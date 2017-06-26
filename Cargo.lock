@@ -2,7 +2,6 @@
 name = "parser-c"
 version = "0.1.0"
 dependencies = [
- "corollary-support 0.1.0",
  "matches 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.1.37 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-derive 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -15,13 +14,6 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "memchr 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "corollary-support"
-version = "0.1.0"
-dependencies = [
- "num 0.1.37 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

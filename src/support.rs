@@ -5,6 +5,7 @@
 extern crate num;
 
 use num::ToPrimitive;
+use std;
 
 pub trait OpAddable {
     fn add(self, right: Self) -> Self;

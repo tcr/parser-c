@@ -5,19 +5,19 @@
 #![feature(slice_patterns, box_syntax, box_patterns, fnbox)]
 #![allow(unused_parens)]
 
-#[macro_use] extern crate corollary_support;
 extern crate num;
 #[macro_use] extern crate matches;
 #[macro_use] extern crate num_derive;
 extern crate parser_c_macro;
 
-use corollary_support::*;
-
 // pub mod analysis;
+#[macro_use] pub mod support;
 pub mod data;
 pub mod parser;
 pub mod syntax;
 
+use support as corollary_support;
+use corollary_support::*;
 use syntax::preprocess::*;
 use syntax::ast::*;
 use data::input_stream::readInputStream;

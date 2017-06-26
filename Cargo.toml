@@ -11,7 +11,6 @@ homepage = "http://github.com/tcr/corrode-but-in-rust"
 license = "BSD-3"
 
 [dependencies]
-corollary-support = { path = "../corollary-support" }
 num = "0.1"
 num-derive = "0.1"
 parser-c-macro = { path = "parser-c-macro" }
