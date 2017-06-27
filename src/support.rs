@@ -662,8 +662,13 @@ pub mod BSW {
     }
 
     pub fn readFile(f: FilePath) -> Vec<u8> {
+        use std::fs::File;
+        use std::io::Read;
+
         // TODO
-        vec![]
+        let mut items = vec![];
+        File::open(f.path).unwrap().read_to_end(&mut items);
+        items
     }
 }
 
