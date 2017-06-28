@@ -32780,7 +32780,7 @@ pub fn alex_deflt() -> Vec<isize> {
 }
 
 pub fn alex_accept<a>() -> Vec<AlexAcc<a>> {
-    listArray((0, 338), vec![
+    let body = vec![
             AlexAccNone,
             AlexAccNone,
             AlexAccNone,
@@ -33120,7 +33120,9 @@ pub fn alex_accept<a>() -> Vec<AlexAcc<a>> {
             AlexAcc(2),
             AlexAcc(1),
             AlexAcc(0),
-        ])
+        ];
+
+    listArray((0, 338), body)
 }
 
 pub fn alex_actions() -> Vec<Box<Fn(Position, isize, InputStream) -> P<CToken>>> {
@@ -33715,23 +33717,25 @@ pub fn lexToken_q(modifyCache: bool) -> P<CToken> {
             },
             AlexSkip((pos_q, inp_q), _len) => {
                 /*do*/ {
-                    setPos(pos_q);
-                    setInput(inp_q);
-                    lexToken_q(modifyCache)
+                    let _0 = setPos(pos_q);
+                    let _1 = setInput(inp_q);
+                    let _2 = lexToken_q(modifyCache);
+                    thenP(_0, box move |_| { let _2 = _2.clone(); thenP(_1.clone(), box move |_| _2.clone()) })
                 }
             },
             AlexToken((pos_q, inp_q), len, action) => {
                 /*do*/ {
-                    setPos(pos_q);
-                    setInput(inp_q);
-                    thenP(action(pos, len, inp), box move |nextTok| {
+                    let _0 = setPos(pos_q);
+                    let _1 = setInput(inp_q);
+                    let _2 = thenP(action(pos, len, inp), box move |nextTok| {
 
                         if modifyCache { 
                             thenP(setLastToken(nextTok.clone()), box move |_| __return(nextTok.clone()))
                         } else {
                             __return(nextTok)
                         }
-                    })
+                    });
+                    thenP(_0, box move |_| { let _2 = _2.clone(); thenP(_1.clone(), box move |_| _2.clone()) })
                 }
             },
         }
@@ -34055,7 +34059,10 @@ pub fn alexScanUser(user: bool, input: AlexInput, sc: isize) -> AlexReturn<Box<F
     }
 }
 
-pub fn alex_scan_tkn(user: bool, orig_input: AlexInput, len: isize, input: AlexInput, s: isize, last_acc: AlexLastAcc) -> (AlexLastAcc, AlexInput) {
+pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, mut input: AlexInput, mut s: isize, mut last_acc: AlexLastAcc) -> (AlexLastAcc, AlexInput) {
+
+loop {
+
     // TODO recursive lambda
     fn check_accs<A: Clone>((user, orig_input, len, input, last_acc): (A, AlexInput, isize, AlexInput, AlexLastAcc), _0: AlexAcc<A>) -> AlexLastAcc {
         match (_0) {
@@ -34085,11 +34092,13 @@ pub fn alex_scan_tkn(user: bool, orig_input: AlexInput, len: isize, input: AlexI
         }
     };
 
-        let new_acc = (check_accs((user, orig_input.clone(), len, input.clone(), last_acc), (quickIndex(alex_accept(), s))));
+    let a = alex_accept();
+    let right = quickIndex(a, s);
+        let new_acc = check_accs((user, orig_input.clone(), len, input.clone(), last_acc), right);
 
     match alexGetByte(input.clone()) {
             None => {
-                (new_acc, input)
+                return (new_acc, input)
             },
             Some((c, new_input)) => {
                 match fromIntegral(c as isize) {
@@ -34108,19 +34117,32 @@ alexIndexInt16OffAddr(alex_deflt(), s)
 
                         match new_s {
                                 -1 => {
-                                    (new_acc, input)
+                                    return (new_acc, input)
                                 },
                                 _ => {
-                                    alex_scan_tkn(user, orig_input, (if ((c < 128) || (c >= 192)) {                                         
-((len + (1)))} else {
-len
-                                        }), new_input, new_s, new_acc)
+                                    user = user;
+                                    orig_input = orig_input;
+                                    len = if ((c < 128) || (c >= 192)) {                                         
+                                        ((len + (1)))
+                                    } else {
+                                        len
+                                    };
+                                    input = new_input;
+                                    s = new_s;
+                                    last_acc = new_acc;
+
+
+                                    // alex_scan_tkn(user, orig_input, (if ((c < 128) || (c >= 192)) {                                         
+// ((len + (1)))} else {
+// len
+                                        // }), new_input, new_s, new_acc)
                                 },
                             }                        }
                     },
                 }
             },
         }   
+}
 }
 
 pub enum AlexLastAcc {

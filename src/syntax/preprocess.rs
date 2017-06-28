@@ -82,13 +82,13 @@ pub fn rawCppArgs(opts: Vec<String>, input_file: FilePath) -> CppArgs {
 }
 
 pub fn addCppOption(cpp_args: CppArgs, opt: CppOption) -> CppArgs {
-    __assign!(cpp_args, {
+    __assign!(cpp_args.clone(), {
         cppOptions: __op_concat(opt, cppOptions(cpp_args))
     })
 }
 
 pub fn addExtraOption(cpp_args: CppArgs, extra: String) -> CppArgs {
-    __assign!(cpp_args, {
+    __assign!(cpp_args.clone(), {
         extraOptions: __op_concat(extra, extraOptions(cpp_args))
     })
 }
@@ -105,11 +105,11 @@ pub fn runPreprocessor<P: Preprocessor>(cpp: P,
     }
 
     let cpp_args2 = cpp_args.clone();
-    let invokeCpp = |actual_out_file| {
+    let invokeCpp = |actual_out_file: FilePath| {
         /*do*/
         {
             let exit_code = cpp.runCPP(__assign!(cpp_args2, {
-                outputFile: Some(actual_out_file)
+                outputFile: Some(actual_out_file.clone())
             }));
 
             match exit_code {

@@ -82,7 +82,11 @@ macro_rules! __assign {
         $($field_name:ident: $field_type:expr),+ $(,)*
     }) => {
         // TODO
-        $left
+        {
+            let mut left = $left;
+            $( left.$field_name = $field_type; )+
+            left
+        }
     }
 }
 
@@ -850,6 +854,16 @@ impl<T: Eq + Hash + Debug> Set<T> {
         // TODO
         Set(HashSet::new())
     }
+
+    pub fn insert(item: T, mut list: Self) -> Self {
+        list.0.insert(item);
+        list
+    }
+
+    pub fn delete(item: T, mut list: Self) -> Self {
+        list.0.remove(&item);
+        list
+    }
 }
 
 
@@ -868,9 +882,8 @@ pub struct Array<T, U> {
     inner: Vec<U>,
 }
 
-pub fn __op_array_index<T>(arr: Vec<T>, idx: isize) -> T {
-    // TODO
-    unreachable!()
+pub fn __op_array_index<T>(mut arr: Vec<T>, idx: isize) -> T {
+    arr.remove(idx as usize)
 }
 
 pub fn __op_rshift(left: isize, right: isize) {

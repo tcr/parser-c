@@ -4,11 +4,13 @@
 #![feature(proc_macro)]
 #![feature(slice_patterns, box_syntax, box_patterns, fnbox)]
 #![allow(unused_parens)]
+#![recursion_limit="500"]
 
 extern crate num;
 #[macro_use] extern crate matches;
 #[macro_use] extern crate num_derive;
 extern crate parser_c_macro;
+#[macro_use] extern crate lazy_static;
 
 // pub mod analysis;
 #[macro_use] pub mod support;

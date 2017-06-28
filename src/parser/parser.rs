@@ -41892,14 +41892,9 @@ pub fn expressionP() -> P<CExpr> {
     expression()
 }
 
+#[derive(Clone)]
 pub struct HappyStk<a>(a, Option<Box<HappyStk<a>>>);
 
-impl<a> Clone for HappyStk<a> {
-    fn clone(&self) -> Self {
-        //TODO
-        unreachable!();
-    }
-}
 
 pub fn happyParse(start_state: Box<Fn(isize, isize, CToken, HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>) -> P<HappyAbsSyn> {
     // TODO this is lazy failure

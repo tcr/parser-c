@@ -25,6 +25,7 @@ use corollary_support::*;
 // use Data::Set;
 
 use data::position::Position;
+use data::position::Position::NoPosition;
 use parser::tokens::*;
 use data::input_stream::*;
 use data::ident::Ident;
@@ -33,24 +34,25 @@ use data::error::*;
 use std::boxed::FnBox;
 use std::rc::Rc;
 
+#[derive(Debug)]
 pub struct ParseError(pub (Vec<String>, Position));
 
 // instance Show ParseError where
 //     show (ParseError (msgs,pos)) = showErrorInfo "Syntax Error !" (ErrorInfo LevelError pos msgs)
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ParseResult<a> {
     POk(PState, a),
     PFailed(Vec<String>, Position),
 }
 pub use self::ParseResult::*;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PState {
     curPos: Position,
     curInput: InputStream,
-    prevToken: CToken,
-    savedToken: CToken,
+    prevToken: Option<CToken>,
+    savedToken: Option<CToken>,
     namesupply: Vec<Name>,
     tyidents: Set<Ident>,
     scopes: Vec<Set<Ident>>,
@@ -62,10 +64,14 @@ fn curInput(a: PState) -> InputStream {
     a.curInput
 }
 fn prevToken(a: PState) -> CToken {
-    a.prevToken
+    // a.prevToken.unwrap_or(CToken::CTokStar((NoPosition, 0)))
+    //TODO
+    a.prevToken.expect("CLexer.execParser: Touched undefined token!")
 }
 fn savedToken(a: PState) -> CToken {
-    a.savedToken
+    // a.savedToken.unwrap_or(CToken::CTokStar((NoPosition, 0)))
+    //TODO
+    a.savedToken.expect("CLexer.execParser: Touched undefined token (safed token)!")
 }
 fn namesupply(a: PState) -> Vec<Name> {
     a.namesupply
@@ -77,7 +83,9 @@ fn scopes(a: PState) -> Vec<Set<Ident>> {
     a.scopes
 }
 
+#[must_use]
 pub struct P<a>(pub Rc<Box<Fn(PState) -> ParseResult<a>>>);
+
 pub fn unP<a>(p: P<a>) -> Rc<Box<Fn(PState) -> ParseResult<a>>> {
     p.0
 }
@@ -110,9 +118,8 @@ pub fn execParser<a>(P(parser): P<a>,
     let initialState = PState {
         curPos: pos,
         curInput: input,
-        prevToken: internalErr("CLexer.execParser: Touched undefined token!".to_string()),
-        savedToken: internalErr("CLexer.execParser: Touched undefined token (safed token)!"
-                                    .to_string()),
+        prevToken: None,
+        savedToken: None,
         namesupply: names,
         tyidents: Set::fromList(builtins),
         scopes: vec![],
@@ -147,23 +154,24 @@ pub fn getNewName() -> P<Name> {
     })
 }
 
+
 pub fn setPos(pos: Position) -> P<()> {
-    P::with(box |s: PState| POk(__assign!(s, { curPos: pos }), ()))
+    P::with(box move |s: PState| POk(__assign!(s, { curPos: pos.clone() }), ()))
 }
 
 pub fn getPos() -> P<Position> {
-    P::with(box |s: PState| POk(s.clone(), s.curPos.clone()))
+    P::with(box move |s: PState| POk(s.clone(), s.curPos.clone()))
 }
 
 pub fn addTypedef(ident: Ident) -> P<()> {
-    P::with(box |s: PState| POk(__assign!(s, { tyidents: Set::insert(ident, s.tyidents.clone()) }), ()))
+    P::with(box move |s: PState| POk(__assign!(s.clone(), { tyidents: Set::insert(ident.clone(), s.tyidents.clone()) }), ()))
 }
 
 pub fn shadowTypedef(ident: Ident) -> P<()> {
-    P::with(box |s: PState| {
-        POk(__assign!(s, {
-                tyidents: (if Set::member(ident, s.tyidents.clone()) {
-                    Set::delete(ident, s.tyidents.clone())
+    P::with(box move |s: PState| {
+        POk(__assign!(s.clone(), {
+                tyidents: (if Set::member(ident.clone(), s.tyidents.clone()) {
+                    Set::delete(ident.clone(), s.tyidents.clone())
                 } else {
                     s.tyidents.clone()
                 }),
@@ -177,7 +185,7 @@ pub fn isTypeIdent(mut ident: Ident) -> P<bool> {
 }
 
 pub fn enterScope() -> P<()> {
-    P::with(box move |s: PState| POk(__assign!(s, { scopes: __op_concat(s.tyidents.clone(), s.scopes.clone()) }), ()))
+    P::with(box move |s: PState| POk(__assign!(s.clone(), { scopes: __op_concat(s.tyidents.clone(), s.scopes.clone()) }), ()))
 }
 
 pub fn leaveScope() -> P<()> {
@@ -187,6 +195,7 @@ pub fn leaveScope() -> P<()> {
             __error!("leaveScope: already in global scope".to_string());
         } else {
             let tyids = ss.remove(0);
+            let ss_q = ss;
             POk(__assign!(s, {
                 tyidents: tyids,
                 scopes: ss_q,
@@ -200,25 +209,25 @@ pub fn getInput() -> P<InputStream> {
 }
 
 pub fn setInput(i: InputStream) -> P<()> {
-    P::with(box |s: PState| POk(__assign!(s, { curInput: i }), ()))
+    P::with(box move |s: PState| POk(__assign!(s, { curInput: i.clone() }), ()))
 }
 
 pub fn getLastToken() -> P<CToken> {
-    P::with(box |s: PState| POk(s.clone(), s.prevToken.clone()))
+    P::with(box |s: PState| POk(s.clone(), prevToken(s).clone()))
 }
 
 pub fn getSavedToken() -> P<CToken> {
-    P::with(box |s: PState| POk(s.clone(), s.savedToken.clone()))
+    P::with(box |s: PState| POk(s.clone(), savedToken(s).clone()))
 }
 
 pub fn setLastToken(_0: CToken) -> P<()> {
     match (_0) {
-        CTokEof => P::with(box |s| POk(__assign!(s, { savedToken: (prevToken(s)) }), ())),
+        CTokEof => P::with(box |s| POk(__assign!(s.clone(), { savedToken: s.prevToken.clone() }), ())),
         tok => {
-            P::with(box |s| {
-                  POk(__assign!(s, {
-                          prevToken: tok,
-                          savedToken: (prevToken(s)),
+            P::with(box move |s| {
+                  POk(__assign!(s.clone(), {
+                          prevToken: Some(tok.clone()),
+                          savedToken: s.prevToken.clone(),
                       }),
                       ())
               })
@@ -227,7 +236,7 @@ pub fn setLastToken(_0: CToken) -> P<()> {
 }
 
 pub fn handleEofToken() -> P<()> {
-    P::with(box |s: PState| POk(__assign!(s, { savedToken: prevToken(s) }), ()))
+    P::with(box |s: PState| POk(__assign!(s.clone(), { savedToken: s.prevToken.clone() }), ()))
 }
 
 pub fn getCurrentPosition() -> P<Position> {
