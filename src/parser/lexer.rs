@@ -33256,7 +33256,8 @@ pub fn alex_actions() -> Vec<Box<Fn(Position, isize, InputStream) -> P<CToken>>>
 
 pub fn readCOctal(s: String) -> Either<String, CInteger> {
     if s.chars().nth(0).unwrap() == '0' {
-        if isDigit(s.chars().nth(1).unwrap()) {
+        println!("OK {:?}", s);
+        if s.len() > 1 && isDigit(s.chars().nth(1).unwrap()) {
             readCInteger(OctalRepr, s[1..].to_string())
         } else {
             readCInteger(DecRepr, s)
@@ -33728,6 +33729,7 @@ pub fn lexToken_q(modifyCache: bool) -> P<CToken> {
                     let _0 = setPos(pos_q);
                     let _1 = setInput(inp_q);
                     let _2 = thenP(action(pos, len, inp), box move |nextTok| {
+
 
                         if modifyCache { 
                             thenP(setLastToken(nextTok.clone()), box move |_| __return(nextTok.clone()))

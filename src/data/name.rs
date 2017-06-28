@@ -17,5 +17,5 @@ pub fn newNameSupply() -> Vec<Name> {
 
 pub fn namesStartingFrom(k: isize) -> Vec<Name> {
     // TODO fix this to be an infinite iterator
-    vec![Name(k)]
+    (0..1024).map(|k| Name(k)).collect()
 }

@@ -35632,29 +35632,47 @@ pub fn happyReduce_4() -> Box<Fn(isize, CToken, HappyState<CToken, Box<Fn(HappyS
     partial_5!(happyMonadReduce, 1, 7, box happyReduction_4)
 }
 
-refute!( pub fn happyReduction_4<t>(HappyStk(HappyAbsSyn8(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: t) -> P<HappyAbsSyn> {
-    happyThen((({
-            let mut decls = reverse(happy_var_1);
-
-            if decls.len() == 0 {
-                    /*do*/ {
-                        thenP(getNewName(), box move |n| {
-                            clones!(decls);
-
-                        thenP(getCurrentPosition(), box move |p| {
-                            clones!(decls);
-
-                        __return(CTranslationUnit::<NodeInfo>(decls.clone(), (mkNodeInfo_q(p.clone(), (p.clone(), 0), n.clone()))))
-
-                        })})
-                    }
-                } else {
-                    let d = decls.remove(0);
-                    let ds = decls;
-                    withNodeInfo(d.clone(), partial_1!(CTranslationUnit::<NodeInfo>, ds.clone()))
+pub fn happyReduction_4<t>(_0: HappyStk<HappyAbsSyn>, _1: t) -> P<HappyAbsSyn> {
+            match (
+                {
+                    _0
+                },
+                {
+                    _1
+                },
+            ) {
+                (HappyStk(HappyAbsSyn8(happy_var_1), Some(box happyRest)), tk) => {
+                    happyThen(
+                        (({
+                            let mut decls = reverse(happy_var_1);
+                            if decls.len() == 0 {
+                                {
+                                    thenP(getNewName(), box move |n| {
+                                        let decls = decls.clone();
+                                        thenP(getCurrentPosition(), box move |p| {
+                                            let decls = decls.clone();
+                                            __return(CTranslationUnit::<NodeInfo>(
+                                                decls.clone(),
+                                                (mkNodeInfo_q(p.clone(), (p.clone(), 0), n.clone())),
+                                            ))
+                                        })
+                                    })
+                                }
+                            } else {
+                                let d = decls[0].clone();
+                                withNodeInfo(d, box move |_0| {
+                                    CTranslationUnit::<NodeInfo>(decls.clone(), _0)
+                                })
+                            }
+                        })),
+                        (box move |r| happyReturn((HappyAbsSyn7(r)))),
+                    )
                 }
-                    })), (box move |r| { happyReturn((HappyAbsSyn7(r))) }))
-} );
+                _ => {
+                    panic!("Irrefutable pattern!");
+                }
+            }
+        }
 
 pub fn happyReduce_5() -> Box<Fn(isize, CToken, HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>> {
     partial_5!(happySpecReduce_0, 8, (happyReduction_5)())

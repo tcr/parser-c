@@ -6,6 +6,7 @@ extern crate num;
 
 use num::ToPrimitive;
 use std;
+use std::str::FromStr;
 
 pub trait OpAddable {
     fn add(self, right: Self) -> Self;
@@ -592,8 +593,12 @@ impl ReadS<char> for readOct {
 pub struct readDec(pub String);
 impl ReadS<isize> for readDec {
     fn read_s(&self) -> Vec<(isize, String)> {
-        // TODO
-        vec![]
+        if let Ok(left) = isize::from_str(&self.0) {
+            let right = self.0.chars().skip_while(|x| x.is_digit(10)).collect();
+            vec![(left, right)]
+        } else {
+            vec![]
+        }
     }
 }
 
@@ -630,18 +635,15 @@ pub mod BSC {
     }
 
     pub fn pack(input: String) -> Vec<u8> {
-        // TODO
-        vec![]
+        input.chars().map(|x| x as u8).collect()
     }
 
     pub fn unpack(input: Vec<u8>) -> String {
-        // TODO
-        "".to_string()
+        input.into_iter().map(|x| x as char).collect()
     }
 
     pub fn take(len: isize, input: Vec<u8>) -> Vec<u8> {
-        // TODO
-        vec![]
+        input.into_iter().take(len as usize).collect()
     }
 }
 
@@ -869,7 +871,10 @@ impl<T: Eq + Hash + Debug> Set<T> {
 
 // Array things
 
-pub fn array<T>(dim: (isize, isize), list: Vec<(isize, T)>) -> Vec<T> {
+pub fn array<T>(dim: (isize, isize), mut list: Vec<(isize, T)>) -> Vec<T> {
+    // Only supports an ordered array for now
+    list.sort_by(|a, b| a.0.cmp(&b.0));
+    assert_eq!(list.last().unwrap().0, dim.1 - 1);
     list.into_iter().map(|x| x.1).collect()
 }
 
