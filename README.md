@@ -30,6 +30,48 @@ int main() {
 }
 ```
 
+Result is:
+
+```
+OUT Right(
+    CTranslationUnit(
+        [
+            CFDefExt(
+                CFunctionDef(
+                    [
+                        CTypeSpec(
+                            CIntType(
+                                NodeInfo(
+                                    Position {
+                                        posOffset: 0,
+                                        posFile: "./tests/simple.c",
+                                        posRow: 1,
+                                        posColumn: 1
+                                    },
+                                    (
+                                        Position {
+                                            posOffset: 0,
+                                            posFile: "./tests/simple.c",
+                                            posRow: 1,
+                                            posColumn: 1
+                                        },
+                                        3
+                                    ),
+                                    Name(
+                                        1
+                                    )
+                                )
+                            )
+                        )
+                    ],
+                    CDeclarator(
+                        Some(
+                            Ident(
+                                "main",
+                                124382170,
+                                ...
+```
+
 ## License
 
 MIT or Apache-2.0, at your option.
