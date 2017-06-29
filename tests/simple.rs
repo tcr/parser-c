@@ -3,16 +3,29 @@ extern crate parser_c;
 use parser_c::parser::parser::parseC;
 use parser_c::data::position::initPos;
 use parser_c::support::FilePath;
-use parser_c::data::input_stream::readInputStream;
+use parser_c::support::Either::*;
+use parser_c::data::input_stream::inputStreamFromString;
+
+const INPUT: &'static str = r#"
+
+int main() {
+    return 0;
+}
+
+"#;
 
 #[test]
 fn simple() {
-    let input_file = FilePath {
-        path: "./tests/simple.c".to_owned(),
-    };
-    let input_stream = readInputStream(input_file.clone());
+    let input_stream = inputStreamFromString(INPUT.to_string());
 
-    let todo = parseC(input_stream, (initPos(input_file)));
+    let todo = parseC(input_stream, (initPos(FilePath::from("simple.c".to_string()))));
 
-    println!("OUT {:#?}", todo);
+    match todo {
+        Left(err) => {
+            panic!("error: {:?}", err);
+        }
+        Right(ast) => {
+            println!("success: {:?}", ast);
+        }
+    }
 }
