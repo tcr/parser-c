@@ -2,14 +2,14 @@
 
 Rust module for parsing C code. Port of Haskell's [language-c](https://github.com/visq/language-c), semi-automatically translated using [Corollary](https://github.com/tcr/corrode-but-in-rust).
 
-A lot of work remains:
+**This port is a work in progress.** A lot of work remains to parse anything but very simple C files; while most source code has been translated from Haskell, errors in translation prevent it from matching language-c's functionality yet. Here are the next steps for achieving parity, in order:
 
-* Building up an equivalent test bed to language-c's, then automatically cross-check
-* Fix errors in the ported code
-* Figure out a porting story for alex/happy generated parser
-* Converting portions of the code into Rust idioms
+1. Building up an equivalent test bed to language-c's, then automatically cross-check
+1. Fix errors in the ported code to support those test cases
+1. Figure out a porting story for alex/happy generated parser
+1. Lastly, converting portions of the code into Rust idioms
 
-Example:
+Example usage:
 
 ```rust
 extern crate parser_c;
