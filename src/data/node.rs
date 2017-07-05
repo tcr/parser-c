@@ -74,7 +74,7 @@ pub fn nodeInfo<T: CNode>(n: T) -> NodeInfo {
 pub fn nameOfNode(_0: NodeInfo) -> Option<Name> {
     match (_0) {
         OnlyPos(_, _) => None,
-        NodeInfo(_, _, name) => None,
+        NodeInfo(_, _, name) => Some(name),
     }
 }
 

@@ -8,8 +8,11 @@ use parser_c::data::input_stream::inputStreamFromString;
 
 const INPUT: &'static str = r#"
 
-int main() {
-    return 0;
+float square ( float x )
+{
+    float p ;
+    p = x * x ;
+    return p ;
 }
 
 "#;

@@ -41639,7 +41639,7 @@ pub fn withLength<a: Clone + 'static>(nodeinfo: NodeInfo, mkAttrNode: Box<Fn(Nod
         thenP(getSavedToken(), box move |lastTok| {
             let firstPos = posOfNode(nodeinfo.clone());
 
-            let attrs = mkNodeInfo_q(firstPos, (posLenOfTok(lastTok)), (maybe((__error!("nameOfNode".to_string())), id, (nameOfNode(nodeinfo.clone())))));
+            let attrs = mkNodeInfo_q(firstPos, (posLenOfTok(lastTok)), nameOfNode(nodeinfo.clone()).unwrap_or_else(|| __error!("nameOfNode".to_string())));
 
             __return((mkAttrNode(attrs)))
         })
