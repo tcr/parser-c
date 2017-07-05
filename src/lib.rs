@@ -4,7 +4,7 @@
 #![feature(proc_macro)]
 #![feature(slice_patterns, box_syntax, box_patterns, fnbox)]
 #![allow(unused_parens)]
-#![recursion_limit="500"]
+#![recursion_limit="5000"]
 
 extern crate num;
 #[macro_use] extern crate matches;
