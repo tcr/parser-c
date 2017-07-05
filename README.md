@@ -6,8 +6,8 @@ Rust module for parsing C code. Port of Haskell's [language-c](https://github.co
 
 1. Building up an equivalent test bed to language-c's, then automatically cross-check
 1. Fix errors in the ported code to support those test cases
-1. Figure out a porting story for alex/happy generated parser
-1. Lastly, converting portions of the code into Rust idioms
+1. Converting portions of the code into Rust idioms without breaking tests
+1. Figure out a porting story for the alex/happy generated parser output
 
 Example usage:
 
