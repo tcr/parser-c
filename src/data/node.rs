@@ -12,13 +12,21 @@ use corollary_support::*;
 
 use data::name::Name;
 use data::position::*;
+use std::fmt;
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
+#[derive(Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum NodeInfo {
     OnlyPos(Position, PosLength),
     NodeInfo(Position, PosLength, Name),
 }
 pub use self::NodeInfo::*;
+
+// TODO This should be replaced with a better impl
+impl fmt::Debug for NodeInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "..")
+    }
+}
 
 impl Pos for NodeInfo {
     fn posOf(self) -> Position {

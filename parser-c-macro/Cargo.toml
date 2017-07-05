@@ -1,7 +1,9 @@
 [package]
 name = "parser-c-macro"
 version = "0.1.0"
-authors = ["Tim Ryan <id@timryan.org>"]
+authors = ["Tim Ryan <tim@timryan.org>"]
+description = "Helper macros for parser-c"
+license = "MIT OR Apache-2.0"
 
 [lib]
 proc-macro = true
@@ -9,4 +11,4 @@ proc-macro = true
 [dependencies]
 syn = { version = "0.10.5", features = [ "full" ] }
 quote = "0.3.10"
-regex = "*"
+regex = "0.2.2"

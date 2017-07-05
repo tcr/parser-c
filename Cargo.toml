@@ -1,20 +1,19 @@
 [package]
 name = "parser-c"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
   "Tim Ryan <tim@timryan.org>",
-  "Paul Collier <paul@paulcollier.ca>"
 ]
 description = "Parses C into an AST."
-repository = "http://github.com/tcr/corrode-but-in-rust"
-homepage = "http://github.com/tcr/corrode-but-in-rust"
-license = "BSD-3"
+repository = "http://github.com/tcr/parser-c"
+homepage = "http://github.com/tcr/parser-c"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 num = "0.1"
 num-derive = "0.1"
-parser-c-macro = { path = "parser-c-macro" }
-matches = "*"
+parser-c-macro = "0.1.0"
+matches = "0.1.6"
 lazy_static = "0.2"
 
 [profile.test]

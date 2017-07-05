@@ -4,7 +4,7 @@
 #![feature(proc_macro)]
 #![feature(slice_patterns, box_syntax, box_patterns, fnbox)]
 #![allow(unused_parens)]
-#![recursion_limit="5000"]
+#![recursion_limit="500"]
 
 extern crate num;
 #[macro_use] extern crate matches;
@@ -26,6 +26,7 @@ use data::input_stream::readInputStream;
 use data::position::initPos;
 use parser::parser_monad::ParseError;
 use parser::parser::parseC;
+use data::input_stream::inputStreamFromString;
 
 // NOTE: These imports are advisory. You probably need to change them to support Rust.
 // use Language::C::Data;
@@ -34,7 +35,7 @@ use parser::parser::parseC;
 // use Language::C::Parser;
 // use Language::C::System::Preprocess;
 
-pub fn parseCFile<C: Preprocessor>(cpp: C,
+fn parseCFile<C: Preprocessor>(cpp: C,
                                    tmp_dir_opt: Option<FilePath>,
                                    args: Vec<String>,
                                    input_file: FilePath)
@@ -63,11 +64,36 @@ pub fn parseCFile<C: Preprocessor>(cpp: C,
     }
 }
 
-pub fn parseCFilePre(file: FilePath) -> Either<ParseError, CTranslUnit> {
+fn parseCFilePre(file: FilePath) -> Either<ParseError, CTranslUnit> {
     /*do*/
     {
         let input_stream = readInputStream(file.clone());
 
         parseC(input_stream, (initPos(file)))
     }
+}
+
+/// Basic public API. This doesn't represent possible final functionality of the crate,
+/// but makes it usable at this early stage.
+pub fn parse(input: &str, filename: &str) -> Result<CTranslUnit, ParseError> {
+    use std::thread;
+
+    let input = input.to_string();
+    let filename = filename.to_string();
+
+    // TODO which stack size is necessary? Can we eliminate this?
+    thread::Builder::new().stack_size(32 * 1024 * 1024).spawn(move || {
+        let input_stream = inputStreamFromString(input);
+
+        let todo = parseC(input_stream, (initPos(FilePath::from(filename))));
+
+        match todo {
+            Left(err) => {
+                Err(err)
+            }
+            Right(ast) => {
+                Ok(ast)
+            }
+        }
+    }).unwrap().join().unwrap()
 }

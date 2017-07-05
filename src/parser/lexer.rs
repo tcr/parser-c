@@ -33256,7 +33256,6 @@ pub fn alex_actions() -> Vec<Box<Fn(Position, isize, InputStream) -> P<CToken>>>
 
 pub fn readCOctal(s: String) -> Either<String, CInteger> {
     if s.chars().nth(0).unwrap() == '0' {
-        println!("OK {:?}", s);
         if s.len() > 1 && isDigit(s.chars().nth(1).unwrap()) {
             readCInteger(OctalRepr, s[1..].to_string())
         } else {

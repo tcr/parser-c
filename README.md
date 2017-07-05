@@ -9,16 +9,12 @@ Rust module for parsing C code. Port of Haskell's [language-c](https://github.co
 1. Converting portions of the code into Rust idioms without breaking tests
 1. Figure out a porting story for the alex/happy generated parser output
 
-Example usage:
+`parser-c` requires nightly. Example usage:
 
 ```rust
 extern crate parser_c;
 
-use parser_c::parser::parser::parseC;
-use parser_c::data::position::initPos;
-use parser_c::support::FilePath;
-use parser_c::support::Either::*;
-use parser_c::data::input_stream::inputStreamFromString;
+use parser_c::parse;
 
 const INPUT: &'static str = r#"
 
@@ -28,17 +24,12 @@ int main() {
 
 "#;
 
-#[test]
-fn simple() {
-    let input_stream = inputStreamFromString(INPUT.to_string());
-
-    let todo = parseC(input_stream, (initPos(FilePath::from("simple.c".to_string()))));
-
-    match todo {
-        Left(err) => {
+fn main() {
+    match parse(INPUT, "simple.c") {
+        Err(err) => {
             panic!("error: {:?}", err);
         }
-        Right(ast) => {
+        Ok(ast) => {
             println!("success: {:?}", ast);
         }
     }
