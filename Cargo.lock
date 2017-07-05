@@ -1,12 +1,12 @@
 [root]
 name = "parser-c"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "matches 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.1.37 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-derive 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
- "parser-c-macro 0.1.0",
+ "parser-c-macro 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -127,6 +127,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "parser-c-macro"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -256,6 +257,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum num-iter 0.1.33 (registry+https://github.com/rust-lang/crates.io-index)" = "f7d1891bd7b936f12349b7d1403761c8a0b85a18b148e9da4429d5d102c1a41e"
 "checksum num-rational 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)" = "c2dc5ea04020a8f18318ae485c751f8cfa1c0e69dcf465c29ddaaa64a313cc44"
 "checksum num-traits 0.1.37 (registry+https://github.com/rust-lang/crates.io-index)" = "e1cbfa3781f3fe73dc05321bed52a06d2d491eaa764c52335cf4399f046ece99"
+"checksum parser-c-macro 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4305b399fce452172a8c6a34f30ce3f139220b332199c858f8307a70bd32ab08"
 "checksum quote 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b0f1847d90ff21d41b08f7f9f8e82dff613c3e2c5ebc9f8a10aeee1a0c4d7d17"
 "checksum quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a"
 "checksum rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "022e0636ec2519ddae48154b028864bdce4eaf7d35226ab8e65c611be97b189d"

@@ -1,5 +1,31 @@
+//! Very work-in-progress C parser, ported from Haskell's language-c.
+//!
+//! ```rust,no_run
+//! extern crate parser_c;
+//! 
+//! use parser_c::parse;
+//! 
+//! const INPUT: &'static str = r#"
+//! 
+//! int main() {
+//!     return 0;
+//! }
+//! 
+//! "#;
+//! 
+//! fn main() {
+//!     match parse(INPUT, "simple.c") {
+//!         Err(err) => {
+//!             panic!("error: {:?}", err);
+//!         }
+//!         Ok(ast) => {
+//!             println!("success: {:?}", ast);
+//!         }
+//!     }
+//! }
+//! ```
+
 // Original file: "C.hs"
-// File auto-generated using Corollary.
 
 #![feature(proc_macro)]
 #![feature(slice_patterns, box_syntax, box_patterns, fnbox)]
@@ -73,9 +99,11 @@ fn parseCFilePre(file: FilePath) -> Either<ParseError, CTranslUnit> {
     }
 }
 
-/// Basic public API. This doesn't represent possible final functionality of the crate,
-/// but makes it usable at this early stage.
+/// Basic public API. Accepts C source and a filename.
 pub fn parse(input: &str, filename: &str) -> Result<CTranslUnit, ParseError> {
+    // This doesn't represent possible final functionality of the crate,
+    // but makes it usable at this early stage.
+
     use std::thread;
 
     let input = input.to_string();
