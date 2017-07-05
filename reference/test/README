@@ -1,0 +1,52 @@
+= Test Framework =
+
+== Build ==
+
+> make
+
+== Running roundtrip tests ==
+
+> cd suite
+> cp compile-lib.template run-my-lib.sh
+
+Now edit run-my-lib.sh and change the test specific names (my-lib*).
+Then either change the make target, or customize the build script.
+
+== Rendering test results ==
+
+In the default configuration:
+
+> cd results
+> ../bin/RenderTests parser-version list-of-test-files
+
+for example
+
+> ../bin/RenderTests parser-0.2 smoke.dat glib.dat gtk2.dat
+
+The result overview can be found in index.html.
+
+== Running custom tests ==
+
+Look at suite/run-smoke.sh
+
+ * First the general setup:
+
+> #!/bin/sh
+> source ./configuration
+> source $CTEST_BINDIR/setup_test_suite my-custom-test-suite
+> # export CTEST_DEBUG=1 # Set if you want a lot of debug messages
+
+ * Run custom tests
+
+> export CTEST_DRIVER=<test-driver>
+> export CTEST_<driver-flag>=<flag-value>
+> sh run-test test-args
+
+for example
+
+> export CTEST_DRIVER=CEquiv
+> export CTEST_NON_EQUIV=1
+> sh run-test my-file-1.c my-file-2.c
+
+Currently, the test drivers CParse, CRoundTrip and CEquiv are implemented.
+Execute them without arguments (in bin/) to get help.

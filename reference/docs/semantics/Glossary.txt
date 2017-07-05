@@ -1,0 +1,19 @@
+h1. Glossary (stub)
+h2. General
+  * translation unit - the unit which is translated to an object file, usually a preprocessed C file
+  * declaration      - introduces a name for a object, function or type
+  * definition       - defines an object (which needs to be allocated) or a function (code generation)
+  * type definition  - defines a struct,union or enum type
+  * typedef          - defines an alias for a type
+  * identifier       - (general)  name for an composite type, struct/union member, typedef, object, 
+																	function, enumerator or label
+                     - (ordinary) name for a typedef, object, enumerator or function (which live in the same namespace)
+  * tag              - name for a struct, union or enum type, sometimes referring to such a type
+  
+h2. Linkage of Declarations / Definitions
+
+  * External linkage: All decls/defs with external linkage in the program denote the same object/function.
+                     This means, they are visible in all translation units.
+  * Internal linkage: All decls/defs within the translation unit denote the same object/function (static keyword).
+  * No linkage:       The declaration denotes a unique entity (not applicable for external decs/defs).
+

@@ -1,0 +1,7 @@
+Tag: struct _s {x :: int; y :: int;} ("good_sinit.c": line 1)
+Typedef: typedef s as struct _s ("good_sinit.c": line 1)
+Decl: object s1 | static/external | s = { 1, 2 } ("good_sinit.c": line 6)
+Decl: object s2 | static/external | s = { .x = 1, .y = 2 } ("good_sinit.c": line 7)
+Decl: object s3 | static/external | s = { .y = 1, .x = 2 } ("good_sinit.c": line 8)
+Decl: object s4 | static/external | s = { .x = 1, 2 } ("good_sinit.c": line 9)
+Decl: object s5 | static/external | s = { 1, .y = 2 } ("good_sinit.c": line 10)

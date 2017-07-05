@@ -1,0 +1,10 @@
+Global Declarations
+    enumerators
+    declarations
+    objects u  ~>  object u | static/internal | int
+            x  ~>  object x | static/external | int = 2
+            y  ~>  object y | static/external | int = 3
+            z  ~>  object z | static/internal | int = 2
+    functions
+    tags
+    typeDefs

@@ -1,0 +1,147 @@
+= C : Specification, Extensions, Subsets, Support =
+
+==  C99  ==
+
+  * Specification of C99: [http://www.open-std.org/JTC1/SC22/WG14/www/docs/n1256.pdf SPEC]
+
+== Gnu Extensions ==
+
+GNU extensions are documented in the [http://gcc.gnu.org/viewcvs/trunk/gcc/c-parser.c gcc C parser]
+and at http://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html.
+
+Here is a summary of available extensions:
+
+=== C99 6.5: Expressions ===
+
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html Statement-Exprs] || Compound Statement as Expressions || 
+|| || {{{ #define maxint(a,b) ({int _a = (a), _b = (b); _a > _b ? _a : _b; }) }}} || 
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html Labels-as-Values] || Taking the address of a label  (see `Computed goto') || 
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Typeof.html Typeof] || compute type of expression ||
+|| || {{{ int x = 2; typeof(x) y = 3; }}} || 
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Conditionals.html Conditionals] || Omitting the middle operand of a `?:' expression ||
+|| || {{{ x ? : y }}} is equivalent to {{{ x ? x : y }}} ||
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Alignment.html Alignment] || Compute the alignment of an object ||
+|| || {{{ __alignof__ (double) }}} ||
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Offsetof.html Offsetof] || Compute offfset of member ||
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html Other builtins] || Various builtin functions of gcc || 
+|| || {{{__builtin_types_compatible_p}}} is supported ||
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Complex.htm Complex numbers] ||  GNU complex extensions ||
+|| || {{{ __complex double c = 2 + 3i, d = __real a; }}} ||
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Character-Escapes.html Character-Escapes] || \e for ESC  ||
+|| || {{{ char c = '\e' ; }}} ||
+
+|| {{{__builtin_va_arg}}} || {{{__builtin_va_arg}}} ||
+
+
+=== C99 6.7: Declarations ===
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html Empty-Structures] || Allow empty structures || 
+|| [http://gcc.gnu.org/onlinedocs/gcc/Incomplete-Enums.html Incomplete-Enums] || Allow incomplete enum definitions ||
+|| [http://gcc.gnu.org/onlinedocs/gcc/Initializers.html Initializers] ||Allow non-constant initializers ||
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html Extended Asm] || Assembler instructions with C expressions as operands ||
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html function attributes ] || Attributes annotating function declarations || 
+|| [http://gcc.gnu.org/onlinedocs/gcc/Variable-Attributes.html variable attributes ] || Attributes annotating variable declarations ||
+|| [http://gcc.gnu.org/onlinedocs/gcc/Type-Attributes.html type attributes ] || Attributes annotating type declarations (struct, union) ||
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Thread_002dLocal.html Thread-Local] || Thread-local storage ||
+
+=== C99 6.8: Statements ===
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Local-Labels.html Local-Labels] || Labels local to a block (affects: C99 6.8.2) ||
+|| || {{{ do{ __label __ back; goto back; back: ...; }while(0); }}} || || ||
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html Labels-as-Values] || Computed Gotos (affects: C99 6.8.6) ||
+|| || {{{ void* p = && back; ... ; goto *p; }}} || 
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Asm-Labels.html Asm-Labels] || Controlling Names Used in Assembler Code || 
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Nested-Functions.html Nested-Functions] || nested functions || 
+|| || {{{ int a() { int b() { return 0;} return b(); } }}} ||
+
+|| [http://gcc.gnu.org/onlinedocs/gcc/Case-Ranges.html Case-Ranges] || case ranges (affects: C99 6.8.1) ||
+|| || {{{ case 'A' ... 'Z': }}} ||
+
+=== C99 6.9 :Translation unit ===
+
+|| Empty Translation unit ||  allow empty translation_unit ||
+|| Redundant ; ||  allow redundant ';' ||
+|| [http://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html Alternate Keywords] ||  allow {{{__extension__}}} keyword before external declaration, and alternate keywards {{{__asm__}}}, {{{__inline__}}}, etc. ||
+|| [http://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html Extended-Asm] || Top level asm definitions ||
+
+=== Extensions which do not apply ===
+
+For completeness sake, the extensions 
+[http://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html Object Size Checking],
+[http://gcc.gnu.org/onlinedocs/gcc/Constructing-Calls.html Constructing-Calls],
+[http://gcc.gnu.org/onlinedocs/gcc/Zero-Length.html Zero-Length Arrays],
+[http://gcc.gnu.org/onlinedocs/gcc/Pointer-Arith.html Pointer-Arith],
+[http://gcc.gnu.org/onlinedocs/gcc/Cast-to-Union.html Cast-to-Union] and
+[http://gcc.gnu.org/onlinedocs/gcc/Function-Prototypes.html Function-Prototypes]
+listed on [http://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html] do not affect the syntax of the program,
+and can therefore be considered as `supported'.
+ 
+
+Some other extensions simply promote C99 features to C89 and therefore aren't listed here.
+
+
+[http://gcc.gnu.org/onlinedocs/gcc/Variadic-Macros.html Variadic-Macros],
+[http://gcc.gnu.org/onlinedocs/gcc/Escaped-Newlines.html Escaped-Newlines],
+[http://gcc.gnu.org/onlinedocs/gcc/C_002b_002b-Comments.html C++-Comments] apply to the preprocessor only.
+
+== Unsupported C99 Features ==
+
+  * Universal Character Names (C99 Lexer)
+
+=== Currently Unsupported GNU Extensions ===
+
+|| Pragmas || {{{#pragma}}} compile directives ||
+|| || {{{ #pragma pack(push, p1, 1) }}} ||
+|| [http://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html Floating-Types] ||Additional Floating Types ||
+|| || {{{ __float80 x = 2.30w; }}} ||
+|| [http://gcc.gnu.org/onlinedocs/gcc/Decimal-Float.html Decimal-Float] || Decimal Floating Types ||
+|| || {{{ __Decimal32 x = 0.555df; }}} ||
+|| [http://gcc.gnu.org/onlinedocs/gcc/Fixed_002dPoint.html Fixed_002dPoint] || Fixed-Point Types ||
+|| || {{{ _Sat long long _Fract pi = 3.14LLR }}} ||
+|| [http://gcc.gnu.org/onlinedocs/gcc/Dollar-Signs.html Dollar-Signs] || Dollar sign is allowed in identifier names ||
+|| || {{{ int $x = 3; }}} ||
+|| [http://gcc.gnu.org/onlinedocs/gcc/Binary-constants.html Binary-constants] || Binary constants ||
+|| || {{{ int x = 0b001; }}} ||
+
+=== Unsupported non-standard C constructs (which GCC allows) ===
+==== useless qualifiers/type names/storage specs in empty declarations  ====
+{{{
+int;
+const;
+static;
+void f(a,b) int; register; { } /* Empty declarations in old-style parameter declarations aren't supported either. */
+}}}
+====  obsolete use of designated initializer without ‘=’ ====
+{{{
+int e[] = { [2] 2 };
+}}}
+==== data definition without type or storage class ====
+{{{
+a;  /* top-level declaration */
+b();
+}}}
+==== GNU parameter forward declaration ====
+{{{
+int f1(int a; int a);
+}}}
+==== no semicolon at end of struct or union ====
+{{{
+struct s3 {
+  int d
+};
+}}}

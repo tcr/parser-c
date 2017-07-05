@@ -1,0 +1,6 @@
+Tag: union $14 {y :: int; z :: int;} ("good_sinit2.c": line 3)
+Tag: struct _s {x :: int; <anonymous> :: union $14;} ("good_sinit2.c": line 1)
+Typedef: typedef s as struct _s ("good_sinit2.c": line 1)
+Decl: object s1 | static/external | s = { 1, 2 } ("good_sinit2.c": line 9)
+Decl: object s2 | static/external | s = { .x = 1, .y = 2 } ("good_sinit2.c": line 11)
+Decl: object s3 | static/external | s = { .x = 1, .z = 2 } ("good_sinit2.c": line 13)

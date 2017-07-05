@@ -1,0 +1,55 @@
+filename  reason
+
+dollar.c        Extended Source Character Set
+
+digraph1.c      Digraphs
+digraphs.c      Digraphs
+paste2.c        Digraphs
+
+lexnum.c        Trigraphs
+lexstrng.c      Trigraphs
+pr18502-1.c     Trigraphs
+trigraphs.c     Trigraphs
+
+escape.c        UNC
+ucnid-1.c       UNC
+ucnid-2.c       UNC
+ucnid-3.c       UNC
+ucnid-4.c       UNC
+ucnid-5.c       UNC
+ucnid-6.c       UNC
+ucnid-9.c       UNC
+ucnid-10.c      UNC
+ucnid-11.c      UNC
+ucnid-12.c      UNC
+ucnid-13.c      UNC
+ucnid-14.c      UNC
+attr-alias-5.c  UNC
+
+
+ia64-float80-1.c float80 builtin
+ia64-postinc.c   float128 builtin
+fp-int-convert-float128 float128 builtin
+
+c99-float-1.c   Preprocessor fails
+
+cast-lvalue-2.c   casting an lvalue
+
+concat.c        390K input size
+concat2.c       390K input size
+
+anon-struct-6.c  	qualifier without declaration
+anon-struct-7.c   qualifier without declaration
+anon-struct-8.c   qualifier without declaration
+declspec-14.c     qualifier without declaration
+declspec-15.c     qualifier without declaration
+
+c90-init-1.c        obsolete use of designated initializer without `='
+init-desig-obs-2.c  obsolete use of designated initializer without `='
+init-desig-obs-3.c  obsolete use of designated initializer without `='
+
+pr69522.c         gcc bug (5.3.0 does not termiante)
+c90-array-lval.c  does not compile
+20100423-2_0.c    does not compile
+no-asm-4.c        -fno-asm not supported, asm always treated as keyword
+pr67964.c         unsupported __attribute__((const const))

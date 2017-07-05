@@ -1,0 +1,41 @@
+Name:           language-c-examples
+Version:        0.5.1
+Cabal-Version:  >= 1.8
+Build-Type:     Simple
+License:        BSD3
+License-File:   LICENSE
+Copyright:      LICENSE
+Author:         AUTHORS
+Maintainer:     benedikt.huber@gmail.com
+Stability:      experimental
+Homepage:       http://visq.github.io/language-c/
+Bug-reports:    https://github.com/visq/language-c/issues/
+
+Synopsis:       Examples - Analysis and generation of C code
+Description:    Language C is a haskell library for the analysis and generation of C code.
+Category:       Language
+
+Executable ParseAndPrint
+   main-is: ParseAndPrint.hs
+   build-depends: base, filepath, mtl, pretty, language-c
+
+Executable ScanFile
+   main-is: ScanFile.hs
+   build-depends: base, filepath, mtl, pretty, language-c
+
+Executable SearchDef
+   main-is: SearchDef.hs
+   build-depends: base, filepath, mtl, pretty, containers, language-c
+
+Executable TypeCheck
+   main-is: TypeCheck.hs
+   build-depends: base, filepath, mtl, pretty, containers, syb, language-c
+
+Executable ComputeSize
+   main-is: ComputeSize.hs
+   build-depends: base, filepath, mtl, pretty, containers, syb, language-c
+
+Executable DumpAst
+   main-is: DumpAst.hs
+   build-depends: base, filepath, mtl, pretty, language-c
+

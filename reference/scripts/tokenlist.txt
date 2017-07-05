@@ -1,0 +1,23 @@
+alignas _Alignas, alignof _Alignof __alignof alignof __alignof__, asm @__, atomic _Atomic, auto
+break, bool _Bool,
+case, char, const @__, continue, complex _Complex __complex__
+default, do, double,
+else, enum, extern,
+float, for,
+generic _Generic, goto,
+if, inline @__, int, int128 __int128, long, noreturn _Noreturn,
+nullable _Nullable __nullable,
+nonnull _Nonnull __nonnull,
+register, restrict @__, return
+short, signed @__, sizeof, static, staticAssert _Static_assert, struct, switch,
+typedef, typeof @__, thread __thread _Thread_local
+union, unsigned, void, volatile @__,
+while,
+label __label__
+(CTokGnuC GnuCAttrTok) __attribute __attribute__
+(CTokGnuC GnuCExtTok) __extension__
+(CTokGnuC GnuCComplexReal) __real __real__
+(CTokGnuC GnuCComplexImag) __imag __imag__
+(CTokGnuC GnuCVaArg) __builtin_va_arg
+(CTokGnuC GnuCOffsetof) __builtin_offsetof
+(CTokGnuC GnuCTyCompat) __builtin_types_compatible_p

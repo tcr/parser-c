@@ -1,0 +1,84 @@
+#!/bin/sh
+# Run a regression test before pushing to code.haskell.org
+# People don't like code that doesn't compile
+
+# Configuration
+if [ -z "${TMPDIR}" ] ; then
+    TMPDIR=/tmp
+fi
+if [ -z "${TESTDIR}" ] ; then
+    TESTDIR=regression_test
+fi
+if [ -z "${DEFAULT_BROWSER}" ] ; then
+    DEFAULT_BROWSER=firefox
+fi
+if [ -e ".git" ] ; then
+    HAS_GIT=1
+elif [ -e "_darcs" ] ; then
+    HAS_DARCS=1
+else
+    echo "Please run this script from the language-c repository (darcs or git)" >&2
+    exit 1
+fi
+
+# messages
+function die() {
+    echo "*** Regression test failed: $1 ***" 1>&2; exit 1
+}
+function warning() {
+    echo "[WARNING] $1" 1>&2
+}
+
+# preparation
+if [ ! -d "$TMPDIR" ] ; then
+    die "TMPDIR ('$TMPDIR') directory does not exist " \
+        "(absolute path to a directory for temporary files)"
+fi
+
+if [ ! -d "$TESTDIR" ] ; then
+    warning "'$TESTDIR' directory does not exist " \
+            "(needs to be a checkout of your local HEAD)"
+    savedir="$(pwd)"
+    mkdir -p $(dirname "${TESTDIR}")
+    pushd $(dirname "${TESTDIR}")
+    if [ $HAS_GIT -eq 1 ] ; then
+        git clone "${savedir}" $(basename "${TESTDIR}") || die "Failed to clone local git repo"
+    else
+        darcs clone "${savedir}" $(basename "${TESTDIR}") || die "Failed to clone local darcs repo"
+    fi
+    popd
+fi
+
+# update
+cd "${TESTDIR}"
+if [ $HAS_GIT -eq 1 ] ; then
+    git pull origin master || die "git pull (from local HEAD) failed"
+else
+    darcs pull || die "darcs pull (from local HEAD) failed"
+fi
+
+
+# regression test
+echo "Building via cabal"
+cabal configure || die "cabal configure failed"
+cabal build || die "cabal build failed"
+cabal haddock || die "cabal haddock failed"
+echo "Finished building via cabal"
+
+cd test
+echo "Building test suite"
+make || die "make failed in /test"
+
+(cd harness && make) || die \
+    "test harness failed"
+
+(cd suite && yes | bash run-smoke.sh && yes | bash run-bugs.sh) || die \
+    "run-dg.sh failed - make sure there is a symlink or copy " \
+    "to the gcc.dg testsuite in $TMPDIR/test/suite"
+
+( cd results && ../bin/RenderTests regression *dat) || die "rendering tests failed"
+
+${BROWSER:-${DEFAULT_BROWSER}} results/index.html
+
+exit 0
+

@@ -1,0 +1,26 @@
+Global Declarations
+    enumerators
+            e0  ~>  <econst a> e0  =  0
+            e1  ~>  <econst a> e1  =  1
+            e2  ~>  <econst a> e2  =  2
+            e3  ~>  <econst a> e3  =  3
+            e4  ~>  <econst b> e4  =  e3 + 1
+            e5  ~>  <econst b> e5  =  e3 + 1 + 1
+            e9  ~>  <econst b> e9  =  e3 * 3
+            em  ~>  <econst c> em  =  -2 + 1
+            e10  ~>  <econst b> e10  =  e3 * 3 + 1
+            e20  ~>  <econst c> e20  =  20
+            e15  ~>  <econst c> e15  =  15
+            e16  ~>  <econst c> e16  =  15 + 1
+            e17  ~>  <econst c> e17  =  15 + 2
+            e0a  ~>  <econst c> e0a  =  -2 + 2
+            emm  ~>  <econst c> emm  =  -2
+    declarations
+            printf  ~>  declaration printf | function/external | int (const char * __restrict format, ...)
+    objects
+    functions
+            main  ~>  function main | function/external | int ()
+    tags    a  ~>  enum a {e0  =  0; e1  =  1; e2  =  2; e3  =  3;}
+            b  ~>  enum b {e4  =  e3 + 1; e5  =  e3 + 1 + 1; e9  =  e3 * 3; e10  =  e3 * 3 + 1;}
+            c  ~>  enum c {e20  =  20; e15  =  15; e16  =  15 + 1; e17  =  15 + 2; emm  =  -2; em  =  -2 + 1; e0a  =  -2 + 2;}
+    typeDefs

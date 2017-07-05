@@ -1,0 +1,6 @@
+= Prototype Status =
+
+needs gtk2hs (tested with 0.9.13) and language-c (>= 0.3.2 from darcs)
+> ghc --make -O SourceView.hs
+> gcc -E example.c > example.i
+> ./SourceView example.i

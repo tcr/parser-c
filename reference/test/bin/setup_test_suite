@@ -1,0 +1,11 @@
+#!/bin/sh
+# Setup test suite (clear and set)
+# Arguments:
+#   $1 .. the name of the test suite
+# Environment:
+#   CTEST_BINDIR ... the directory containing the test executables (including this file)
+#   CTEST_RESULTDIR ... the directory to write report files and logs
+if [ ! -e $CTEST_BINDIR/setup ]; then echo "Missing environment variable \$CTEST_BINDIR or missing file $CTEST_BINDIR/setup"; exit 1; fi
+if [ -z $TEST_SETUP ]; then source $CTEST_BINDIR/setup; fi
+source $CTEST_BINDIR/clear_test_suite $1
+source $CTEST_BINDIR/set_test_suite   $1

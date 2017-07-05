@@ -1,0 +1,37 @@
+'''currently under construction'''
+= Language.C - A C99 library for haskell =
+
+The Language.C project aims to be a stable and compliant C99 library for [http://www.haskell.org haskell]. 
+
+As for now, it features a complete, reasonably well tested parser and pretty printer for all of C99 and a large set of GNU extensions ([wiki:Cee C language support]).
+
+Eventually, we also want to provide a complete analysis framework for C.
+
+== Good news, everybody ==
+
+ * 2008/08/12: Released 0.3
+
+== Download ==
+
+   * darcs get [http://code.haskell.org/language-c]
+   * (soon also via hackage / cabal-install)
+
+== Documentation ==
+   
+   * [wiki:GettingStarted Getting Started]
+   * [http://code.haskell.org/~bhuber/docs/language-c-latest/ API docs]
+   * [wiki:ProjectPlan project status and further directions]
+
+== Feedback ==
+
+   * Please submit bug reports and feature request using the [http://www.sivity.net/projects/language.c/report/ bug tracker]
+   * You may also contact the me at ''benedikt <dot> huber <at> gmail <dot> com''
+
+== License ==
+
+Language.C is released under the BSD-3 license.
+ 
+== Acknowledgments ==
+
+Google's [http://code.google.com/soc Summer Of Code] funded Benedikt Huber to work on this project ([wiki:DetailledProposal updated detailed proposal]).
+[http://yav.purely-functional.net/ Iavor Diatchki] and [http://www.cse.unsw.edu.au/~dons/ Don Steward] have been the great supervisors and Duncan Coutts provided a lot of valuable suggestions.

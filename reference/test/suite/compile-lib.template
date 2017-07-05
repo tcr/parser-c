@@ -1,0 +1,15 @@
+#!/bin/sh
+# Template for executing test suites
+source ./configuration
+
+source $CTEST_BINDIR/setup_test_suite my-lib
+
+export CC=$CTEST_BINDIR/cc-wrapper
+cd my-lib-dir
+
+# Waste of time if run each time
+if [ -n $RUN_CONFIGURE ]; then
+	./configure
+fi
+make clean 2> /dev/null
+make my-lib-target

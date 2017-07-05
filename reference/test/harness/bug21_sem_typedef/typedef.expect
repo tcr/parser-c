@@ -1,0 +1,10 @@
+Global Declarations
+    enumerators
+    declarations
+    objects
+    functions
+    tags
+    typeDefs
+            nat_int  ~>  typedef nat_int as int
+            ppnat_int  ~>  typedef ppnat_int as int * *
+            pnat_int  ~>  typedef pnat_int as int *

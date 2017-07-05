@@ -1,0 +1,34 @@
+= Project Status =
+
+== Parser and Pretty-Printer ==
+
+The core parser / pretty-printer components are more or less complete (see [wiki:Cee C language support]).
+
+== Preprocessor ==
+
+=== Done ===
+ * Provide a module for calling an external preprocessor
+ * Support for using GCC as preprocessor
+
+== Analysis ==
+
+=== Done (0.3) ===
+ * Framework for name analysis
+ * File-scope analysis
+ * Declaration analysis
+
+=== Planned ===
+ * Type checking expressions
+ * Constant expression evaluation
+ * typed representation of attributes
+ * Normalized representation of initializers
+ * Support for analyzing function bodies
+ * Normalizing expressions and statements
+
+== Other Features under consideration ==
+
+ * Exposing more parsers ({{{parseExpr}}},{{{parseStmt}}})
+ * Quasiquoting (problem with typedefs)
+ * Code generation combinators
+ * Recording comments
+ * Code transformations (deferred)

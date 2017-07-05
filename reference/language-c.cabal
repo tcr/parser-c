@@ -1,0 +1,121 @@
+Name:           language-c
+Version:        0.6.1
+Cabal-Version:  >= 1.8
+Build-Type:     Simple
+License:        BSD3
+License-File:   LICENSE
+Copyright:      LICENSE
+Author:         AUTHORS
+Maintainer:     benedikt.huber@gmail.com
+Stability:      experimental
+Homepage:       http://visq.github.io/language-c/
+Bug-reports:    https://github.com/visq/language-c/issues/
+
+Synopsis:       Analysis and generation of C code
+Description:    Language C is a haskell library for the analysis and generation of C code.
+                It features a complete, well tested parser and pretty printer for all of C99 and a large
+                set of C11 and clang/GNU extensions.
+Category:       Language
+Tested-With:    GHC == 7.8.*, GHC == 7.10.*, GHC == 8.0.*
+
+Extra-Source-Files: AUTHORS AUTHORS.c2hs ChangeLog README
+                    src/Language/C/Parser/Lexer.x
+                    src/Language/C/Parser/Parser.y
+
+Source-Repository head
+  type:     git
+  location: https://github.com/visq/language-c.git
+
+Flag splitBase
+    Description: Choose the new smaller, split-up base package.
+Flag useByteStrings
+    Description: Use ByteString as InputStream datatype
+    Default: True
+Flag separateSYB
+  description: Data.Generics available in separate package.
+Flag allWarnings
+    Description: Turn on all warnings for building (development)
+    Default: False
+Library
+    Extensions: CPP, DeriveDataTypeable, PatternGuards, BangPatterns, ExistentialQuantification, GeneralizedNewtypeDeriving, ScopedTypeVariables
+    Build-Depends:  filepath
+    if flag(allWarnings)
+        if impl(ghc >= 8.0)
+          ghc-options:     -Wall -Wno-redundant-constraints
+        else
+          ghc-options:     -Wall
+    if flag(splitBase)
+        Build-Depends: base >= 3 && < 5, process, directory, array, containers, pretty
+
+        If flag(separateSYB)
+          Build-Depends:
+            base >=4 && <5,
+            syb
+        Else
+          Build-Depends:
+            base <4
+    else
+        Build-Depends: base < 3
+
+    if flag(useByteStrings)
+        Build-Depends: bytestring >= 0.9.0
+    else
+        cpp-options: -DNO_BYTESTRING
+    Build-Tools:    happy, alex
+
+    Hs-Source-Dirs: src
+    Exposed-Modules:
+                      -- top-level
+                      Language.C
+                      -- data
+                      Language.C.Data
+                      Language.C.Data.Position
+                      Language.C.Data.Ident
+                      Language.C.Data.Error
+                      Language.C.Data.Name
+                      Language.C.Data.Node
+                      Language.C.Data.InputStream
+                      -- syntax
+                      Language.C.Syntax
+                      Language.C.Syntax.AST
+                      Language.C.Syntax.Constants
+                      Language.C.Syntax.Ops
+                      Language.C.Syntax.Utils
+                      -- parser
+                      Language.C.Parser
+                      -- pretty printer
+                      Language.C.Pretty
+                      -- system
+                      Language.C.System.Preprocess
+                      Language.C.System.GCC
+                      -- analysis [experimental]
+                      Language.C.Analysis
+                      Language.C.Analysis.ConstEval
+                      Language.C.Analysis.Builtins
+                      Language.C.Analysis.SemError
+                      Language.C.Analysis.SemRep
+                      Language.C.Analysis.DefTable
+                      Language.C.Analysis.TravMonad
+                      Language.C.Analysis.AstAnalysis
+                      Language.C.Analysis.DeclAnalysis
+                      Language.C.Analysis.Debug
+                      Language.C.Analysis.TypeCheck
+                      Language.C.Analysis.TypeConversions
+                      Language.C.Analysis.TypeUtils
+                      Language.C.Analysis.NameSpaceMap
+                      -- semrep -> code [alpha]
+                      Language.C.Analysis.Export
+    Other-Modules:
+                      Language.C.Data.RList
+                      -- parser implementation
+                      Language.C.Parser.Builtin
+                      Language.C.Parser.Lexer
+                      Language.C.Parser.ParserMonad
+                      Language.C.Parser.Tokens
+                      Language.C.Parser.Parser
+
+-- test description
+Test-Suite language-c-harness
+    type:       exitcode-stdio-1.0
+    main-is:    test/harness/run-harness.hs
+    build-depends: base, language-c, directory, process, filepath

@@ -1,0 +1,19 @@
+Global Declarations
+    enumerators
+            e1  ~>  <econst $3> e1  =  4
+            e2  ~>  <econst E2> e2  =  e1
+            e3  ~>  <econst E2> e3  =  e1 + 1
+    declarations
+            a  ~>  declaration a | static/external | int
+            f2  ~>  declaration f2 | function/external | int ()
+    objects b  ~>  object b | static/internal | long long
+            c  ~>  object c | static/external | long = 4
+            xe1  ~>  object xe1 | static/external | enum $3
+    functions
+            g  ~>  function g | function/internal | int (char * * a)
+            f1  ~>  function f1 | function/internal | int ()
+            export  ~>  function export | function/external | int ()
+    tags    $3  ~>  enum $3 {e1  =  4;}
+            E2  ~>  enum E2 {e2  =  e1; e3  =  e1 + 1;}
+    typeDefs
+            ENUM2  ~>  typedef ENUM2 as enum E2

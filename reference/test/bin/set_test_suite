@@ -1,0 +1,22 @@
+#!/bin/sh
+# Set the environment variables for testing to one test suite
+# Arguments:
+#   $1 .. the name of the test suite
+# Environment:
+#   CTEST_BINDIR ... the directory containing the test executables (including this file)
+#   CTEST_RESULTDIR ... the directory to write report files and logs
+# Calls: 
+#   die()
+if [ ! -e $CTEST_BINDIR/setup ]; then echo "Missing environment variable \$CTEST_BINDIR or missing file $CTEST_BINDIR/setup"; exit 1; fi
+if [ -z $TEST_SETUP ]; then source $CTEST_BINDIR/setup; fi
+if [ -z $1 ]; then die "Usage: ./set_test_suite test"; fi
+
+export TESTNAME=$1
+export CTEST_TMPDIR=$CTEST_RESULTDIR/$TESTNAME/
+if [ ! -e $CTEST_TMPDIR ]; then 
+	mkdir $CTEST_TMPDIR || die "Failed to create result directory $CTEST_TMPDIR" ; 
+elif [ ! -d $CTEST_TMPDIR ]; then
+	die "Result directory $CTEST_TMPDIR is not a directory"
+fi
+export CTEST_REPORT_FILE=$CTEST_RESULTDIR/$TESTNAME.dat
+export CTEST_LOGFILE=$CTEST_TMPDIR/parse.log

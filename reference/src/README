@@ -1,0 +1,14 @@
+= Language.C sources =
+The sources are located in /src.
+
+The Language.C source tree is structured as follows:
+- Language
+ - C             ... C facade imports
+ - C.Data        ... common datatypes, such as identifiers, unique names etc.
+ - C.Syntax      ... The AST
+ - C.Pretty      ... Pretty printing C code
+ - C.InputStream ... Input stream abstraction
+ - C.Parser      ... C parser and pretty printer
+ - C.System      ... Executing preprocessors and compilers
+ - C.Analysis    ... Analysis of C source files (alpha)
+

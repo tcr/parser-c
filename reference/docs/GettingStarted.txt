@@ -1,0 +1,101 @@
+= Getting Started =
+
+== Overview ==
+
+Language.C consists of several modules, each with its own purpose:
+	
+	* '''Language.C''' exports the stable, common modules of the Language.C library
+	
+	* '''Language.C.Data''' exports common datatypes representing identifiers, source code location etc.
+	
+	* '''Language.C.AST''' contains the definitions for the abstract syntax tree
+	
+	* '''Language.C.Parser''' provides functionality to parse preprocessed C source files
+	
+	* '''Language.C.Pretty''' adds support for pretty printing AST nodes
+
+  * '''Language.C.System''' can be used to invoke external preprocessors / compilers
+
+  * [EXPERIMENTAL] '''Language.C.Analysis''' helps to analyze C sources
+
+== Preprocessing, Parsing and Pretty Printing ==
+
+To preprocess, parse and then pretty-print a file proceed as follows.
+
+=== Import the Language.C library  ===
+
+{{{
+module Main where
+import Language.C
+import Language.C.System.GCC   -- preprocessor used
+main = parseMyFile "test.c" >>= printMyAST
+}}}
+
+=== Parse a file using {{{parseCFile}}}  ===
+
+{{{
+parseMyFile :: FilePath -> IO CTranslUnit
+parseMyFile input_file =
+  do parse_result <- parseCFile (newGCC "gcc") Nothing [] input_file
+     case parse_result of
+       Left parse_err -> error (show parse_err)
+       Right ast      -> return ast
+}}}
+
+=== Pretty print the AST ===
+
+{{{
+printMyAST :: CTranslUnit -> IO ()
+printMyAST ctu = (print . pretty) ctu
+}}}
+
+== The AST ==
+
+When in doubt, consult the [http://code.haskell.org/~bhuber/language-c-latest/index.html API documentation].
+
+In general, every AST node type is an instance of ''CNode'', which allows the user to retrieve the source code location and a unique identifier for that node.
+
+While expressions and statements are rather easy to understand (from a syntactic point of view), declarations are a bit tricky. Here's an example:
+
+=== AST of Declarations: An example ===
+
+Consider the declaration
+{{{
+static int *x,
+           __attribute__((deprecated)) y = 0,
+           *f(void*());
+}}}
+
+This source block declares two objects ({{{x}}} of type ''pointer to int'' and {{{y}}} of type ''int'', the latter being deprecated and initialized to 0) and one function prototype ({{{f}}} of type ''function taking an arbitrary pointer and returning a pointer to int''). 
+
+==== CDecl ====
+
+{{{static}}} is a ''storage specifier'' and the leftmost {{{int}}} is a type specifier. They both apply to all of the declared objects.
+
+{{{
+decl = CDecl [CStorageSpec [CStatic _], CTypeSpec [CInt _]] [declr1, declr2, declr3] _
+}}}
+
+==== CDeclr ====
+
+The declarator for x has no initializer or bitfield. It specifies one ''pointer type derivation'', i.e. int becomes pointer to int. 
+{{{
+declr1 = (Just (CDeclr (Just "x") [CPtrDeclr _ _] _ _ _), _, _)
+}}}
+
+The declarator for y has an initializer and an attribute, but no type derivations
+{{{
+declr2 = (Just (CDeclr (Just "y") [] _ [deprecated] _), Just 0, _)
+}}}
+
+Finally, the declarator for f specifes a ''function type derivation'' and a pointer type derivation, i.e. int becomes function returning pointer to int.
+{{{
+declr3 = (Just (CDecr (Just "f") [fun_deriv, CPtrDeclr _ _] _ _ _), _ _)
+fun_deriv = CFunDeclr (Right [arg]) [] _
+}}}
+
+This formal approach to C's syntax takes a while to adopt to, but it turns out to be an accurate model.
+
+== Analysis ==
+
+The analysis module is still under development, though it already does some useful things. See [wiki:ProjectPlan project status] for the current status of the analysis.

@@ -1,0 +1,6 @@
+# Install gcc.dg test suite
+RURL=https://github.com/gcc-mirror/gcc.git
+RPATH=gcc/testsuite/gcc.dg
+git clone $RURL gcc-mirror
+mv gcc-mirror/$RPATH gcc.dg
+rm -rf gcc-mirror

@@ -1,0 +1,7 @@
+Tag: struct $6 {x :: int;} ("bad_bug29.c": line 1)
+Typedef: typedef foo as struct $6 ("bad_bug29.c": line 1)
+Decl: declaration f | function/external | void () ("bad_bug29.c": line 3)
+Local: object foo | auto | foo * ("bad_bug29.c": line 4)
+ScanFile: Semantic Error: [bad_bug29.c:5: (column 10) [ERROR]  >>> error
+  not found: bar
+]

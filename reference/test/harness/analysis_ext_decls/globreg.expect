@@ -1,0 +1,9 @@
+Global Declarations
+    enumerators
+    declarations
+            x  ~>  declaration x  (asmname "esp") | static/internal | int
+    objects
+    functions
+            f  ~>  function f | function/external | void ()
+    tags
+    typeDefs

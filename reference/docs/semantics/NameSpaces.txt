@@ -1,0 +1,37 @@
+In C, there are 4 categories of identifiers:
+ * labels
+ * tag names (@(struct|union|enum) tag-name@), where all tag names live in one namespace
+ * members of structures and unions
+ * identifiers, type-names and enumeration constants
+
+There are 4 kind of scopes:
+ * file scope: outside of parameter lists and blocks
+ * function prototype scope
+ * function scope: labels are visible within the entire function, and declared implicitely
+ * block scope
+
+Scoping rules:
+ * labels have function scope
+ * all other identifiers have scope determined by the placement of the identifier
+ * struct/union/enum tags have scopes that begin after their appearance
+ * all other identifiers scopes begins at the end of the corresponding declarator
+ * their scope ends at the end of the block / file / prototype if they are in block/file/prototype scope
+ * inner scope hides (shadows) outer scope
+
+Linkage rules:
+ * if an identifier declaration has no linkage, it refers to the unique object declared
+ * if an identifier decl has internal linkage, it refers to the file-scope object with the given name
+    * the specifier `static' declares internal linkage
+ * if an identifier decl has external linkage, it refers to the program scope object with the given name
+    * the specifier `extern' declares external linkage IF no identifier of the given name is visible
+       File-scope function declarations have and implicit `extern` specifier, while file-scope objects 
+       have external linkage, unless declared otherwise.
+ * the specifier `extern' denotes the object with the same name which is visible (if there is one)
+ * undefined behaviour if identifier appears with both internal and external linkage     
+
+Strategy for declarations/definitions:
+   * if there is no identifier
+   * if there is an undefined declaration of the same kind in scope, we define it
+   * if there is an identifier of different kind in scope, we overwrite it and return the old definition
+     It is the clients responsibility to check whether the redefinition is ok
+   * if there is an defined declaration of the same kind in scope, we redefine it and return the old definition

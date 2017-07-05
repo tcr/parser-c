@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# See http://wooledge.org:8000/BashFAQ for advanced bash tricks.
+# TODO: This depends on bash's PIPESTATUS and perl
+if [ ! -e $CTEST_BINDIR/setup ]; then echo "Missing environment variable \$CTEST_BINDIR or missing file $CTEST_BINDIR/setup"; exit 1; fi
+if [ -z $TEST_SETUP ]; then source $CTEST_BINDIR/setup; fi
+
+doalarm() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+
+# Runs the test $CTEST_DRIVER
+if [ -z $CTEST_BINDIR ]; then die "Missing environment variable \$CTEST_BINDIR"; fi
+if [ -z $CTEST_TMPDIR ]; then die "Missing environment variable \$CTEST_TMPDIR"; fi
+if [ -z $CTEST_DRIVER ]; then die "Missing environment variable \$CTEST_DRIVER"; fi
+if [ -z $CTEST_REPORT_FILE ]; then die "Missing environment variable \$CTEST_REPORT_FILE"; fi
+
+# Temporary file to collect stderr output
+TMPFILE=`mktemp $CTEST_TMPDIR/cc-wrapper.XXXXXX` || exit 1
+
+if [ -z $CTEST_MAX_MEM ]; then
+	CTEST_MAX_MEM=64M
+fi
+# Run the test (max 30 seconds), teeing output to TMPFILE
+doalarm 30 $CTEST_BINDIR/$CTEST_DRIVER +RTS -M$CTEST_MAX_MEM -RTS $@ 2>&1 | tee $TMPFILE
+
+# If return status of test driver isn't 0, we have a fatal error and report it.
+if [ $PIPESTATUS -ne 0 ]; then
+	if [ -n $CTEST_DEBUG ]; then
+		echo '[DEBUG]: Fatal Error (Caught)' 2>&1
+ 	fi
+	$CTEST_BINDIR/ReportFatal $CTEST_REPORT_FILE $@ < $TMPFILE
+fi
+
+# Remove the temporary file
+rm $TMPFILE

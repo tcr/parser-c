@@ -1,0 +1,6 @@
+Tag: union $14 {y :: int; z :: int;} ("good_anonunion.c": line 3)
+Tag: struct foo {x :: int; <anonymous> :: union $14;} ("good_anonunion.c": line 1)
+Typedef: typedef s as struct foo ("good_anonunion.c": line 1)
+Decl: declaration f | function/external | int (s * ps) ("good_anonunion.c": line 9)
+Param: auto ps :: s * ("good_anonunion.c": line 9)
+Decl: function f | function/external | int (s * ps) ("good_anonunion.c": line 9)

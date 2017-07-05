@@ -1,0 +1,21 @@
+#!/bin/bash
+# Setup test environment
+# Arguments:
+# Environment:
+#   CTEST_BINDIR ... the directory containing the test executables (including this file)
+#   CTEST_RESULTDIR ... the directory to write report files and logs
+# Calls:
+
+# Setup
+function die() {
+	echo $1 1>&2
+	exit 1
+}
+
+if [ ! -d $CTEST_BINDIR ];    then die "Missing environment variable \$CTEST_BINDIR"; fi
+if [ -z $CTEST_RESULTDIR ] ; then die "Missing environment variable \$CTEST_RESULTDIR"; fi
+if [ ! -d $CTEST_RESULTDIR ]; then
+    mkdir "${CTEST_RESULTDIR}"
+fi
+export PATH=$CTEST_BINDIR:$PATH
+TEST_SETUP=1

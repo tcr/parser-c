@@ -1,0 +1,5 @@
+#!/bin/sh
+# Common configuration
+export CTEST_BINDIR=`pwd`/../bin
+export CTEST_RESULTDIR=`pwd`/../results
+source $CTEST_BINDIR/setup

@@ -1,0 +1,36 @@
+#!/bin/sh
+# Remove the result files of a test suite
+# Arguments:
+#   $1 .. the name of the test suite to clear
+# Environment:
+#   CTEST_BINDIR ... the directory containing the test executables (including this file)
+#   CTEST_RESULTDIR ... the directory to write report files and logs
+# Calls:
+#   die()
+if [ ! -e $CTEST_BINDIR/setup ]; then echo "Missing environment variable \$CTEST_BINDIR or missing file $CTEST_BINDIR/setup"; exit 1; fi
+if [ -z $TEST_SETUP ]; then source $CTEST_BINDIR/setup; fi
+L_TEST=$1
+if [ -z $L_TEST ]; then die "Usage: ./clear_test_suite test_name"; fi
+
+L_TEST_TMPDIR=$CTEST_RESULTDIR/$L_TEST/
+L_TEST_REPORT_FILE=$CTEST_RESULTDIR/$L_TEST.dat
+L_TEST_LOGFILE=$L_TEST_TMPDIR/parse.log
+
+# rm is somewhat dangerous, therefore we are careful here
+
+# Create temporary directory for tests
+mkdir -p "$L_TEST_TMPDIR" || die "Failed to create directory $L_TEST_TMPDIR"
+
+# Remove the old report file (with interactive query)
+if [ -e "$L_TEST_REPORT_FILE" ]; then
+	rm -i "$L_TEST_REPORT_FILE";
+fi
+
+# Ensure the tmp directory is present
+if [ ! -d $L_TEST_TMPDIR ]; then
+	die "No a valid directory : $L_TEST_TMPDIR";
+
+# If there is a parse.log file in the temporary directory, remove its contents
+elif [ -e "$L_TEST_TMPDIR"/parse.log ]; then
+    (cd "$L_TEST_TMPDIR" && ls  | xargs rm)
+fi

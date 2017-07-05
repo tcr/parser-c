@@ -1,0 +1,2 @@
+__int128 y = (__int128) 0x7fffffffffffffffuLL << 32;
+unsigned __int128 y2 = (unsigned __int128) 0xffffffffffffffffuLL << 32;

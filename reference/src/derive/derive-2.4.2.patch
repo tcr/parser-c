@@ -1,0 +1,239 @@
+diff -Nur derive-2.4.2/Data/Derive/All.hs derive-2.4.2-patched/Data/Derive/All.hs
+--- derive-2.4.2/Data/Derive/All.hs	2011-04-17 14:52:21.000000000 +0200
++++ derive-2.4.2-patched/Data/Derive/All.hs	2011-04-16 21:56:20.000000000 +0200
+@@ -39,6 +39,10 @@
+ import Data.Derive.UniplateDirect      as D
+ import Data.Derive.UniplateTypeable    as D
+ import Data.Derive.Update              as D
++
++import Data.Derive.Annotated           as D
++import Data.Derive.CNode               as D
++
+ derivations :: [Derivation]
+-derivations = [makeArbitrary,makeArbitraryOld,makeArities,makeBinary,makeBinaryDefer,makeBounded,makeData,makeDataAbstract,makeDefault,makeEnum,makeEnumCyclic,makeEq,makeFold,makeFoldable,makeFrom,makeFunctor,makeHas,makeIs,makeJSON,makeLazySet,makeMonoid,makeNFData,makeOrd,makeRead,makeRef,makeSerial,makeSerialize,makeSet,makeShow,makeTraversable,makeTypeable,makeUniplateDirect,makeUniplateTypeable,makeUpdate]
++derivations = [makeArbitrary,makeArbitraryOld,makeArities,makeBinary,makeBinaryDefer,makeBounded,makeData,makeDataAbstract,makeDefault,makeEnum,makeEnumCyclic,makeEq,makeFold,makeFoldable,makeFrom,makeFunctor,makeHas,makeIs,makeJSON,makeLazySet,makeMonoid,makeNFData,makeOrd,makeRead,makeRef,makeSerial,makeSerialize,makeSet,makeShow,makeTraversable,makeTypeable,makeUniplateDirect,makeUniplateTypeable,makeUpdate, makeCNode, makeAnnotated]
+ -- GENERATED STOP
+diff -Nur derive-2.4.2/Data/Derive/Annotated.hs derive-2.4.2-patched/Data/Derive/Annotated.hs
+--- derive-2.4.2/Data/Derive/Annotated.hs	1970-01-01 01:00:00.000000000 +0100
++++ derive-2.4.2-patched/Data/Derive/Annotated.hs	2011-04-17 15:42:48.000000000 +0200
+@@ -0,0 +1,110 @@
++{-# LANGUAGE TemplateHaskell #-}
++-- | Derives 'Annotated' instances for language.c
++module Data.Derive.Annotated(
++    makeAnnotated,
++    -- few misc helpers for my derivations
++    isVarName, ctorArgs, selectPolyArg, matchIndex,
++    noLoc, funDecl,
++    -- a monad with failure (Either String)
++    DeriveM(..), runDeriveM
++    ) where
++
++{-
++-- For a type T a, for each constructor C:
++--   If C ~ X a_1 .. a_n, and exactly one a_k is a polymorphic variable, then
++--    annotation t@(X a_1 ... a_n) = a_k
++--    amap f     t@(X a_1 ... a_n) = X a_1 ... (f a_k) ... a_n
++--   If C ~ X t, where t is of type S a, then
++--    annotation (X s) = annotation s
++--    amap f (X s) = amap f s
++--   Else Fail
++-- data Test1 a = A Int a String | B a (Test a) (Test a) | C a | D (Test1 a)
++-}
++import Control.Monad (liftM)
++import Language.Haskell.Exts hiding (paren)
++import Language.Haskell -- helpers from Derive
++import Data.Derive.Internal.Derivation
++
++makeAnnotated :: Derivation
++makeAnnotated = derivationCustom "Annotated" (runDeriveM . genAnnotatedInst)
++
++genAnnotatedInst :: FullDataDecl -> DeriveM [Decl]
++genAnnotatedInst (_,dat) = do
++  let ctors = dataDeclCtors dat
++  (annotDecls, amapDecls) <- liftM unzip $ mapM (annotClause "annotation" "amap") ctors
++  return [ InstDecl noLoc [] (qname "Annotated") [TyCon $ qname (dataDeclName dat)] (map InsDecl [ FunBind annotDecls, FunBind amapDecls ]) ]
++
++annotClause :: String -> String -> CtorDecl -> DeriveM (Match, Match)
++annotClause annot amap ctor = do
++  args <- ctorArgs ctor
++  case (selectPolyArg args, selectDelegateArg args) of
++    ( DOk (ix,_), DErr _ ) -> return ( funDecl annot  [matchIndex ctor args ix (PVar (name "n"))] (Var (qname "n"))
++                                     , funDecl amap [PVar (name f), matchCtor ctor args "a_"] (mapPoly ctor args ix) )
++    ( DErr _, DOk _ )      -> return ( funDecl annot  [matchOne ctor "n"] (app (Var (qname annot)) (Var (qname "n")))
++                                     , funDecl amap [PVar (name f), matchOne ctor "n"] (amapRec ctor "n") )
++    ( DErr m1, DErr m2)    -> fail $ "Deriving Annotation: Constructor has neither exactly one variable type argument, nor"++
++                                     "exactly one argument of type (T a). " ++ m1 ++ ". " ++ m2
++    ( DOk _, DOk _)        -> fail $ "Internal Error: Constructor has both a variable type argument, and a constructor type argument"
++  where
++    f = "f"
++    argName i = qname ("a_" ++ show i)
++    mapPoly ctor args ix = apps (Con (qname $ ctorDeclName ctor)) (map (applyAt ix) args)
++    applyAt i (index,_) | index == i = app (Var (qname f)) (Var (argName i))
++                        | otherwise  = Var (argName index)
++    matchOne ctor var = PApp (qname (ctorDeclName ctor)) [PVar (name var)]
++    amapRec ctor var = App (Con (qname (ctorDeclName ctor))) (Paren (apps (Var (qname amap)) [Var (qname f), Var (qname var)]))
++
++-- we do not have source locations when generating code
++noLoc :: SrcLoc
++noLoc = SrcLoc "<generated>" 0 0
++
++-- whether we have a ctor argument of variable type
++isVarName :: Type -> Bool
++isVarName (TyVar _) = True
++isVarName _         = False
++
++ctorArgs :: CtorDecl -> DeriveM [(Integer,BangType)]
++ctorArgs ctor@(Left _)  = return $ zip [(1::Integer)..] $ map snd (ctorDeclFields ctor)
++ctorArgs ctor@(Right _) = fail   $ "CNode: GADTs are not supported: " ++ show ctor
++
++selectDelegateArg :: [(Integer, BangType)] -> DeriveM Type
++selectDelegateArg args =
++  case args of
++    []       -> fail "Select Delegate Argument: Constructor has no argument"
++    [(_,bty)] -> case fromTyParens (fromBangType bty) of
++      ty@(TyApp (TyCon _) (TyVar _)) -> return ty
++      ty     -> fail $ "Select Delegate Argument: Constructor is not of the form T x: " ++ show ty
++    _xs      -> fail "Select Delegate Argument: Constructor has more than one argument"
++
++selectPolyArg :: [(Integer, BangType)] -> DeriveM (Integer, Name)
++selectPolyArg args =
++  case filter (isVarName . fromBangType . snd) args of
++        []             -> fail   $ "Select Polymorphic Argument: no type variable arguments in " ++ show args
++        [(ix,ty)]      -> return $ (ix,fromTyVar (fromBangType ty))
++        _xs            -> fail   $ "Select Polymorphic Argument: More than one type variable argument in " ++ show args
++  where fromTyVar (TyVar n) = n
++
++-- a little bit more powerful than simpleFun ;)
++funDecl :: String -> [Pat] -> Exp -> Match
++funDecl funName patterns rhs = Match noLoc (Ident funName) patterns Nothing (UnGuardedRhs rhs) (BDecls [])
++
++matchCtor :: CtorDecl -> [(Integer, t)] -> String -> Pat
++matchCtor ctor ctorArgs varPrefix = PApp (qname (ctorDeclName ctor)) $ map matchArg ctorArgs
++  where
++    matchArg (ix,_) = PVar (name $ varPrefix ++ show ix)
++
++matchIndex :: (Eq a) => CtorDecl -> [(a, t)] -> a -> Pat -> Pat
++matchIndex ctor ctorArgs ix matchPat = PApp (qname (ctorDeclName ctor)) $ map matchArg ctorArgs
++  where
++    matchArg (ix',_) | ix == ix' = matchPat
++                     | otherwise = PWildCard
++
++-- I want to have an error monad, and Monad Either is not available :(
++data DeriveM a = DOk a | DErr String
++runDeriveM (DOk a)    = Right a
++runDeriveM (DErr msg) = Left msg
++instance Monad DeriveM where
++  return = DOk
++  (>>=) (DErr msg) f = DErr msg
++  (>>=) (DOk ok)   f = f ok
++  fail msg = DErr msg
+diff -Nur derive-2.4.2/Data/Derive/CNode.hs derive-2.4.2-patched/Data/Derive/CNode.hs
+--- derive-2.4.2/Data/Derive/CNode.hs	1970-01-01 01:00:00.000000000 +0100
++++ derive-2.4.2-patched/Data/Derive/CNode.hs	2011-04-17 15:37:32.000000000 +0200
+@@ -0,0 +1,94 @@
++{-# LANGUAGE TemplateHaskell,PatternGuards #-}
++-- | Derives 'CNode' instances for language.c
++module Data.Derive.CNode(makeCNode) where
++
++{-
++-- For all type variables a, we require (CNode a)
++-- If we have a data constructor
++--   X a_1 .. a_n, and exactly one a_k is a polymorphic variable, then return (nodeInfo a_k)
++data Test3 a = A Test1 a Test1 | B a Test2 | C Test1 a deriving (Show {-! ,CNode !-})
++-- Else If we have a data constructor
++--   X a_1 .. a_n, and exactly one a_k is a Language.C.Data.NodeInfo, then return that a_k
++data Test1 = X Int NodeInfo |  Y NodeInfo String | Z Int NodeInfo Integer deriving (Show {-! ,CNode !-})
++
++-- Else If we have a data constructor
++--   X a, then return nodeInfo a
++data Test2 = U Test1 | V Test1 deriving (Show {-! ,CNode !-})
++-- Else Fail
++-}
++import Language.Haskell.Exts hiding (paren)
++import Language.Haskell -- helpers from Derive
++import Data.Derive.Internal.Derivation
++import Data.Derive.Annotated
++
++makeCNode :: Derivation
++makeCNode = derivationCustom "CNode" (runDeriveM . genNodeInst)
++
++nodeInfoTypeName :: [Char]
++nodeInfoTypeName = "Language.C.Data.Node.NodeInfo"
++
++genNodeInst :: FullDataDecl -> DeriveM [Decl]
++genNodeInst (_,dat) = do
++  nodeInfoDecls <- nodeInfoDefs "nodeInfo" dat
++  return $
++   [ instanceContext ["CNode"] "CNode" dat [ FunBind $ nodeInfoDecls ]
++   , instanceContext ["CNode"] "Pos" dat [ FunBind  $ posOfDef "posOf" ]
++   ]
++
++posOfDef :: String -> [Match]
++posOfDef funName =
++  [ funDecl funName [pvar "x"]
++                 (app (var "posOf") (paren $ app (var "nodeInfo") (var "x")))
++  ]
++  where
++    var  = Var . qname
++    pvar = PVar . Ident
++
++nodeInfoDefs :: String -> DataDecl -> DeriveM [Match]
++nodeInfoDefs funName dat = mapM nodeInfoImpl (dataDeclCtors dat) where
++    nodeInfoImpl ctor =
++        case matchNodeInfo ctor of
++            DOk (pat,rhs) ->
++                return $ funDecl funName [pat] rhs
++            DErr err ->
++                fail   $ "Failed to derive NodeInfo for " ++ ctorDeclName ctor ++ ": " ++ err
++
++matchNodeInfo :: CtorDecl -> DeriveM (Pat, Exp)
++matchNodeInfo ctor = ctorArgs ctor >>= tryNodeInfoArg
++  where
++    tryNodeInfoArg args =
++        case filter (isNodeInfo.fromBangType.snd) args  of
++            []       -> tryDelegate args
++            [(ix,_)] -> return $ (matchIndex ctor args ix (PVar (name "n")), Var (qname "n"))
++            _        -> fail   $ "More than one NodeInfo type"
++        where
++            isNodeInfo (TyCon qname) | (Qual _ (Ident "NodeInfo")) <- qname = True
++                                     | (UnQual (Ident "NodeInfo")) <- qname = True
++                                     | otherwise = False
++            isNodeInfo _ = False
++    tryDelegate args =
++       case args of
++           []        -> fail   $ "cannot derive NodeInfo for nullary constructor"
++           [_c]      -> return $ (PApp (qname $ ctorDeclName ctor) [PVar (name "d")],
++                                  App (Var (qname "nodeInfo")) (Var (qname "d")))
++           _xs       -> delegateToPolymorphic "nodeInfo" ctor
++    delegateToPolymorphic :: String -> CtorDecl -> DeriveM (Pat,Exp)
++    delegateToPolymorphic fun ctor = ctorArgs ctor >>= delegate
++      where
++        delegate args =
++          case filter (isVarName . fromBangType . snd) args of
++            []        -> fail   $ "delegateToPolymorphic: no type variable arguments"
++            [(ix,_)]  -> return $ (matchIndex ctor args ix (PVar (name "n")),
++                                 App (Var (qname fun)) (Var (qname "n")))
++            _xs       -> fail   $ "delegateToPolymorphic: More than one type variable argument"
++
++-- ported from TH.Helpers
++instanceContext :: [String] -> String -> Decl -> [Decl] -> Decl
++instanceContext reqs cls dat defs = InstDecl noLoc ctx className [hed] (map InsDecl defs)
++    where
++        vars = [Ident ('t' : show i) | i <- [1..dataDeclArity dat]]
++        ctx = [ ClassA (qname req) [TyVar var] | req <- reqs, var <- vars]
++        className = qname cls
++        hed = (if not (null vars) then TyParen else id) $
++              tyApp (TyCon $ qname (dataDeclName dat)) (map TyVar vars)
++
+diff -Nur derive-2.4.2/derive.cabal derive-2.4.2-patched/derive.cabal
+--- derive-2.4.2/derive.cabal	2011-04-17 14:52:21.000000000 +0200
++++ derive-2.4.2-patched/derive.cabal	2011-04-16 22:01:09.000000000 +0200
+@@ -97,6 +97,8 @@
+         Data.Derive.UniplateDirect
+         Data.Derive.UniplateTypeable
+         Data.Derive.Update
++        Data.Derive.Annotated
++        Data.Derive.CNode
+ -- GENERATED STOP
+
+         -- Mainly internal but some still people use them

@@ -1,0 +1,57 @@
+= External Definitions =
+
+This document covers file-scope declarations and definitions of objects and functions.
+All file-scope declarations have static storage, see [wiki:Glossary] for explanation of terminology.
+We use the following abbreviations:
+{{{
+  T - type
+  To - object type
+  Tf - function type
+  Tv - void type
+}}}
+
+==  Declarations, tentative definitions (C99 6.9.2 / 2) and definitions ==
+
+A declaration introduce a identifier and associates it with a kind and type.
+An external definition does the same, but also requests to allocate storage for an object, or generate code for a function.
+
+A tentative definition will either be interpreted as a external declaration or definition, depending on the file scope context.
+A tentative definition is of the form {{{ static? To name; }}}, i.e. an object declaration without initializer.
+If the tentative definition is the last tentative definition and there are no external definitions for that object,
+then it is an external definition, with an implicit initializer ( {{{ static? To name = (To) 0; }}} ).
+Otherwise, it is a declaration.
+Tentative definitions with internal linkage may not have incomplete type.
+
+==  Syntactic Forms ==
+On the top level, the semantics of declarations and definitions is given as follows:
+
+{{{
+To name;            /* tentative _definition_ of an object of type T with external linkage  */
+Tf name;            /* prototype _declaration_ of a function with external linkage*/
+static To name;     /* tentative definition of an object of type T with internal linkage  */
+static Tf name;     /* prototype _declaration_ of a function with internal linkage */
+extern To name = I; /* _definition_ of an object with external linkage (6.9.2 / 1) */
+extern T name;      /* not OBJ_NAME_IN_SCOPE(name): declaration of an object/function with external linkage */
+extern T name;      /* OBJ_NAME_IN_SCOPE(name): declaration which refers to the previously declared entity */
+
+Tf f { ... }        /* definition of a function with either external linkage or with the linkage of previous declaration */
+static Tf f { ... } /* definition of a function with internal linkage */
+extern Tf f { ... } /* definition of a function with either external linkage or with the linkage of previous declaration */
+
+/* ERROR */ (register|auto) T name;
+}}}
+
+==  Constraints ==
+
+ 1) '''At most one''' ''external definition'' of an identifier with ''internal linkage''.
+
+ 2) '''Exactly one''' ''external definition'' of an idenitifer used 
+    (references in compile-time constants (sizeof) do not count as usage)
+
+ 3) '''Exactly one''' definition of an identifier used in the entire program.
+
+ 4) The declarator of a function definition has to have function type and may not return an array type.
+
+ 5) The only storage specifiers allowed for function definitions are {{{extern}}} or {{{static}}}.
+
+ 6) Parameters may only have the storage specifier {{{register}}}.
