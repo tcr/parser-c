@@ -8,6 +8,7 @@
 //! const INPUT: &'static str = r#"
 //! 
 //! int main() {
+//!     printf("hello world!");
 //!     return 0;
 //! }
 //! 

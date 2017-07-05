@@ -9,7 +9,7 @@ Rust module for parsing C code. Port of Haskell's [language-c](https://github.co
 1. Converting portions of the code into Rust idioms without breaking tests
 1. Figure out a porting story for the alex/happy generated parser output
 
-`parser-c` requires nightly. Example usage:
+`parser-c` requires nightly (for now). See `tests/` for some working examples, or try this example:
 
 ```rust
 extern crate parser_c;
@@ -19,6 +19,7 @@ use parser_c::parse;
 const INPUT: &'static str = r#"
 
 int main() {
+    printf("hello world!\n");
     return 0;
 }
 
@@ -47,26 +48,7 @@ OUT Right(
                     [
                         CTypeSpec(
                             CIntType(
-                                NodeInfo(
-                                    Position {
-                                        posOffset: 0,
-                                        posFile: "./tests/simple.c",
-                                        posRow: 1,
-                                        posColumn: 1
-                                    },
-                                    (
-                                        Position {
-                                            posOffset: 0,
-                                            posFile: "./tests/simple.c",
-                                            posRow: 1,
-                                            posColumn: 1
-                                        },
-                                        3
-                                    ),
-                                    Name(
-                                        1
-                                    )
-                                )
+                                ..
                             )
                         )
                     ],
@@ -75,7 +57,10 @@ OUT Right(
                             Ident(
                                 "main",
                                 124382170,
-                                ...
+                                ..
+                            )
+                        ),
+                        ...
 ```
 
 ## License

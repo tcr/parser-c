@@ -5,6 +5,7 @@ use parser_c::parse;
 const INPUT: &'static str = r#"
 
 int main() {
+    printf("hello world!\n");
     return 0;
 }
 

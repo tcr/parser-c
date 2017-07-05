@@ -32,8 +32,8 @@ int main()
 "#;
 
 #[test]
-fn float() {
-    match parse(INPUT, "float.c") {
+fn fibonacci() {
+    match parse(INPUT, "fibonacci.c") {
         Err(err) => {
             panic!("error: {:?}", err);
         }
