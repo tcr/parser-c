@@ -31,7 +31,7 @@ fn main() {
             panic!("error: {:?}", err);
         }
         Ok(ast) => {
-            println!("success: {:?}", ast);
+            println!("success: {:#?}", ast);
         }
     }
 }
@@ -40,7 +40,7 @@ fn main() {
 Result is:
 
 ```
-OUT Right(
+success: Right(
     CTranslationUnit(
         [
             CFDefExt(
