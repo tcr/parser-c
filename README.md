@@ -1,6 +1,15 @@
 # parser-c
 
-Rust module to parse C code. Port of Haskell's language-C to Rust. WIP
+Rust module for parsing C code. Port of Haskell's [language-c](https://github.com/visq/language-c), semi-automatically translated using [Corollary](https://github.com/tcr/corrode-but-in-rust).
+
+A lot of work remains:
+
+* Building up an equivalent test bed to language-c's, then automatically cross-check
+* Fix errors in the ported code
+* Figure out a porting story for alex/happy generated parser
+* Converting portions of the code into Rust idioms
+
+Example:
 
 ```rust
 extern crate parser_c;
@@ -8,25 +17,31 @@ extern crate parser_c;
 use parser_c::parser::parser::parseC;
 use parser_c::data::position::initPos;
 use parser_c::support::FilePath;
-use parser_c::data::input_stream::readInputStream;
+use parser_c::support::Either::*;
+use parser_c::data::input_stream::inputStreamFromString;
 
-fn main() {
-    let input_file = FilePath {
-        path: "./tests/simple.c".to_owned(),
-    };
-    let input_stream = readInputStream(input_file.clone());
+const INPUT: &'static str = r#"
 
-    let todo = parseC(input_stream, (initPos(input_file)));
-
-    println!("Parsed code: {:#?}", todo);
-}
-```
-
-`simple.c` is:
-
-```c
 int main() {
     return 0;
+}
+
+"#;
+
+#[test]
+fn simple() {
+    let input_stream = inputStreamFromString(INPUT.to_string());
+
+    let todo = parseC(input_stream, (initPos(FilePath::from("simple.c".to_string()))));
+
+    match todo {
+        Left(err) => {
+            panic!("error: {:?}", err);
+        }
+        Right(ast) => {
+            println!("success: {:?}", ast);
+        }
+    }
 }
 ```
 
