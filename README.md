@@ -1,5 +1,7 @@
 # parser-c
 
+![https://img.shields.io/crates/v/parser-c.svg](https://img.shields.io/crates/v/parser-c.svg)
+
 Rust module for parsing C code. Port of Haskell's [language-c](https://github.com/visq/language-c), semi-automatically translated using [Corollary](https://github.com/tcr/corrode-but-in-rust).
 
 **This port is a work in progress.** A lot of work remains to parse anything but very simple C files; while most source code has been translated from Haskell, errors in translation prevent it from matching language-c's functionality yet. Here are the next steps for achieving parity, in order:
