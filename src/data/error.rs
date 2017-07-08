@@ -39,7 +39,7 @@ pub struct ErrorInfo(pub ErrorLevel, pub Position, pub Vec<String>);
 
 
 pub fn mkErrorInfo(lvl: ErrorLevel, msg: String, node: NodeInfo) -> ErrorInfo {
-    ErrorInfo(lvl, (posOfNode(node)), (lines(msg)))
+    ErrorInfo(lvl, node.pos(), lines(msg))
 }
 
 #[derive(Debug)]

@@ -58,7 +58,7 @@ impl CNode for Ident {
 
 impl Pos for Ident {
     fn posOf(self) -> Position {
-        posOfNode(nodeInfo(self))
+        nodeInfo(self).pos()
     }
 }
 
@@ -105,23 +105,23 @@ pub fn bits28() -> isize {
 }
 
 pub fn mkIdent(pos: Position, s: String, name: Name) -> Ident {
-    Ident(s.clone(), (quad(s.clone())), (mkNodeInfo_q(pos.clone(), (pos, s.len() as isize), name)))
+    Ident(s.clone(), quad(s.clone()), NodeInfo::new(pos.clone(), (pos, s.len() as isize), name))
 }
 
 pub fn internalIdent(s: String) -> Ident {
-    Ident(s.clone(), (quad(s.clone())), (mkNodeInfoOnlyPos(Position::internal())))
+    Ident(s.clone(), quad(s.clone()), NodeInfo::with_only_pos(Position::internal()))
 }
 
 pub fn internalIdentAt(pos: Position, s: String) -> Ident {
-    Ident(s.clone(), (quad(s.clone())), (mkNodeInfoPosLen(pos.clone(), (pos, s.len() as isize))))
+    Ident(s.clone(), quad(s.clone()), NodeInfo::with_pos_len(pos.clone(), (pos, s.len() as isize)))
 }
 
 pub fn builtinIdent(s: String) -> Ident {
-    Ident(s.clone(), (quad(s.clone())), (mkNodeInfoOnlyPos(Position::builtin())))
+    Ident(s.clone(), quad(s.clone()), NodeInfo::with_only_pos(Position::builtin()))
 }
 
 pub fn isInternalIdent(Ident(_, _, nodeinfo): Ident) -> bool {
-    posOfNode(nodeinfo).isInternal()
+    nodeinfo.pos().isInternal()
 }
 
 pub fn identToString(Ident(s, _, _): Ident) -> String {

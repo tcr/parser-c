@@ -14,6 +14,20 @@ use data::name::Name;
 use data::position::*;
 use std::fmt;
 
+
+// a class for convenient access to the attributes of an attributed object
+pub trait CNode {
+    fn nodeInfo(self) -> NodeInfo;
+}
+
+impl CNode for NodeInfo {
+    fn nodeInfo(self) -> NodeInfo { self }
+}
+
+pub fn nodeInfo<T: CNode>(n: T) -> NodeInfo {
+    n.nodeInfo()
+}
+
 #[derive(Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum NodeInfo {
     OnlyPos(Position, PosLength),
@@ -37,96 +51,79 @@ impl Pos for NodeInfo {
     }
 }
 
-pub fn lengthOfNode(ni: NodeInfo) -> Option<isize> {
+impl NodeInfo {
+    pub fn internal() -> NodeInfo {
+        Self::undef()
+    }
 
-    let computeLength = |pos: Position, (lastPos, lastTokLen): PosLength| {
-        if lastTokLen < 0 {
-            None
-        } else {
-            Some(lastPos.offset() + lastTokLen - pos.offset())
+    pub fn undef() -> NodeInfo {
+        OnlyPos(Position::none(), (Position::none(), -1))
+    }
+
+    pub fn new(pos: Position, lasttok: PosLength, name: Name) -> NodeInfo {
+        NodeInfo(pos, lasttok, name)
+    }
+
+    pub fn with_only_pos(pos: Position) -> NodeInfo {
+        OnlyPos(pos, (Position::none(), -1))
+    }
+
+    pub fn with_pos_len(a: Position, b: PosLength) -> NodeInfo {
+        OnlyPos(a, b)
+    }
+
+    pub fn with_pos_name(pos: Position, name: Name) -> NodeInfo {
+        NodeInfo(pos, (Position::none(), -1), name)
+    }
+
+    pub fn len(&self) -> Option<isize> {
+        let computeLength = |pos: &Position, &(ref lastPos, lastTokLen): &PosLength| {
+            if lastTokLen < 0 {
+                None
+            } else {
+                Some(lastPos.offset() + lastTokLen - pos.offset())
+            }
+        };
+
+        let len = match *self {
+            NodeInfo(ref firstPos, ref lastTok, _) |
+            OnlyPos(ref firstPos, ref lastTok) => computeLength(firstPos, lastTok),
+        };
+
+        len
+    }
+
+    pub fn getLastTokenPos(self) -> PosLength {
+        match self {
+            NodeInfo(_, lastTok, _) => lastTok,
+            OnlyPos(_, lastTok) => lastTok,
         }
-    };
-
-    let len = match ni {
-        NodeInfo(firstPos, lastTok, _) => computeLength(firstPos, lastTok),
-        OnlyPos(firstPos, lastTok) => computeLength(firstPos, lastTok),
-    };
-
-    len
-}
-
-pub fn getLastTokenPos(_0: NodeInfo) -> PosLength {
-    match (_0) {
-        NodeInfo(_, lastTok, _) => lastTok,
-        OnlyPos(_, lastTok) => lastTok,
     }
-}
 
-// a class for convenient access to the attributes of an attributed object
-pub trait CNode {
-    fn nodeInfo(self) -> NodeInfo;
-}
-impl CNode for NodeInfo {
-    fn nodeInfo(self) -> NodeInfo { self }
-}
-
-pub fn nodeInfo<T: CNode>(n: T) -> NodeInfo {
-    n.nodeInfo()
-}
-
-// impl CNode for (CNode<a>, CNode<b>) {
-//     pub fn nodeInfo(self) -> NodeInfo { Either(a, b) }
-//     => CNode (Either a b) where
-//   nodeInfo = either nodeInfo nodeInfo
-
-pub fn nameOfNode(_0: NodeInfo) -> Option<Name> {
-    match (_0) {
-        OnlyPos(_, _) => None,
-        NodeInfo(_, _, name) => Some(name),
+    pub fn name(&self) -> Option<Name> {
+        match *self {
+            OnlyPos(_, _) => None,
+            NodeInfo(_, _, name) => Some(name),
+        }
     }
-}
 
-pub fn posOfNode(ni: NodeInfo) -> Position {
-    match ni {
-        OnlyPos(pos, _) => pos,
-        NodeInfo(pos, _, _) => pos,
+    pub fn pos(self) -> Position {
+        match self {
+            OnlyPos(pos, _) => pos,
+            NodeInfo(pos, _, _) => pos,
+        }
     }
 }
 
 pub fn fileOfNode<A: CNode>(obj: A) -> Option<FilePath> {
-    fn justIf<T>(predicate: bool, x: T) -> Option<T> {
-        if predicate { Some(x) } else { None }
+    let pos = obj.nodeInfo().pos();
+    if pos.isSource() {
+        Some(FilePath { path: pos.file() })
+    } else {
+        None
     }
-
-    // TODO
-    unreachable!()
-    // __fmap!(posFile, justIf(isSourcePos(posOfNode(obj.nodeInfo()))))
 }
 
 pub fn eqByName<A: CNode>(obj1: A, obj2: A) -> bool {
     obj1.nodeInfo() == obj2.nodeInfo()
-}
-
-pub fn internalNode() -> NodeInfo {
-    undefNode()
-}
-
-pub fn undefNode() -> NodeInfo {
-    OnlyPos(Position::none(), (Position::none(), -1))
-}
-
-pub fn mkNodeInfoOnlyPos(pos: Position) -> NodeInfo {
-    OnlyPos(pos, (Position::none(), -1))
-}
-
-pub fn mkNodeInfoPosLen(a: Position, b: PosLength) -> NodeInfo {
-    OnlyPos(a, b)
-}
-
-pub fn mkNodeInfo(pos: Position, name: Name) -> NodeInfo {
-    NodeInfo(pos, (Position::none(), -1), name)
-}
-
-pub fn mkNodeInfo_q(pos: Position, lasttok: PosLength, name: Name) -> NodeInfo {
-    NodeInfo(pos, lasttok, name)
 }
