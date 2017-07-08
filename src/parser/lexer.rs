@@ -33569,7 +33569,7 @@ pub fn adjustLineDirective(pragmaLen: isize, __str: String, pos: Position) -> Po
         dropWhile((|c| { (c == ' ') || (c == '\t') }), input)
     }
 
-    let offs_q = ((posOffset(pos.clone())) + pragmaLen);
+    let offs_q = pos.offset() + pragmaLen;
 
     let str_q = dropWhite(drop_str(1, __str));
 
@@ -33582,7 +33582,7 @@ pub fn adjustLineDirective(pragmaLen: isize, __str: String, pos: Position) -> Po
 
     let fnameStr = takeWhile_str(|x| { x != '\"' }, drop_str(1, str_q_q_q.clone()));
 
-    let fname = posFile(pos.clone());
+    let fname = pos.file();
 
     let fname_q = if str_q_q_q.len() == 0 || head_str(str_q_q_q) != '"' {
         fname
@@ -33593,7 +33593,7 @@ pub fn adjustLineDirective(pragmaLen: isize, __str: String, pos: Position) -> Po
         fnameStr
     };
 
-    position(offs_q, fname_q, row_q, 1)
+    Position::new(offs_q, fname_q, row_q, 1)
 }
 
 pub fn unescapeMultiChars(cs: String) -> String {
@@ -33651,20 +33651,12 @@ pub fn alexGetByte((p, is): AlexInput) -> Option<(Word8, AlexInput)> {
     }
 }
 
-pub fn alexMove(_0: Position, _1: char) -> Position {
-    match (_0, _1) {
-        (pos, ' ') => {
-            incPos(pos, 1)
-        },
-        (pos, '\n') => {
-            retPos(pos)
-        },
-        (pos, '\r') => {
-            incOffset(pos, 1)
-        },
-        (pos, _) => {
-            incPos(pos, 1)
-        },
+pub fn alexMove(pos: Position, ch: char) -> Position {
+    match ch {
+        ' '  => pos.inc(1),
+        '\n' => pos.retPos(),
+        '\r' => pos.incOffset(1),
+        _    => pos.inc(1),
     }
 }
 

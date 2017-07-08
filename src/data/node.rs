@@ -39,11 +39,11 @@ impl Pos for NodeInfo {
 
 pub fn lengthOfNode(ni: NodeInfo) -> Option<isize> {
 
-    let computeLength = |pos, (lastPos, lastTokLen)| {
+    let computeLength = |pos: Position, (lastPos, lastTokLen): PosLength| {
         if lastTokLen < 0 {
             None
         } else {
-            Some(posOffset(lastPos) + lastTokLen - posOffset(pos))
+            Some(lastPos.offset() + lastTokLen - pos.offset())
         }
     };
 
@@ -112,11 +112,11 @@ pub fn internalNode() -> NodeInfo {
 }
 
 pub fn undefNode() -> NodeInfo {
-    OnlyPos(nopos(), (nopos(), -(1)))
+    OnlyPos(Position::none(), (Position::none(), -1))
 }
 
 pub fn mkNodeInfoOnlyPos(pos: Position) -> NodeInfo {
-    OnlyPos(pos, (nopos(), -(1)))
+    OnlyPos(pos, (Position::none(), -1))
 }
 
 pub fn mkNodeInfoPosLen(a: Position, b: PosLength) -> NodeInfo {
@@ -124,7 +124,7 @@ pub fn mkNodeInfoPosLen(a: Position, b: PosLength) -> NodeInfo {
 }
 
 pub fn mkNodeInfo(pos: Position, name: Name) -> NodeInfo {
-    NodeInfo(pos, (nopos(), -(1)), name)
+    NodeInfo(pos, (Position::none(), -1), name)
 }
 
 pub fn mkNodeInfo_q(pos: Position, lasttok: PosLength, name: Name) -> NodeInfo {

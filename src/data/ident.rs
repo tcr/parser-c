@@ -109,7 +109,7 @@ pub fn mkIdent(pos: Position, s: String, name: Name) -> Ident {
 }
 
 pub fn internalIdent(s: String) -> Ident {
-    Ident(s.clone(), (quad(s.clone())), (mkNodeInfoOnlyPos(internalPos())))
+    Ident(s.clone(), (quad(s.clone())), (mkNodeInfoOnlyPos(Position::internal())))
 }
 
 pub fn internalIdentAt(pos: Position, s: String) -> Ident {
@@ -117,11 +117,11 @@ pub fn internalIdentAt(pos: Position, s: String) -> Ident {
 }
 
 pub fn builtinIdent(s: String) -> Ident {
-    Ident(s.clone(), (quad(s.clone())), (mkNodeInfoOnlyPos(builtinPos())))
+    Ident(s.clone(), (quad(s.clone())), (mkNodeInfoOnlyPos(Position::builtin())))
 }
 
 pub fn isInternalIdent(Ident(_, _, nodeinfo): Ident) -> bool {
-    isInternalPos((posOfNode(nodeinfo)))
+    posOfNode(nodeinfo).isInternal()
 }
 
 pub fn identToString(Ident(s, _, _): Ident) -> String {

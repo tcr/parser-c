@@ -119,7 +119,7 @@ pub fn unsupportedFeature<P: Pos>(msg: String, a: P) -> UnsupportedFeature {
 }
 
 pub fn unsupportedFeature_(msg: String) -> UnsupportedFeature {
-    UnsupportedFeature(msg, internalPos())
+    UnsupportedFeature(msg, Position::internal())
 }
 
 #[derive(Debug)]
@@ -127,7 +127,7 @@ pub struct UserError(pub ErrorInfo);
 
 
 pub fn userErr(msg: String) -> UserError {
-    UserError((ErrorInfo(LevelError, internalPos(), (lines(msg)))))
+    UserError(ErrorInfo(LevelError, Position::internal(), lines(msg)))
 }
 
 pub fn showError<E: Error>(short_msg: String, e: E) -> String {
@@ -138,13 +138,13 @@ pub fn showErrorInfo(short_msg: String, ErrorInfo(level, pos, msgs): ErrorInfo) 
 
     let pos2 = pos.clone();
     let showPos = |p: Position| -> String {
-        if isSourcePos(p.clone()) {
-            __op_addadd(posFile(p.clone()),
+        if p.isSource() {
+            __op_addadd(p.file(),
                 __op_addadd(":".to_string(),
-                    __op_addadd(show(posRow(pos2.clone())),
+                    __op_addadd(show(pos2.row()),
                         __op_addadd(": ".to_string(),
                             __op_addadd("(column ".to_string(),
-                                __op_addadd(show(posColumn(pos2.clone())),
+                                __op_addadd(show(pos2.column()),
                                     ") ".to_string()))))))
         } else {
             __op_addadd(show(p.clone()), ":: ".to_string())
