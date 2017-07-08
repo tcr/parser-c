@@ -75,7 +75,7 @@ fn parseCFile<C: Preprocessor>(cpp: C,
         Ok(ok) => ok,
     };
 
-    let input_stream = if !isPreprocessed(input_file.clone().into()) {
+    let input_stream = if !isPreprocessed(&input_file.path) {
         let cpp_args = __assign!((rawCppArgs(args, input_file.clone())), {
             cppTmpDir: tmp_dir_opt
         });

@@ -24,8 +24,10 @@ pub trait Preprocessor {
     fn runCPP(&self, CppArgs) -> ExitCode;
 }
 
-pub fn preprocessedExt() -> String {
-    ".i".to_string()
+pub const PREPROCESSED_EXT: &str = ".i";
+
+pub fn isPreprocessed(x: &str) -> bool {
+    x.ends_with(PREPROCESSED_EXT)
 }
 
 #[derive(Clone)]
@@ -148,9 +150,9 @@ pub fn mkOutputFile(tmp_dir_opt: Option<FilePath>, input_file: FilePath) -> File
 pub fn getOutputFileName(fp: FilePath) -> FilePath {
     let filename = takeFileName(fp.clone());
     if hasExtension(fp) {
-        replaceExtension(filename, preprocessedExt())
+        replaceExtension(filename, PREPROCESSED_EXT)
     } else {
-        addExtension(filename, preprocessedExt())
+        addExtension(filename, PREPROCESSED_EXT)
     }
 }
 
@@ -162,8 +164,4 @@ pub fn mkTmpFile(tmp_dir: FilePath, file_templ: FilePath) -> FilePath {
         hClose(file_handle);
         path
     }
-}
-
-pub fn isPreprocessed(x: String) -> bool {
-    isSuffixOf(".i".to_string(), x)
 }

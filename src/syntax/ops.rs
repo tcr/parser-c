@@ -39,7 +39,7 @@ pub fn assignBinop(_0: CAssignOp) -> CBinaryOp {
     }
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum CBinaryOp {
     CMulOp,
     CDivOp,
@@ -63,19 +63,19 @@ pub enum CBinaryOp {
 pub use self::CBinaryOp::*;
 
 pub fn isCmpOp(op: CBinaryOp) -> bool {
-    elem(op, vec![CLeqOp, CGeqOp, CLeOp, CGrOp, CEqOp, CNeqOp])
+    [CLeqOp, CGeqOp, CLeOp, CGrOp, CEqOp, CNeqOp].contains(&op)
 }
 
 pub fn isPtrOp(op: CBinaryOp) -> bool {
-    elem(op, vec![CAddOp, CSubOp])
+    [CAddOp, CSubOp].contains(&op)
 }
 
 pub fn isBitOp(op: CBinaryOp) -> bool {
-    elem(op, vec![CShlOp, CShrOp, CAndOp, COrOp, CXorOp])
+    [CShlOp, CShrOp, CAndOp, COrOp, CXorOp].contains(&op)
 }
 
 pub fn isLogicOp(op: CBinaryOp) -> bool {
-    elem(op, vec![CLndOp, CLorOp])
+    [CLndOp, CLorOp].contains(&op)
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -94,5 +94,5 @@ pub enum CUnaryOp {
 pub use self::CUnaryOp::*;
 
 pub fn isEffectfulOp(op: CUnaryOp) -> bool {
-    elem(op, vec![CPreIncOp, CPreDecOp, CPostIncOp, CPostDecOp])
+    [CPreIncOp, CPreDecOp, CPostIncOp, CPostDecOp].contains(&op)
 }

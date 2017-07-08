@@ -83,9 +83,7 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), Stri
         if a.len() > 0 {
             let flag = a[0].clone();
             let rest = a[1..].to_vec();
-            if (flag == "-c".to_string()) ||
-                (flag == "-S".to_string()) ||
-                isPrefixOf("-M".to_string(), flag.clone()) {
+            if flag == "-c" || flag == "-S" || flag.starts_with("-M") {
                 return mungeArgs((cpp_args, (extra, snoc(other, flag))), rest)
             }
         }
@@ -115,7 +113,7 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), Stri
         if a.len() > 0 {
             let cfile = a[0].clone();
             let rest = a[1..].to_vec();
-            if (any(|x| { isSuffixOf(cfile.clone(), x.clone()) }, (words(".c .hc .h".to_string())))) {
+            if [".c", ".hc", ".h"].iter().any(|suf| cfile.ends_with(suf)) {
                 return if isJust(inp) {
                     Err("two input files given".to_string())
                 } else {

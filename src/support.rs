@@ -40,32 +40,12 @@ impl<A> OpConcatable for Vec<A> {
 }
 
 
-pub struct IO<A: Sized>(A);
-
-pub fn assertEqual<A: Eq + Sized>(desc: String, left: A, right: A) -> IO<()> {
-    if left != right {
-        panic!("{}", desc);
-    }
-    IO(())
-}
-
-pub fn putStrLn(line: String) -> IO<()> {
-    println!("{}", line);
-    IO(())
-}
-
 pub mod List {
     pub fn reverse<A>(mut input: Vec<A>) -> Vec<A> {
         input.reverse();
         input
     }
 }
-
-pub fn __op_index<F, T: ::std::ops::Index<F>>(a: T, pos: F) -> (<T as std::ops::Index<F>>::Output)
-where <T as std::ops::Index<F>>::Output: std::marker::Sized + Clone {
-    a[pos].clone()
-}
-
 #[macro_export]
 macro_rules! __assign {
     ($left: expr, {
@@ -108,26 +88,6 @@ pub enum ExitCode {
     ExitFailure(isize),
 }
 pub use self::ExitCode::*;
-
-pub fn isSuffixOf(a: String, r: String) -> bool {
-    r.ends_with(&a)
-}
-
-pub fn isPrefixOf(a: String, r: String) -> bool {
-    r.starts_with(&a)
-}
-
-pub fn elem<T: PartialEq>(item: T, value: Vec<T>) -> bool {
-    value.contains(&item)
-}
-
-pub fn replicate<T: Clone>(rep: isize, item: T) -> Vec<T> {
-    (0..rep).map(|_| item.clone()).collect()
-}
-
-pub fn words(input: String) -> Vec<String> {
-    input.split_whitespace().map(|x| x.to_string()).collect()
-}
 
 pub trait Lengthable {
     fn get_len(&self) -> isize;
@@ -351,12 +311,12 @@ pub fn hasExtension(fp: FilePath) -> bool {
     false
 }
 
-pub fn replaceExtension(fp: FilePath, ext: String) -> FilePath {
+pub fn replaceExtension(fp: FilePath, ext: &str) -> FilePath {
     // TODO
     fp
 }
 
-pub fn addExtension(fp: FilePath, ext: String) -> FilePath {
+pub fn addExtension(fp: FilePath, ext: &str) -> FilePath {
     // TODO
     fp
 }
