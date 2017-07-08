@@ -1,6 +1,6 @@
 # parser-c
 
-[![https://img.shields.io/crates/v/parser-c.svg](https://img.shields.io/crates/v/parser-c.svg)](http://crates.io/crates/parser-c/)
+[![Gitter](https://img.shields.io/gitter/room/tcr/parser-c.svg)](http://gitter.im/parser-c/Lobby) [![https://img.shields.io/crates/v/parser-c.svg](https://img.shields.io/crates/v/parser-c.svg)](http://crates.io/crates/parser-c/)
 
 Rust module for parsing C code. Port of Haskell's [language-c](https://github.com/visq/language-c), semi-automatically translated using [Corollary](https://github.com/tcr/corrode-but-in-rust).
 
