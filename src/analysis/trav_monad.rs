@@ -233,8 +233,8 @@ pub fn isDeclaration(_0: IdentDecl) -> bool {
     }
 }
 
-pub fn checkCompatibleTypes(_: Type, _: Type) -> Either<TypeMismatch, ()> {
-    Right(())
+pub fn checkCompatibleTypes(_: Type, _: Type) -> Result<(), TypeMismatch> {
+    Ok(())
 }
 
 pub fn handleObjectDef(local: bool, ident: Ident, obj_def: ObjDef) -> m<()> {
@@ -359,10 +359,10 @@ pub fn astError<a>(node: NodeInfo, msg: String) -> m<a> {
     throwTravError(invalidAST(node, msg))
 }
 
-pub fn throwOnLeft<a>(_0: Either<e, a>) -> m<a> {
+pub fn throwOnLeft<a>(_0: Result<a, e>) -> m<a> {
     match (_0) {
-        Left(err) => throwTravError(err),
-        Right(v) => v,
+        Err(err) => throwTravError(err),
+        Ok(v) => v,
     }
 }
 
@@ -371,9 +371,9 @@ pub fn warn(err: e) -> m<()> {
 }
 
 pub struct Trav<s, a> {
-    unTrav: fn(TravState<s>) -> Either<CError, (a, TravState<s>)>,
+    unTrav: fn(TravState<s>) -> Result<(a, TravState<s>), CError>,
 }
-fn unTrav(a: Trav) -> fn(TravState<s>) -> Either<CError, (a, TravState<s>)> {
+fn unTrav(a: Trav) -> fn(TravState<s>) -> Result<(a, TravState<s>), CError> {
     a.unTrav
 }
 
@@ -393,7 +393,7 @@ pub fn put(s: TravState<s>) -> Trav<s, ()> {
     Trav((|_| Right(((), s))))
 }
 
-pub fn runTrav<a>(state: s, traversal: Trav<s, a>) -> Either<Vec<CError>, (a, TravState<s>)> {
+pub fn runTrav<a>(state: s, traversal: Trav<s, a>) -> Result<(a, TravState<s>), Vec<CError>> {
 
     let action = /*do*/ {
             withDefTable((__TODO_const(((), builtins))));
@@ -401,13 +401,13 @@ pub fn runTrav<a>(state: s, traversal: Trav<s, a>) -> Either<Vec<CError>, (a, Tr
         };
 
     match unTrav(action, (initTravState(state))) {
-        Left(trav_err) => Left(vec![trav_err]),
-        Right((v, ts)) if hadHardErrors((travErrors(ts))) => Left((travErrors(ts))),
-        Right((v, ts)) => Right((v, ts)),
+        Err(trav_err) => Err(vec![trav_err]),
+        Ok((v, ts)) if hadHardErrors((travErrors(ts))) => Err((travErrors(ts))),
+        Ok((v, ts)) => Ok((v, ts)),
     }
 }
 
-pub fn runTrav_<a>(t: Trav<(), a>) -> Either<Vec<CError>, (a, Vec<CError>)> {
+pub fn runTrav_<a>(t: Trav<(), a>) -> Result<(a, Vec<CError>), Vec<CError>> {
     fmap(fst,
          runTrav((),
                  /*do*/

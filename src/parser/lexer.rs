@@ -33254,7 +33254,7 @@ pub fn alex_actions() -> Vec<Box<Fn(Position, isize, InputStream) -> P<CToken>>>
         ])
 }
 
-pub fn readCOctal(s: String) -> Either<String, CInteger> {
+pub fn readCOctal(s: String) -> Result<CInteger, String> {
     if s.chars().nth(0).unwrap() == '0' {
         if s.len() > 1 && isDigit(s.chars().nth(1).unwrap()) {
             readCInteger(OctalRepr, s[1..].to_string())
@@ -33616,16 +33616,19 @@ pub fn token_fail(errmsg: String, pos: Position, _: isize, _: InputStream) -> P<
     failP(pos, vec!["Lexical Error !".to_string(), errmsg])
 }
 
-pub fn token<a>(mkTok: Box<Fn(PosLength, a) -> CToken>, fromStr: Box<Fn(String) -> a>, pos: Position, len: isize, __str: InputStream) -> P<CToken> {
+pub fn token<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
+                fromStr: Box<Fn(String) -> a>, pos: Position, len: isize, __str: InputStream) -> P<CToken> {
     __return((mkTok((pos, len), (fromStr(takeChars_str(len, __str))))))
 }
 
-pub fn token_plus<a>(mkTok: Box<Fn(PosLength, a) -> CToken>, fromStr: Box<Fn(String) -> Either<String, a>>, pos: Position, len: isize, __str: InputStream) -> P<CToken> {
+pub fn token_plus<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
+                     fromStr: Box<Fn(String) -> Result<a, String>>,
+                     pos: Position, len: isize, __str: InputStream) -> P<CToken> {
     match fromStr((takeChars_str(len, __str))) {
-        Left(err) => {
+        Err(err) => {
             failP(pos, vec!["Lexical error ! ".to_string(), err])
         },
-        Right(ok) => {
+        Ok(ok) => {
             __return(mkTok((pos, len), ok))
         },
     }

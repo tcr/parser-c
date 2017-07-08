@@ -19,7 +19,7 @@ use data::input_stream::*;
 // 'Preprocessor' encapsulates the abstract interface for invoking C preprocessors
 pub trait Preprocessor {
     // parse the given command line arguments, and return a pair of parsed and ignored arguments
-    fn parseCPPArgs(&self, Vec<String>, Either<String, String>) -> (CppArgs, Vec<String>);
+    fn parseCPPArgs(&self, Vec<String>, Result<String, String>) -> (CppArgs, Vec<String>);
     // run the preprocessor
     fn runCPP(&self, CppArgs) -> ExitCode;
 }
@@ -95,7 +95,7 @@ pub fn addExtraOption(cpp_args: CppArgs, extra: String) -> CppArgs {
 
 pub fn runPreprocessor<P: Preprocessor>(cpp: P,
                                         cpp_args: CppArgs)
-                                        -> Either<ExitCode, InputStream> {
+                                        -> Result<InputStream, ExitCode> {
 
     pub fn getActualOutFile(cpp_args: CppArgs) -> FilePath {
         outputFile(cpp_args.clone())
@@ -113,8 +113,8 @@ pub fn runPreprocessor<P: Preprocessor>(cpp: P,
             }));
 
             match exit_code {
-                ExitSuccess => Right(readInputStream(actual_out_file)),
-                ExitFailure(_) => Left(exit_code),
+                ExitSuccess => Ok(readInputStream(actual_out_file)),
+                ExitFailure(_) => Err(exit_code),
             }
         }
     };

@@ -28,7 +28,7 @@ pub fn newGCC(gccPath: FilePath) -> GCC {
     GCC { gccPath }
 }
 
-pub fn gccParseCPPArgs(args: Vec<String>) -> Either<String, (CppArgs, Vec<String>)> {
+pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), String> {
 
 
     fn getDefine(opt: String) -> CppOption {
@@ -53,12 +53,12 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Either<String, (CppArgs, Vec<String
         //     None
         // }
     }
-    
-    fn mungeArgs(parsed: ParseArgsState, unparsed_args: Vec<String>) -> Either<String, ParseArgsState> {
+
+    fn mungeArgs(parsed: ParseArgsState, unparsed_args: Vec<String>) -> Result<ParseArgsState, String> {
         let (cpp_args, unparsed) = parsed.clone();
         let (inp, out, cpp_opts) = cpp_args.clone();
         let (extra, other) = unparsed.clone();
-        
+
         let a = unparsed_args;
 
         // ["-E", rest..]
@@ -95,7 +95,7 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Either<String, (CppArgs, Vec<String
             let file = a[1].clone();
             let rest = a[2..].to_vec();
             return if isJust(out) {
-                Left("two output files given".to_string())
+                Err("two output files given".to_string())
             } else {
                 mungeArgs(((inp, Some(file.into()), cpp_opts), unparsed), rest)
             };
@@ -117,7 +117,7 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Either<String, (CppArgs, Vec<String
             let rest = a[1..].to_vec();
             if (any(|x| { isSuffixOf(cfile.clone(), x.clone()) }, (words(".c .hc .h".to_string())))) {
                 return if isJust(inp) {
-                    Left("two input files given".to_string())
+                    Err("two input files given".to_string())
                 } else {
                     mungeArgs(((Some(cfile.into()), out, cpp_opts), unparsed), rest)
                 };
@@ -132,20 +132,20 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Either<String, (CppArgs, Vec<String
         }
 
         // otherwise
-        return Right(parsed);
+        Ok(parsed)
     }
 
     match mungeArgs(((None, None, RList::empty()), (RList::empty(), RList::empty())),
                     args) {
-        Left(err) => Left(err),
-        Right(((None, _, _), _)) => Left("No .c / .hc / .h source file given".to_string()),
-        Right(((Some(input_file), output_file_opt, cpp_opts), (extra_args, other_args))) => {
-            Right((__assign!((rawCppArgs((RList::reverse(extra_args)), input_file)),
-                             {
-                                 outputFile: output_file_opt,
-                                 cppOptions: RList::reverse(cpp_opts),
-                             }),
-                   RList::reverse(other_args)))
+        Err(err) => Err(err),
+        Ok(((None, _, _), _)) => Err("No .c / .hc / .h source file given".to_string()),
+        Ok(((Some(input_file), output_file_opt, cpp_opts), (extra_args, other_args))) => {
+            Ok((__assign!((rawCppArgs((RList::reverse(extra_args)), input_file)),
+                          {
+                              outputFile: output_file_opt,
+                              cppOptions: RList::reverse(cpp_opts),
+                          }),
+                RList::reverse(other_args)))
         }
     }
 }

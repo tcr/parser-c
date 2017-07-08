@@ -41759,7 +41759,7 @@ pub fn appendDeclrAttrs(_0: Vec<CAttribute<NodeInfo>>, _1: CDeclrR) -> CDeclrR {
                             CFunDeclr(parameters, __op_addadd(cattrs, newAttrs), at),
                     }
                 };
-                
+
                 CDeclrR(ident, (Reversed((__op_concat(appendAttrs(x), xs)))), asmname, cattrs, at)
             }
         },
@@ -41891,7 +41891,7 @@ pub fn happyError<a: 'static>() -> P<a> {
     parseError()
 }
 
-pub fn parseC(input: InputStream, initialPosition: Position) -> Either<ParseError, CTranslationUnit<NodeInfo>> {
+pub fn parseC(input: InputStream, initialPosition: Position) -> Result<CTranslationUnit<NodeInfo>, ParseError> {
     execParser(translUnitP(), input, initialPosition, builtinTypeNames(), (namesStartingFrom(0)))
         .map(|x| x.0)
 }
