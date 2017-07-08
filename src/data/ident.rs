@@ -7,7 +7,7 @@ use data::position::{Position, Pos};
 use data::node::{NodeInfo, CNode};
 use data::name::Name;
 
-#[derive(Clone, Debug, PartialEq, PartialOrd, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SUERef {
     AnonymousRef(Name),
     NamedRef(Ident),
@@ -30,7 +30,8 @@ impl SUERef {
     }
 }
 
-#[derive(Clone, Debug, PartialOrd, Eq)]
+// TODO: use NodeInfo for Ord or not?
+#[derive(Clone, Debug, PartialOrd, Ord, Eq)]
 pub struct Ident(pub String, pub NodeInfo);
 
 // required because we keep Idents in a HashSet and don't want the set to

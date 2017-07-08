@@ -6,7 +6,7 @@ use std::fmt::Write;
 use data::node::NodeInfo;
 use data::position::{Position, Pos};
 
-#[derive(Eq, Ord, PartialEq, PartialOrd, Debug)]
+#[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd, Debug)]
 pub enum ErrorLevel {
     LevelWarn,
     LevelError,
@@ -20,11 +20,11 @@ impl ::std::fmt::Display for ErrorLevel {
     }
 }
 
-pub fn isHardError<E: Error>(e: E) -> bool {
+pub fn isHardError<E: Error>(e: &E) -> bool {
     errorLevel(e) > LevelWarn
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ErrorInfo(pub ErrorLevel, pub Position, pub Vec<String>);
 
 
@@ -42,16 +42,20 @@ pub trait Error
     where Self: Debug
 {
     // obtain source location etc. of an error
-    fn errorInfo(self) -> ErrorInfo;
+    fn errorInfo(&self) -> ErrorInfo;
     // wrap error in 'CError'
-    fn toError(self) -> CError;
+    fn toError(self) -> CError where Self: Sized + 'static {
+        CError(Box::new(self))
+    }
     // try to cast a generic 'CError' to the specific error type
-    fn fromError(c: CError) -> Option<Box<Self>> where Self: Sized;
+    fn fromError(_c: CError) -> Option<Box<Self>> where Self: Sized {
+        unimplemented!("unused in source anyway")
+    }
     // modify the error level
     fn changeErrorLevel(self, lvl: ErrorLevel) -> Self
         where Self: Sized + Clone
     {
-        if errorLevel(self.clone()) == lvl {
+        if errorLevel(&self.clone()) == lvl { // TODO
             self
         } else {
             panic!("changeErrorLevel: not possible for {:?}", self);
@@ -63,10 +67,8 @@ pub trait Error
 // instance Show CError where
 //     show (CError e) = show e
 impl Error for CError {
-    fn errorInfo(self) -> ErrorInfo {
-        // TODO
-        unreachable!()
-        // self.0.errorInfo()
+    fn errorInfo(&self) -> ErrorInfo {
+        self.0.errorInfo()
     }
 
     fn toError(self) -> CError {
@@ -84,19 +86,16 @@ impl Error for CError {
     }
 }
 
-pub fn errorPos<E: Error>(e: E) -> Position {
-    let ErrorInfo(_, pos, _) = e.errorInfo();
-    pos
+pub fn errorLevel<E: Error>(e: &E) -> ErrorLevel {
+    e.errorInfo().0
 }
 
-pub fn errorLevel<E: Error>(e: E) -> ErrorLevel {
-    let ErrorInfo(lvl, _, _) = e.errorInfo();
-    lvl
+pub fn errorPos<E: Error>(e: &E) -> Position {
+    e.errorInfo().1
 }
 
-pub fn errorMsg<E: Error>(e: E) -> Vec<String> {
-    let ErrorInfo(_, _, msgs) = e.errorInfo();
-    msgs
+pub fn errorMsg<E: Error>(e: &E) -> Vec<String> {
+    e.errorInfo().2
 }
 
 #[derive(Debug)]

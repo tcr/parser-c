@@ -1,528 +1,426 @@
 // Original file: "TravMonad.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
+use std::mem;
+use either::Either::*;
 
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Language::C::Data;
-// use Language::C::Data::RList;
-// use Language::C::Analysis::Builtins;
-// use Language::C::Analysis::SemError;
-// use Language::C::Analysis::SemRep;
-// use Language::C::Analysis::TypeUtils;
-// use sameType;
-// use Language::C::Analysis::DefTable;
-// use Language::C::Analysis::DefTable;
-// use Data::IntMap;
-// use insert;
-// use Data::Maybe;
-// use Control::Applicative;
-// use Applicative;
-// use Control::Monad;
-// use liftM;
-// use Prelude;
-
-use data::name::newNameSupply;
+use data::error::Error;
+use data::node::*;
+use data::name::*;
 use analysis::def_table::*;
 use analysis::sem_rep::*;
 use analysis::sem_error::*;
+use analysis::builtins::*;
+use analysis::type_utils::*;
 use data::ident::*;
 use data::error::*;
 
-pub fn checkRedef(subject: String, new_decl: t, redecl_status: DeclarationStatus<t1>) -> m<()> {
-    match redecl_status {
-        NewDecl => (),
-        Redeclared(old_def) => {
-            throwTravError(redefinition(LevelError,
-                                        subject,
-                                        DuplicateDef,
-                                        (nodeInfo(new_decl)),
-                                        (nodeInfo(old_def))))
-        }
-        KindMismatch(old_def) => {
-            throwTravError(redefinition(LevelError,
-                                        subject,
-                                        DiffKindRedecl,
-                                        (nodeInfo(new_decl)),
-                                        (nodeInfo(old_def))))
-        }
-        Shadowed(_old_def) => (),
-        KeepDef(_old_def) => (),
-    }
-}
 
-pub fn handleTagDecl(decl: TagFwdDecl) -> m<()> {
-    /*do*/
-    {
-        let redecl = withDefTable(declareTag((sueRef(decl)), decl));
-
-        checkRedef((sueRefToString(sueRef(decl))), decl, redecl)
-    }
-}
-
-pub fn handleTagDef(def: TagDef) -> m<()> {
-    /*do*/
-    {
-        let redecl = withDefTable(defineTag((sueRef(def)), def));
-
-        checkRedef((sueRefToString(sueRef(def))), def, redecl);
-        handleDecl((TagEvent(def)))
-    }
-}
-
-pub fn handleEnumeratorDef(enumerator: Enumerator) -> m<()> {
-    /*do*/
-    {
-        let ident = declIdent(enumerator);
-
-        let redecl = withDefTable(defineScopedIdent(ident, (EnumeratorDef(enumerator))));
-
-        checkRedef((identToString(ident)), ident, redecl);
-        ()
-    }
-}
-
-pub fn handleTypeDef(typeDef: TypeDef, __OP__: m<()>) -> m<()> {
-    /*do*/
-    {
-        let redecl = withDefTable(defineTypeDef(ident, typeDef));
-
-        match redecl {
-            Redeclared(Left(TypeDef(_, t2, _, _))) if sameType(t1, t2) => (),
-            _ => checkRedef((identToString(ident)), typeDef, redecl),
-        };
-        handleDecl((TypeDefEvent(typeDef)));
-        ()
-    }
-}
-
-pub fn handleAsmBlock(asm: AsmBlock) -> m<()> {
-    handleDecl((AsmEvent(asm)))
-}
-
-pub fn redefErr(name: Ident, lvl: ErrorLevel, new: new, old: old, kind: RedefKind) -> m<()> {
-    throwTravError(redefinition(lvl,
-                                (identToString(name)),
-                                kind,
-                                (nodeInfo(new)),
-                                (nodeInfo(old))))
-}
-
-pub fn _checkIdentTyRedef(_0: IdentEntry, _1: DeclarationStatus<IdentEntry>) -> m<()> {
-    match (_0, _1) {
-        (Right(decl), status) => checkVarRedef(decl, status),
-        (Left(tydef), KindMismatch(old_def)) => {
-            redefErr((identOfTypeDef(tydef)),
-                     LevelError,
-                     tydef,
-                     old_def,
-                     DiffKindRedecl)
-        }
-        (Left(tydef), Redeclared(old_def)) => {
-            redefErr((identOfTypeDef(tydef)),
-                     LevelError,
-                     tydef,
-                     old_def,
-                     DuplicateDef)
-        }
-        (Left(_tydef), _) => (),
-    }
-}
-
-pub fn checkVarRedef(def: IdentDecl, redecl: DeclarationStatus<IdentEntry>) -> m<()> {
-
-    let redefVarErr = |old_def, kind| redefErr((declIdent(def)), LevelError, def, old_def, kind);
-
-    let linkageErr = |new_def, old_def| match (declLinkage(new_def), declLinkage(old_def)) {
-        (NoLinkage, _) => {
-            redefErr((declIdent(new_def)),
-                     LevelError,
-                     new_def,
-                     old_def,
-                     NoLinkageOld)
-        }
-        _ => {
-            redefErr((declIdent(new_def)),
-                     LevelError,
-                     new_def,
-                     old_def,
-                     DisagreeLinkage)
-        }
-    };
-
-    let new_ty = declType(def);
-
-    let canBeOverwritten = |_0| match (_0) {
-        Declaration(_) => true,
-        ObjectDef(od) => isTentative(od),
-        _ => false,
-    };
-
-    match redecl {
-        KindMismatch(old_def) => redefVarErr(old_def, DiffKindRedecl),
-        KeepDef(Right(old_def)) if not((agreeOnLinkage(def, old_def))) => linkageErr(def, old_def),
-        KeepDef(Right(old_def)) => throwOnLeft(checkCompatibleTypes(new_ty, (declType(old_def)))),
-        Redeclared(Right(old_def)) if not((agreeOnLinkage(def, old_def))) => {
-            linkageErr(def, old_def)
-        }
-        Redeclared(Right(old_def)) if not((canBeOverwritten(old_def))) => {
-            redefVarErr(old_def, DuplicateDef)
-        }
-        Redeclared(Right(old_def)) => {
-            throwOnLeft(checkCompatibleTypes(new_ty, (declType(old_def))))
-        }
-        _ => (),
-    }
-}
-
-pub fn handleVarDecl(is_local: bool, decl: Decl) -> m<()> {
-    /*do*/
-    {
-        let def = enterDecl(decl, (__TODO_const(false)));
-
-        handleDecl(((if is_local { LocalEvent } else { DeclEvent })(def)))
-    }
-}
-
-pub fn handleParamDecl(_0: ParamDecl) -> m<()> {
-    match _0 {
-        pd @ AbstractParamDecl(_, _) => handleDecl((ParamEvent(pd))),
-        pd @ ParamDecl(vardecl, node) => {
-            /*do*/
-            {
-                let def = ObjectDef((ObjDef(vardecl, None, node)));
-
-                let redecl = withDefTable(defineScopedIdent((declIdent(def)), def));
-
-                checkVarRedef(def, redecl);
-                handleDecl((ParamEvent(pd)))
-            }
-        }
-    }
-}
-
-pub fn enterDecl(decl: Decl, cond: fn(IdentDecl) -> bool) -> m<IdentDecl> {
-    /*do*/
-    {
-        let def = Declaration(decl);
-
-        let redecl = withDefTable(defineScopedIdentWhen(cond, (declIdent(def)), def));
-
-        checkVarRedef(def, redecl);
-        def
-    }
-}
-
-pub fn handleFunDef(ident: Ident, fun_def: FunDef) -> m<()> {
-    /*do*/
-    {
-        let def = FunctionDef(fun_def);
-
-        let redecl = withDefTable(defineScopedIdentWhen(isDeclaration, ident, def));
-
-        checkVarRedef(def, redecl);
-        handleDecl((DeclEvent(def)))
-    }
-}
-
-pub fn isDeclaration(_0: IdentDecl) -> bool {
-    match (_0) {
+pub fn isDeclaration(decl: &IdentDecl) -> bool {
+    match *decl {
         Declaration(_) => true,
         _ => false,
     }
+}
+
+pub fn mismatchErr(ctx: &str, expect: &str, found: &str) -> String {
+    format!("{}: Expected {}, but found: {}", ctx, expect, found)
+}
+
+pub fn hadHardErrors(errors: &[CError]) -> bool {
+    errors.iter().any(isHardError)
+}
+
+pub fn travErrors<S>(a: &mut TravState<S>) -> Vec<CError> {
+    let mut errors = mem::replace(&mut a.rerrors, vec![]);
+    errors.reverse();
+    errors
 }
 
 pub fn checkCompatibleTypes(_: Type, _: Type) -> Result<(), TypeMismatch> {
+    // TODO: is that all?
     Ok(())
 }
 
-pub fn handleObjectDef(local: bool, ident: Ident, obj_def: ObjDef) -> m<()> {
+fn redefErr<N: CNode, O: CNode>(name: Ident, lvl: ErrorLevel, new: N, old: O,
+                                kind: RedefKind) -> TravResult<()> {
+    Err(redefinition(lvl,
+                     name.to_string(),
+                     kind,
+                     new.into_node_info(),
+                     old.into_node_info()).toError())
+}
 
-    let isTentativeDef = |_0| match (_0) {
-        ObjectDef(object_def) => isTentative(object_def),
-        _ => false,
+fn linkageErr(new_def: IdentDecl, old_def: IdentDecl) -> TravResult<()> {
+    let kind = match (declLinkage(&new_def), declLinkage(&old_def)) {
+        (NoLinkage, _) => NoLinkageOld,
+        _ => DisagreeLinkage,
     };
-
-    /*do*/
-    {
-        let def = ObjectDef(obj_def);
-
-        let redecl = withDefTable(defineScopedIdentWhen((shouldOverride(def)), ident, def));
-
-        checkVarRedef(def, redecl);
-        handleDecl(((if local { LocalEvent } else { DeclEvent })(def)))
-    }
+    redefErr(declIdent(&new_def), LevelError, new_def, old_def, kind)
 }
 
-pub fn updDefTable(f: fn(DefTable) -> DefTable) -> m<()> {
-    withDefTable((|st| ((), f(st))))
-}
 
-pub fn enterPrototypeScope() -> m<()> {
-    updDefTable(ST::enterBlockScope())
-}
-
-pub fn leavePrototypeScope() -> m<()> {
-    updDefTable(ST::leaveBlockScope())
-}
-
-pub fn enterFunctionScope() -> m<()> {
-    updDefTable(ST::enterFunctionScope())
-}
-
-pub fn leaveFunctionScope() -> m<()> {
-    updDefTable(ST::leaveFunctionScope())
-}
-
-pub fn enterBlockScope() -> m<()> {
-    updDefTable(ST::enterBlockScope())
-}
-
-pub fn leaveBlockScope() -> m<()> {
-    updDefTable(ST::leaveBlockScope())
-}
-
-pub fn lookupTypeDef(ident: Ident) -> m<Type> {
-
-    let wrongKindErrMsg = |d| {
-        __op_addadd("wrong kind of object: expected typedef but found ".to_string(),
-                    __op_addadd((objKindDescr(d)),
-                                __op_addadd(" (for identifier `".to_string(),
-                                            __op_addadd(identToString(ident), "\')".to_string()))))
-    };
-
-    __op_bind(getDefTable, |symt| match lookupIdent(ident, symt) {
-        None => {
-            astError((nodeInfo(ident)),
-                     __op_addadd("unbound typeDef: ".to_string(), identToString(ident)))
-        }
-        Some(Left(TypeDef(def_ident, ty, _, _))) => __op_rshift(addRef(ident, def_ident), ty),
-        Some(Right(d)) => astError((nodeInfo(ident)), (wrongKindErrMsg(d))),
-    })
-}
-
-pub fn lookupObject(ident: Ident) -> m<Option<IdentDecl>> {
-    /*do*/
-    {
-        let old_decl = liftM((lookupIdent(ident)), getDefTable);
-
-        mapMaybeM(old_decl, |obj| match obj {
-            Right(objdef) => __op_rshift(addRef(ident, objdef), objdef),
-            Left(_tydef) => {
-                astError((nodeInfo(ident)),
-                         (mismatchErr("lookupObject".to_string(),
-                                      "an object".to_string(),
-                                      "a typeDef".to_string())))
-            }
-        })
-    }
-}
-
-pub fn addRef(__use: u, def: d) -> m<()> {
-    match (nodeInfo(__use), nodeInfo(def)) {
-        (NodeInfo(_, _, useName), NodeInfo(_, _, defName)) => {
-            withDefTable((|dt| {
-                              ((),
-                               dt { refTable: insert((nameId(useName)), defName, (refTable(dt))) })
-                          }))
-        }
-        (_, _) => (),
-    }
-}
-
-pub fn mismatchErr(ctx: String, expect: String, found: String) -> String {
-    __op_addadd(ctx,
-                __op_addadd(": Expected ".to_string(),
-                            __op_addadd(expect, __op_addadd(", but found: ".to_string(), found))))
-}
-
-pub fn createSUERef(_0: NodeInfo, _1: Option<Ident>) -> m<SUERef> {
-    match (_0, _1) {
-        (_node_info, Some(ident)) => NamedRef(ident),
-        (node_info, None) => {
-            /* Expr::Error */
-            Error
-        }
-    }
-}
-
-pub fn handleTravError<a>(a: m<a>) -> m<Option<a>> {
-    catchTravError(liftM(Some, a), (|e| __op_rshift(recordError(e), None)))
-}
-
-pub fn hadHardErrors() -> bool {
-    any(isHardError)
-}
-
-pub fn astError<a>(node: NodeInfo, msg: String) -> m<a> {
-    throwTravError(invalidAST(node, msg))
-}
-
-pub fn throwOnLeft<a>(_0: Result<a, e>) -> m<a> {
-    match (_0) {
-        Err(err) => throwTravError(err),
-        Ok(v) => v,
-    }
-}
-
-pub fn warn(err: e) -> m<()> {
-    recordError((changeErrorLevel(err, LevelWarn)))
-}
-
-pub struct Trav<s, a> {
-    unTrav: fn(TravState<s>) -> Result<(a, TravState<s>), CError>,
-}
-fn unTrav(a: Trav) -> fn(TravState<s>) -> Result<(a, TravState<s>), CError> {
-    a.unTrav
-}
-
-pub fn modify(f: fn(TravState<s>) -> TravState<s>) -> Trav<s, ()> {
-    Trav((|s| Right(((), f(s)))))
-}
-
-pub fn gets<a>(f: fn(TravState<s>) -> a) -> Trav<s, a> {
-    Trav((|s| Right((f(s), s))))
-}
-
-pub fn get() -> Trav<s, TravState<s>> {
-    Trav((|s| Right((s, s))))
-}
-
-pub fn put(s: TravState<s>) -> Trav<s, ()> {
-    Trav((|_| Right(((), s))))
-}
-
-pub fn runTrav<a>(state: s, traversal: Trav<s, a>) -> Result<(a, TravState<s>), Vec<CError>> {
-
-    let action = /*do*/ {
-            withDefTable((__TODO_const(((), builtins))));
-            traversal
-        };
-
-    match unTrav(action, (initTravState(state))) {
-        Err(trav_err) => Err(vec![trav_err]),
-        Ok((v, ts)) if hadHardErrors((travErrors(ts))) => Err((travErrors(ts))),
-        Ok((v, ts)) => Ok((v, ts)),
-    }
-}
-
-pub fn runTrav_<a>(t: Trav<(), a>) -> Result<(a, Vec<CError>), Vec<CError>> {
-    fmap(fst,
-         runTrav((),
-                 /*do*/
-                 {
-                     let r = t;
-
-                     let es = getErrors;
-
-                     (r, es)
-                 }))
-}
-
-pub fn withExtDeclHandler<a>(action: Trav<s, a>,
-                             handler: fn(DeclEvent) -> Trav<s, ()>)
-                             -> Trav<s, a> {
-    /*do*/
-    {
-        modify(|st| st { doHandleExtDecl: handler });
-        action
-    }
-}
-
+#[derive(Clone, Copy)]
 pub enum CLanguage {
     C89,
     C99,
     GNU89,
     GNU99,
 }
-pub use self::CLanguage::*;
 
 pub struct TravOptions {
     language: CLanguage,
 }
-fn language(a: TravOptions) -> CLanguage {
-    a.language
-}
 
-pub struct TravState<s> {
+type ExtDeclHandler<S> = Fn(&mut TravState<S>, DeclEvent);
+
+pub struct TravState<S> {
     symbolTable: DefTable,
-    rerrors: RList<CError>,
-    nameGenerator: Vec<Name>,
-    doHandleExtDecl: fn(DeclEvent) -> Trav<s, ()>,
-    userState: s,
+    rerrors: Vec<CError>,
+    nameGenerator: Box<Iterator<Item=Name>>,
+    userState: S,
     options: TravOptions,
 }
-fn symbolTable(a: TravState) -> DefTable {
-    a.symbolTable
-}
-fn rerrors(a: TravState) -> RList<CError> {
-    a.rerrors
-}
-fn nameGenerator(a: TravState) -> Vec<Name> {
-    a.nameGenerator
-}
-fn doHandleExtDecl(a: TravState) -> fn(DeclEvent) -> Trav<s, ()> {
-    a.doHandleExtDecl
-}
-fn userState(a: TravState) -> s {
-    a.userState
-}
-fn options(a: TravState) -> TravOptions {
-    a.options
-}
 
-pub fn travErrors() -> Vec<CError> {
-    RList::reverse(rerrors)
-}
-
-pub fn initTravState(userst: s) -> TravState<s> {
-    TravState {
-        symbolTable: emptyDefTable,
-        rerrors: RList::empty,
-        nameGenerator: newNameSupply,
-        doHandleExtDecl: __TODO_const((())),
-        userState: userst,
-        options: TravOptions { language: C99 },
+impl<S> TravState<S> {
+    fn new(userst: S) -> TravState<S> {
+        TravState {
+            symbolTable: DefTable::new(),
+            rerrors: Vec::new(),
+            nameGenerator: new_name_supply(),
+            userState: userst,
+            options: TravOptions { language: CLanguage::C99 },
+        }
     }
 }
 
-pub fn modifyUserState(f: fn(s) -> s) -> Trav<s, ()> {
-    modify(|ts| ts { userState: f((userState(ts))) })
+pub struct Trav<S> {
+    state: TravState<S>,
+    doHandleExtDecl: Box<ExtDeclHandler<S>>,
 }
 
-pub fn getUserState() -> Trav<s, s> {
-    liftM(userState, get)
+pub fn runTrav<T, S, F>(state: S, mut do_traversal: F) -> Result<(T, TravState<S>), Vec<CError>>
+    where F: FnMut(&mut Trav<S>) -> TravResult<T>
+{
+    let mut trav = Trav { state: TravState::new(state), doHandleExtDecl: Box::new(|_, _| ()) };
+    trav.state.symbolTable = builtins();
+    match do_traversal(&mut trav) {
+        Err(trav_err) => Err(vec![trav_err]),
+        Ok(_) if hadHardErrors(&trav.state.rerrors) => Err(travErrors(&mut trav.state)),
+        Ok(v) => Ok((v, trav.state)),
+    }
 }
 
-pub fn modifyOptions(f: fn(TravOptions) -> TravOptions) -> Trav<s, ()> {
-    modify(|ts| ts { options: f((options(ts))) })
+pub fn runTrav_<T, F>(mut do_traversal: F) -> Result<(T, Vec<CError>), Vec<CError>>
+    where F: FnMut(&mut Trav<()>) -> TravResult<T>
+{
+    runTrav((), |trav| {
+        let v = do_traversal(trav)?;
+        Ok((v, travErrors(&mut trav.state)))
+    }).map(|x| x.0)
 }
 
-pub fn generateName() -> Trav<s, Name> {
-    __op_bind(get, |ts| {
-        /*do*/
-        {
-            let [new_name, gen_q] = nameGenerator(ts);
+pub type TravResult<T> = Result<T, CError>;
 
-            put(ts { nameGenerator: gen_q });
-            new_name
+impl<S> Trav<S> {
+    pub fn checkRedef<T: CNode, T1: CNode>(&mut self, subject: String, new_decl: T,
+                                           redecl_status: DeclarationStatus<T1>) -> TravResult<()> {
+        match redecl_status {
+            NewDecl => Ok(()),
+            Redeclared(old_def) => {
+                Err(redefinition(LevelError,
+                                 subject,
+                                 DuplicateDef,
+                                 new_decl.into_node_info(),
+                                 old_def.into_node_info()).toError())
+            }
+            KindMismatch(old_def) => {
+                Err(redefinition(LevelError,
+                                 subject,
+                                 DiffKindRedecl,
+                                 new_decl.into_node_info(),
+                                 old_def.into_node_info()).toError())
+            }
+            Shadowed(_old_def) => Ok(()),
+            KeepDef(_old_def) => Ok(()),
         }
-    })
-}
+    }
 
-pub fn mapMaybeM<a, b>(m: Option<a>, f: fn(a) -> m<b>) -> m<Option<b>> {
-    maybe((None), (liftM(Some, f)), m)
-}
+    pub fn handleDecl(&mut self, decl: DeclEvent) -> TravResult<()> {
+        (self.doHandleExtDecl)(&mut self.state, decl);
+        Ok(())
+    }
 
-pub fn maybeM<a>(m: Option<a>, f: fn(a) -> m<()>) -> m<()> {
-    maybe((()), f, m)
-}
+    pub fn handleTagDecl(&mut self, decl: TagFwdDecl) -> TravResult<()> {
+        let redecl = self.state.symbolTable.declareTag(decl.sueRef(), decl.clone());
+        self.checkRedef(decl.sueRef().to_string(), decl, redecl)
+    }
 
-pub fn mapSndM<a, b>(f: fn(b) -> m<c>, (a, b): (a, b)) -> m<(a, c)> {
-    liftM((__op_tuple2(a)), (f(b)))
-}
+    pub fn handleTagDef(&mut self, def: TagDef) -> TravResult<()> {
+        let redecl = self.state.symbolTable.defineTag(def.sueRef(), def.clone());
+        self.checkRedef(def.sueRef().to_string(), def.clone(), redecl)?;
+        self.handleDecl(TagEvent(def))
+    }
 
-pub fn concatMapM<a, b>(f: fn(a) -> m<Vec<b>>) -> m<Vec<b>> {
-    liftM(concat, mapM(f))
+    pub fn handleEnumeratorDef(&mut self, enumerator: Enumerator) -> TravResult<()> {
+        let ident = declIdent(&enumerator);
+        let redecl = self.state.symbolTable.defineScopedIdent(ident.clone(), EnumeratorDef(enumerator));
+        self.checkRedef(ident.clone().to_string(), ident, redecl)
+    }
+
+    pub fn handleTypeDef(&mut self, typeDef: TypeDef) -> TravResult<()> {
+        match typeDef.clone() {
+            TypeDef(ident, t1, ..) => {
+                let redecl = self.state.symbolTable.defineTypeDef(ident.clone(), typeDef.clone());
+
+                match redecl {
+                    Redeclared(Left(TypeDef(_, ref t2, _, _))) if sameType(t1, t2.clone()) => (),
+                    _ => self.checkRedef(ident.to_string(), typeDef.clone(), redecl)?,
+                };
+                self.handleDecl(TypeDefEvent(typeDef))
+            }
+        }
+    }
+
+    pub fn handleAsmBlock(&mut self, asm: AsmBlock) -> TravResult<()> {
+        self.handleDecl(AsmEvent(asm))
+    }
+
+    pub fn _checkIdentTyRedef(&mut self, _0: IdentEntry, _1: DeclarationStatus<IdentEntry>) -> TravResult<()> {
+        match (_0, _1) {
+            (Right(decl), status) => self.checkVarRedef(decl, status),
+            (Left(tydef), KindMismatch(old_def)) => {
+                redefErr(identOfTypeDef(&tydef), LevelError, tydef, old_def, DiffKindRedecl)
+            }
+            (Left(tydef), Redeclared(old_def)) => {
+                redefErr(identOfTypeDef(&tydef), LevelError, tydef, old_def, DuplicateDef)
+            }
+            (Left(_tydef), _) => Ok(()),
+        }
+    }
+
+    pub fn checkVarRedef(&mut self, def: IdentDecl, redecl: DeclarationStatus<IdentEntry>) -> TravResult<()> {
+        let new_ty = declType(&def);
+
+        fn canBeOverwritten(def: &IdentDecl) -> bool {
+            match *def {
+                Declaration(_) => true,
+                ObjectDef(ref od) => od.isTentative(),
+                _ => false,
+            }
+        }
+
+        fn agreeOnLinkage(new_def: &IdentDecl, old_def: &IdentDecl) -> bool {
+            if declStorage(old_def) == FunLinkage(InternalLinkage) {
+                true
+            } else if !declStorage(new_def).hasLinkage() || !declStorage(old_def).hasLinkage() {
+                false
+            } else if declLinkage(new_def) != declLinkage(old_def) {
+                false
+            } else {
+                true
+            }
+        }
+
+        match redecl {
+            KindMismatch(old_def) => {
+                redefErr(declIdent(&def), LevelError, def, old_def, DiffKindRedecl)
+            }
+            KeepDef(Right(old_def)) => {
+                if !agreeOnLinkage(&def, &old_def) {
+                    linkageErr(def, old_def)
+                } else {
+                    checkCompatibleTypes(new_ty, declType(&old_def)).map_err(Error::toError)
+                }
+            }
+            Redeclared(Right(old_def)) => {
+                if !agreeOnLinkage(&def, &old_def) {
+                    linkageErr(def, old_def)
+                } else if !canBeOverwritten(&old_def) {
+                    redefErr(declIdent(&def), LevelError, def, old_def, DuplicateDef)
+                } else {
+                    checkCompatibleTypes(new_ty, declType(&old_def)).map_err(Error::toError)
+                }
+            }
+            _ => Ok(()),
+        }
+    }
+
+    pub fn handleVarDecl(&mut self, is_local: bool, decl: Decl) -> TravResult<()> {
+        let def = self.enterDecl(decl, |_| false)?;
+        self.handleDecl(if is_local { LocalEvent(def) } else { DeclEvent(def) })
+    }
+
+    pub fn handleParamDecl(&mut self, decl: ParamDecl) -> TravResult<()> {
+        match decl.clone() {
+            AbstractParamDecl(_, _) => self.handleDecl(ParamEvent(decl)),
+            ParamDecl(vardecl, node) => {
+                let def = ObjectDef(ObjDef(vardecl, None, node));
+
+                let redecl = self.state.symbolTable.defineScopedIdent(declIdent(&def), def.clone());
+
+                self.checkVarRedef(def, redecl)?;
+                self.handleDecl(ParamEvent(decl))
+            }
+        }
+    }
+
+    pub fn enterDecl<F>(&mut self, decl: Decl, cond: F) -> TravResult<IdentDecl>
+        where F: Fn(&IdentDecl) -> bool
+    {
+        let def = Declaration(decl);
+        let redecl = self.state.symbolTable.defineScopedIdentWhen(cond, declIdent(&def), def.clone());
+        self.checkVarRedef(def.clone(), redecl)?;
+        Ok(def)
+    }
+
+    pub fn handleFunDef(&mut self, ident: Ident, fun_def: FunDef) -> TravResult<()> {
+        let def = FunctionDef(fun_def);
+
+        let redecl = self.state.symbolTable.defineScopedIdentWhen(isDeclaration, ident, def.clone());
+
+        self.checkVarRedef(def.clone(), redecl)?;
+        self.handleDecl(DeclEvent(def))
+    }
+
+    pub fn handleObjectDef(&mut self, local: bool, ident: Ident, obj_def: ObjDef) -> TravResult<()> {
+        fn isTentativeDef(def: &IdentDecl) -> bool {
+            match *def {
+                ObjectDef(ref object_def) => object_def.isTentative(),
+                _ => false,
+            }
+        }
+
+        let def = ObjectDef(obj_def);
+
+        let redecl = {
+            let shouldOverride = |old: &IdentDecl| {
+                isDeclaration(old) || !isTentativeDef(&def) || isTentativeDef(old)
+            };
+            self.state.symbolTable.defineScopedIdentWhen(shouldOverride, ident, def.clone())
+        };
+
+        self.checkVarRedef(def.clone(), redecl)?;
+        self.handleDecl(if local { LocalEvent(def) } else { DeclEvent(def) })
+    }
+
+    pub fn enterPrototypeScope(&mut self) {
+        self.state.symbolTable.enterBlockScope();
+    }
+
+    pub fn leavePrototypeScope(&mut self) {
+        self.state.symbolTable.leaveBlockScope();
+    }
+
+    pub fn enterFunctionScope(&mut self) {
+        self.state.symbolTable.enterFunctionScope();
+    }
+
+    pub fn leaveFunctionScope(&mut self) {
+        self.state.symbolTable.leaveFunctionScope();
+    }
+
+    pub fn enterBlockScope(&mut self) {
+        self.state.symbolTable.enterBlockScope();
+    }
+
+    pub fn leaveBlockScope(&mut self) {
+        self.state.symbolTable.leaveBlockScope();
+    }
+
+    pub fn lookupTypeDef(&mut self, ident: Ident) -> TravResult<Type> {
+        match self.state.symbolTable.lookupIdent(&ident).cloned() {
+            None => {
+                Err(invalidAST(ident.node_info().clone(),
+                               format!("unbound typeDef: {}", ident.to_string())).toError())
+            }
+            Some(Right(d)) => {
+                Err(invalidAST(ident.node_info().clone(),
+                               format!("wrong kind of object: expected typedef but found {} \
+                                        (for identifier `{}')",
+                                       objKindDescr(&d), ident.to_string())).toError())
+            }
+            Some(Left(TypeDef(def_ident, ty, _, _))) => {
+                self.addRef(ident, def_ident);
+                Ok(ty)
+            }
+        }
+    }
+
+    pub fn lookupObject(&mut self, ident: Ident) -> TravResult<Option<IdentDecl>> {
+        match self.state.symbolTable.lookupIdent(&ident).cloned() {
+            None => Ok(None),
+            Some(Right(objdef)) => {
+                self.addRef(ident, objdef.clone());
+                Ok(Some(objdef))
+            }
+            Some(Left(_)) => {
+                Err(invalidAST(ident.node_info().clone(),
+                               mismatchErr("lookupObject", "an object", "a typeDef")).toError())
+            }
+        }
+    }
+
+    pub fn addRef<U: CNode, D: CNode>(&mut self, use_: U, def: D) {
+        match (use_.into_node_info(), def.into_node_info()) {
+            (NodeInfo(_, _, useName), NodeInfo(_, _, defName)) => {
+                self.state.symbolTable.refTable.insert(useName, defName);
+            }
+            _ => {}
+        }
+    }
+
+    pub fn createSUERef(&mut self, node_info: NodeInfo, ident: Option<Ident>) -> TravResult<SUERef> {
+        match ident {
+            Some(ident) => Ok(NamedRef(ident)),
+            None => if let Some(name) = node_info.clone().name() {
+                Ok(AnonymousRef(name))
+            } else {
+                Err(invalidAST(node_info, "struct/union/enum definition without unique name".into()).toError())
+            }
+        }
+    }
+
+    pub fn recordError<E: Error + 'static>(&mut self, err: E) {
+        self.state.rerrors.push(err.toError());
+    }
+
+    pub fn handleTravError<T>(&mut self, v: TravResult<T>) -> TravResult<Option<T>> {
+        match v {
+            Ok(v) => Ok(Some(v)),
+            Err(e) => {
+                self.recordError(e);
+                Ok(None)
+            }
+        }
+    }
+
+    pub fn warn<E: Error + Clone + 'static>(&mut self, err: E) {
+        self.recordError(err.changeErrorLevel(LevelWarn))
+    }
+
+    pub fn withExtDeclHandler(&mut self, handler: Box<ExtDeclHandler<S>>) {
+        // TODO: should this be scoped (take closure)?
+        self.doHandleExtDecl = handler;
+    }
+
+    pub fn modifyUserState<F>(&mut self, mut f: F)
+        where F: FnMut(&mut S)
+    {
+        f(&mut self.state.userState)
+    }
+
+    pub fn getUserState(&self) -> &S {
+        &self.state.userState
+    }
+
+    pub fn modifyOptions<F>(&mut self, mut f: F)
+        where F: FnMut(&mut TravOptions)
+    {
+        f(&mut self.state.options)
+    }
+
+    pub fn generateName(&mut self) -> Name {
+        self.state.nameGenerator.next().unwrap()
+    }
 }
