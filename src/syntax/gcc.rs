@@ -165,20 +165,13 @@ pub fn buildCppArgs(CppArgs {
     let tOption = |_0| match (_0) {
         IncludeDir(incl) => vec!["-I".to_string(), incl.to_string()],
         Define(key, value) => {
-            vec![__op_addadd("-D".to_string(),
-                             __op_addadd(key,
-                                         (__op_addadd(if value.is_empty() {
-                                                          "".to_string()
-                                                      } else {
-                                                          "=".to_string()
-                                                      },
-                                                      value))))]
+            vec![format!("-D{}{}{}", key, if value.is_empty() { "" } else { "=" }, value)]
         }
-        Undefine(key) => vec![__op_addadd("-U".to_string(), key)],
+        Undefine(key) => vec![format!("-U{}", key)],
         IncludeFile(f) => vec!["-include".to_string(), f.to_string()],
     };
-    
-    let outputFileOpt = output_file_opt.map(|x| vec!["-o".to_string(), x.to_string()]).unwrap_or(vec![]);
+
+    let outputFileOpt = output_file_opt.map_or(vec![], |x| vec!["-o".to_string(), x.to_string()]);
 
     __op_addadd((__concatMap!(tOption, options)),
                 __op_addadd(outputFileOpt,

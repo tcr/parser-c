@@ -33517,19 +33517,16 @@ pub fn idkwtok(_0: String, _curry_1: Position) -> P<CToken> {
                 box move |name| {
                     let pos = pos.clone();
 
-                    let len = match length(cs.clone()) {
-                            l => {
-                                l
-                            },
-                        };
+                    let len = cs.len();
 
                     let ident = mkIdent(pos.clone(), cs.clone(), name);
 
                     thenP(isTypeIdent(ident.clone()), box move |tyident| {
 
-                    if tyident {                     
-__return((CTokTyIdent((pos.clone(), len), ident.clone())))} else {
-__return((CTokIdent((pos.clone(), len), ident.clone())))
+                    if tyident {
+                        __return(CTokTyIdent((pos.clone(), len as isize), ident.clone()))
+                    } else {
+                        __return(CTokIdent((pos.clone(), len as isize), ident.clone()))
                     }
                     })
                 })
@@ -33668,10 +33665,10 @@ pub fn lexicalError<a: 'static>() -> P<a> {
                 let (c, _) = takeChar(input);
                 let pos = pos.clone();
 
-        failP(pos, vec![
-                "Lexical error !".to_string(),
-                __op_addadd("The character ".to_string(), __op_addadd(show(c), " does not fit here.".to_string())),
-            ])
+                failP(pos, vec![
+                    "Lexical error !".to_string(),
+                    format!("The character {} does not fit here.", c),
+                ])
             })
         })
     }
@@ -33681,9 +33678,9 @@ pub fn parseError<a: 'static>() -> P<a> {
     /*do*/ {
         thenP(getLastToken(), box move |lastTok| {
 
-        failP((posOf(lastTok.clone())), vec![
+            failP((posOf(lastTok.clone())), vec![
                 "Syntax error !".to_string(),
-                __op_addadd("The symbol `".to_string(), __op_addadd(show(lastTok), "\' does not fit here.".to_string())),
+                format!("The symbol `{}' does not fit here.", lastTok),
             ])
         })
     }

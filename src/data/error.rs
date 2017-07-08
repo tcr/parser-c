@@ -9,6 +9,9 @@ use corollary_support::*;
 // use Language::C::Data::Node;
 // use Language::C::Data::Position;
 
+use std::iter;
+use std::fmt::Write;
+
 use data::position::*;
 use data::node::*;
 use data::position::Pos;
@@ -134,68 +137,40 @@ pub fn showError<E: Error>(short_msg: String, e: E) -> String {
     showErrorInfo(short_msg, e.errorInfo())
 }
 
-pub fn showErrorInfo(short_msg: String, ErrorInfo(level, pos, msgs): ErrorInfo) -> String {
 
-    let pos2 = pos.clone();
-    let showPos = |p: Position| -> String {
-        if p.isSource() {
-            __op_addadd(p.file(),
-                __op_addadd(":".to_string(),
-                    __op_addadd(show(pos2.row()),
-                        __op_addadd(": ".to_string(),
-                            __op_addadd("(column ".to_string(),
-                                __op_addadd(show(pos2.column()),
-                                    ") ".to_string()))))))
-        } else {
-            __op_addadd(show(p.clone()), ":: ".to_string())
-        }
-    };
+pub const INDENT: &str = "  ";
 
-    let header = __op_addadd(showPos(pos),
-                             __op_addadd("[".to_string(),
-                                         __op_addadd(show(level), "]".to_string())));
+pub const INTERNAL_ERR_PREFIX: &str = "parser-c : Internal Error\n\
+     This is propably a bug, and should be reported at \
+     https://github.com/tcr/parser-c";
 
-    let showMsgLines = |mut _0: Vec<String>| {
-        if _0.len() == 0 {
-            internalErr("No short message or error message provided.".to_string())
-        } else {
-            let x = _0.remove(0);
-            let xs = _0;
-            __op_addadd(indent(),
-                __op_addadd(">>> ".to_string(),
-                    __op_addadd(x,
-                        __op_addadd("\n".to_string(),
-                            unlines((__map!(|x| {
-                                        __op_addadd(indent(), x)
-                                    },
-                                    xs)))))))
-        }
-    };
 
-    __op_addadd(header,
-                showMsgLines(if short_msg.is_empty() {
-                                msgs
-                            } else {
-                                __op_concat(short_msg, msgs)
-                            }))
+pub fn showErrorInfo(short_msg: String, ErrorInfo(level, pos, mut msgs): ErrorInfo) -> String {
+    let mut res = String::new();
+
+    if pos.isSource() {
+        write!(res, "{}:{}: (column {}) ", pos.file(), pos.row(), pos.column());
+    } else {
+        write!(res, "{}:: ", pos);
+    }
+    write!(res, "[{}]", level);
+    if !short_msg.is_empty() {
+        msgs.insert(0, short_msg);
+    }
+    if msgs.is_empty() {
+        internalErr("No short message or error message provided.");
+    }
+    for msg in msgs {
+        write!(res, "{}>>> {}\n", INDENT, msg);
+    }
+
+    res
 }
 
-pub fn internalErrPrefix() -> String {
-    unlines(vec!["Language.C : Internal Error".to_string(),
-                 __op_addadd("This is propably a bug, and should be reported at ".to_string(),
-                             "http://www.sivity.net/projects/language.c/newticket".to_string())])
-}
-
-pub fn internalErr<a>(msg: String) -> a {
-    __error!(__op_addadd(internalErrPrefix,
-                         __op_addadd("\n".to_string(),
-                                     __op_addadd(indentLines(msg), "\n".to_string()))));
-}
-
-pub fn indent() -> String {
-    "  ".to_string()
-}
-
-pub fn indentLines(input: String) -> String {
-    unlines(__map!(|x| __op_addadd(indent(), x), lines(input)))
+pub fn internalErr(msg: &str) -> ! {
+    let mut res = String::new();
+    for line in msg.split('\n') {
+        write!(res, "{}{}\n", INDENT, line);
+    }
+    panic!("{}\n{}", INTERNAL_ERR_PREFIX, res);
 }

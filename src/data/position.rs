@@ -21,6 +21,7 @@ pub enum Position {
 }
 pub use self::Position::{NoPosition, BuiltinPosition, InternalPosition};
 
+// XXX: replace this later
 impl ::std::fmt::Display for Position {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         write!(f, "{:?}", self)

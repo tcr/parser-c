@@ -105,7 +105,7 @@ pub fn bits28() -> isize {
 }
 
 pub fn mkIdent(pos: Position, s: String, name: Name) -> Ident {
-    Ident(s.clone(), (quad(s.clone())), (mkNodeInfo_q(pos.clone(), (pos, length(s)), name)))
+    Ident(s.clone(), (quad(s.clone())), (mkNodeInfo_q(pos.clone(), (pos, s.len() as isize), name)))
 }
 
 pub fn internalIdent(s: String) -> Ident {
@@ -113,7 +113,7 @@ pub fn internalIdent(s: String) -> Ident {
 }
 
 pub fn internalIdentAt(pos: Position, s: String) -> Ident {
-    Ident(s.clone(), (quad(s.clone())), (mkNodeInfoPosLen(pos.clone(), (pos, length(s)))))
+    Ident(s.clone(), (quad(s.clone())), (mkNodeInfoPosLen(pos.clone(), (pos, s.len() as isize))))
 }
 
 pub fn builtinIdent(s: String) -> Ident {

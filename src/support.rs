@@ -15,12 +15,7 @@ pub trait OpAddable {
 pub fn __op_addadd<A: OpAddable>(left: A, right: A) -> A {
     OpAddable::add(left, right)
 }
-impl OpAddable for String {
-    fn add(mut self, right: Self) -> Self {
-        self.push_str(&right);
-        self
-    }
-}
+
 impl<A> OpAddable for Vec<A> {
     fn add(mut self, right: Self) -> Self {
         self.extend(right);
@@ -35,12 +30,6 @@ pub trait OpConcatable {
 }
 pub fn __op_concat<A: OpConcatable>(left: A::Item, right: A) -> A {
     OpConcatable::concat(right, left)
-}
-impl OpConcatable for String {
-    type Item = char;
-    fn concat(self, right: Self::Item) -> Self {
-        format!("{}{}", right, self)
-    }
 }
 impl<A> OpConcatable for Vec<A> {
     type Item = A;
@@ -144,11 +133,6 @@ pub trait Lengthable {
 }
 pub fn length<A: Lengthable>(left: A) -> isize {
     Lengthable::get_len(&left)
-}
-impl Lengthable for String {
-    fn get_len(&self) -> isize {
-        self.len() as isize
-    }
 }
 impl<T> Lengthable for Vec<T> {
     fn get_len(&self) -> isize {
