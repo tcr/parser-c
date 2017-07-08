@@ -102,6 +102,7 @@ pub fn show<A: Display>(a: A) -> String {
     format!("{}", a)
 }
 
+#[derive(Debug)]
 pub enum ExitCode {
     ExitSuccess,
     ExitFailure(isize),
@@ -699,14 +700,6 @@ macro_rules! __concatMap {
         $target.into_iter()
             .flat_map($fn)
             .collect::<Vec<_>>()
-    }
-}
-
-#[macro_export]
-macro_rules! __error {
-    ($fn: expr) => {
-        // TODO
-        panic!("ERROR!")
     }
 }
 

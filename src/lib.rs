@@ -71,7 +71,7 @@ fn parseCFile<C: Preprocessor>(cpp: C,
                                    -> Result<CTranslUnit, ParseError> {
 
     let handleCppError = |_0| match (_0) {
-        Err(exitCode) => __error!(format!("Preprocessor failed with {}", exitCode)),
+        Err(exitCode) => panic!("Preprocessor failed with {:?}", exitCode),
         Ok(ok) => ok,
     };
 

@@ -487,7 +487,7 @@ pub fn tNumType(NumTypeSpec(basetype, sgn, sz, iscomplex): NumTypeSpec)
         (BaseFloat, NoSignSpec, NoSizeMod) => floatType(TyFloat),
         (BaseDouble, NoSignSpec, NoSizeMod) => floatType(TyDouble),
         (BaseDouble, NoSignSpec, LongMod) => floatType(TyLDouble),
-        (_, _, _) => __error!("Bad AST analysis".to_string()),
+        (_, _, _) => panic!("Bad AST analysis"),
     }
 }
 

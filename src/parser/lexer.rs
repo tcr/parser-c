@@ -33262,7 +33262,7 @@ pub fn readCOctal(s: String) -> Result<CInteger, String> {
             readCInteger(DecRepr, s)
         }
     }  else {
-        __error!("ReadOctal: string does not start with `0\'".to_string())
+        panic!("ReadOctal: string does not start with `0'")
     }
 }
 
@@ -33601,7 +33601,7 @@ pub fn unescapeMultiChars(cs: String) -> String {
     } else if cs.len() == 1 && cs.chars().nth(0).unwrap() == '\'' {
         "".to_string()
     } else {
-        __error!("Unexpected end of multi-char constant".to_string())
+        panic!("Unexpected end of multi-char constant")
     }
 }
 
@@ -33634,7 +33634,7 @@ pub fn token_plus<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
 pub type AlexInput = (Position, InputStream);
 
 pub fn alexInputPrevChar(_: AlexInput) -> char {
-    __error!("alexInputPrevChar not used".to_string())
+    panic!("alexInputPrevChar not used")
 }
 
 pub fn alexGetByte((p, is): AlexInput) -> Option<(Word8, AlexInput)> {

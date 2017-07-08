@@ -46,7 +46,7 @@ pub fn getCCharAsInt(_0: CChar) -> isize {
     match (_0) {
         CChar(c, _) => fromIntegral(c as isize),
         CChars(_cs, _) => {
-            __error!("integer value of multi-character character constants is implementation defined".to_string())
+            panic!("integer value of multi-character character constants is implementation defined")
         }
     }
 }
@@ -337,7 +337,7 @@ pub fn unescapeChar(_0: String) -> (char, String) {
     }
 
     // []
-    __error!("unescape char: empty string".to_string())
+    panic!("unescape char: empty string")
 }
 
 pub fn readOct_q(s: String) -> Box<ReadS<char>> {
@@ -369,19 +369,19 @@ pub fn dQuote(s: String) -> Box<ShowS> {
     box showString(format!("\"{}\"", s))
 }
 
-pub fn head_q<a>(_0: &str, mut _1: Vec<a>) -> a {
+pub fn head_q<a>(msg: &str, mut _1: Vec<a>) -> a {
     if _1.is_empty() {
-        __error!(_0);
+        panic!("{}", msg);
     } else {
         _1.remove(0)
     }
 }
 
-pub fn head_q_str(_0: String, _1: String) -> char {
+pub fn head_q_str(msg: &str, _1: String) -> char {
     if let Some(c) = _1.chars().next() {
        c
     } else {
-        __error!(_0);
+        panic!("{}", msg);
     }
 }
 

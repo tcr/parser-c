@@ -41639,7 +41639,8 @@ pub fn withLength<a: Clone + 'static>(nodeinfo: NodeInfo, mkAttrNode: Box<Fn(Nod
         thenP(getSavedToken(), box move |lastTok| {
             let firstPos = posOfNode(nodeinfo.clone());
 
-            let attrs = mkNodeInfo_q(firstPos, (posLenOfTok(lastTok)), nameOfNode(nodeinfo.clone()).unwrap_or_else(|| __error!("nameOfNode".to_string())));
+            let attrs = mkNodeInfo_q(firstPos, (posLenOfTok(lastTok)),
+                                     nameOfNode(nodeinfo.clone()).unwrap_or_else(|| panic!("nameOfNode")));
 
             __return((mkAttrNode(attrs)))
         })
@@ -42158,7 +42159,7 @@ pub fn happyFail<a0: 'static>(_0: isize, _1: CToken, _2: HappyState<CToken, Box<
 }
 
 pub fn notHappyAtAll<a: 'static>() -> a {
-    __error!("Internal Happy error\n".to_string())
+    panic!("Internal Happy error")
 }
 
 pub fn happyDoSeq<a, b>(a: a, b: b) -> b {

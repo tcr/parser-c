@@ -192,7 +192,7 @@ pub fn leaveScope() -> P<()> {
     P::with(box |s: PState| {
         let mut ss = s.scopes.clone();
         if ss.is_empty() {
-            __error!("leaveScope: already in global scope".to_string());
+            panic!("leaveScope: already in global scope");
         } else {
             let tyids = ss.remove(0);
             let ss_q = ss;

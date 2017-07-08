@@ -292,11 +292,11 @@ pub fn exportStorage(_0: Storage) -> Vec<CStorageSpec> {
         Auto(reg) => if reg { vec![CRegister(ni)] } else { vec![] },
         Static(InternalLinkage, thread_local) => threadLocal(thread_local, vec![CStatic(ni)]),
         Static(ExternalLinkage, thread_local) => threadLocal(thread_local, vec![CExtern(ni)]),
-        Static(NoLinkage, _) => __error!("impossible storage: static without linkage".to_string()),
+        Static(NoLinkage, _) => panic!("impossible storage: static without linkage"),
         FunLinkage(InternalLinkage) => vec![CStatic(ni)],
         FunLinkage(ExternalLinkage) => vec![],
         FunLinkage(NoLinkage) => {
-            __error!("impossible storage: function without linkage".to_string())
+            panic!("impossible storage: function without linkage")
         }
     }
 }
@@ -319,7 +319,7 @@ pub fn fromDirectType(_0: Type) -> TypeName {
     match (_0) {
         DirectType(ty, _, _) => ty,
         TypeDefType(TypeDefRef(_, ty, _), _, _) => fromDirectType(ty),
-        _ => __error!("fromDirectType".to_string()),
+        _ => panic!("fromDirectType"),
     }
 }
 

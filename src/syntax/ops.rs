@@ -25,7 +25,7 @@ pub use self::CAssignOp::*;
 
 pub fn assignBinop(_0: CAssignOp) -> CBinaryOp {
     match (_0) {
-        CAssignOp => __error!("direct assignment has no binary operator".to_string()),
+        CAssignOp => panic!("direct assignment has no binary operator"),
         CMulAssOp => CMulOp,
         CDivAssOp => CDivOp,
         CRmdAssOp => CRmdOp,

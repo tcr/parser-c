@@ -46,7 +46,7 @@ pub fn enterNewScope<a, k>(NsMap(gs, lss): NameSpaceMap<k, a>) -> NameSpaceMap<k
 
 pub fn leaveScope<a, k>(_0: NameSpaceMap<k, a>) -> (NameSpaceMap<k, a>, Vec<(k, a)>) {
     match (_0) {
-        NsMap(_, []) => __error!("NsMaps.leaveScope: No local scope!".to_string()),
+        NsMap(_, []) => panic!("NsMaps.leaveScope: No local scope!"),
         NsMap(gs, [ls, lss]) => (NsMap(gs, lss), ls),
     }
 }
