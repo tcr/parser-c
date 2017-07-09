@@ -35653,7 +35653,7 @@ pub fn happyReduction_4<t>(_0: HappyStk<HappyAbsSyn>, _1: t) -> P<HappyAbsSyn> {
                                             let decls = decls.clone();
                                             __return(CTranslationUnit::<NodeInfo>(
                                                 decls.clone(),
-                                                (mkNodeInfo_q(p.clone(), (p.clone(), 0), n.clone())),
+                                                (NodeInfo::new(p.clone(), (p.clone(), 0), n.clone())),
                                             ))
                                         })
                                     })
@@ -41626,7 +41626,7 @@ pub fn withNodeInfo<a: Clone + 'static, node: Pos + Clone + 'static>(node: node,
             thenP(getSavedToken(), box move |lastTok| {
                 let firstPos = posOf(node.clone());
 
-                let attrs = mkNodeInfo_q(firstPos, (posLenOfTok(lastTok)), name.clone());
+                let attrs = NodeInfo::new(firstPos, (posLenOfTok(lastTok)), name.clone());
 
                 __return((mkAttrNode(attrs)))
             })
@@ -41637,9 +41637,10 @@ pub fn withNodeInfo<a: Clone + 'static, node: Pos + Clone + 'static>(node: node,
 pub fn withLength<a: Clone + 'static>(nodeinfo: NodeInfo, mkAttrNode: Box<Fn(NodeInfo) -> a>) -> P<a> {
     /*do*/ {
         thenP(getSavedToken(), box move |lastTok| {
-            let firstPos = posOfNode(nodeinfo.clone());
+            let firstPos = nodeinfo.clone().pos();
 
-            let attrs = mkNodeInfo_q(firstPos, (posLenOfTok(lastTok)), nameOfNode(nodeinfo.clone()).unwrap_or_else(|| __error!("nameOfNode".to_string())));
+            let attrs = NodeInfo::new(firstPos, (posLenOfTok(lastTok)),
+                                     nodeinfo.name().unwrap_or_else(|| panic!("nameOfNode")));
 
             __return((mkAttrNode(attrs)))
         })
@@ -41668,7 +41669,7 @@ pub fn reverseDeclr(CDeclrR(ide, reversedDDs, asmname, cattrs, at): CDeclrR) -> 
 pub fn withAttribute<node: Pos + Clone + 'static>(node: node, cattrs: Vec<CAttribute<NodeInfo>>, mkDeclrNode: Box<Fn(NodeInfo) -> CDeclrR>) -> P<CDeclrR> {
     /*do*/ {
         thenP(getNewName(), box move |name| {
-            let attrs = mkNodeInfo((posOf(node.clone())), name);
+            let attrs = NodeInfo::with_pos_name(node.clone().posOf(), name);
 
             let newDeclr = appendDeclrAttrs(cattrs.clone(), mkDeclrNode(attrs));
 
@@ -41682,7 +41683,7 @@ pub fn withAttributePF<node: Pos + Clone + 'static>(node: node, cattrs: Vec<CAtt
     /*do*/ {
         thenP(getNewName(), box move |name| {
                 let mkDeclrCtor = mkDeclrCtor.clone();
-            let attrs = mkNodeInfo((posOf(node.clone())), name);
+            let attrs = NodeInfo::with_pos_name(node.clone().posOf(), name);
 
             let cattrs = cattrs.clone();
 
@@ -41827,7 +41828,7 @@ impl<A: Pos> Pos for Reversed<A> {
 }
 
 pub fn emptyDeclr() -> CDeclrR {
-    CDeclrR(None, (empty)(), None, vec![], undefNode())
+    CDeclrR(None, (empty)(), None, vec![], NodeInfo::undef())
 }
 
 pub fn mkVarDeclr(ident: Ident, _curry_1: NodeInfo) -> CDeclrR {
@@ -42158,7 +42159,7 @@ pub fn happyFail<a0: 'static>(_0: isize, _1: CToken, _2: HappyState<CToken, Box<
 }
 
 pub fn notHappyAtAll<a: 'static>() -> a {
-    __error!("Internal Happy error\n".to_string())
+    panic!("Internal Happy error")
 }
 
 pub fn happyDoSeq<a, b>(a: a, b: b) -> b {

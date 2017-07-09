@@ -10,10 +10,10 @@ use corollary_support::*;
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum Position {
     Position {
-        posOffset: isize,
-        posFile: String,
-        posRow: isize,
-        posColumn: isize,
+        offset: isize,
+        file: String,
+        row: isize,
+        column: isize,
     },
     NoPosition,
     BuiltinPosition,
@@ -21,49 +21,119 @@ pub enum Position {
 }
 pub use self::Position::{NoPosition, BuiltinPosition, InternalPosition};
 
+// XXX: replace this later
 impl ::std::fmt::Display for Position {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-pub fn posOffset(p: Position) -> isize {
-    if let Position::Position { posOffset, .. } = p {
-        posOffset
-    } else {
-        panic!("Non Position::Position passed to posOffset")
+impl Position {
+    pub fn new(offset: isize, file: String, row: isize, column: isize) -> Position {
+        Position::Position { offset, file, row, column }
     }
-}
 
-pub fn posFile(p: Position) -> String {
-    if let Position::Position { posFile, .. } = p {
-        posFile
-    } else {
-        panic!("Non Position::Position passed to posFile")
+    pub fn from_file(file: FilePath) -> Position {
+        Self::new(0, file.into(), 1, 1)
     }
-}
 
-pub fn posRow(p: Position) -> isize {
-    if let Position::Position { posRow, .. } = p {
-        posRow
-    } else {
-        panic!("Non Position::Position passed to posRow")
+    pub fn none() -> Position {
+        NoPosition
     }
-}
 
-pub fn posColumn(p: Position) -> isize {
-    if let Position::Position { posColumn, .. } = p {
-        posColumn
-    } else {
-        panic!("Non Position::Position passed to posColumn")
+    pub fn builtin() -> Position {
+        BuiltinPosition
+    }
+
+    pub fn internal() -> Position {
+        InternalPosition
+    }
+
+    pub fn offset(&self) -> isize {
+        if let Position::Position { offset, .. } = *self {
+            offset
+        } else {
+            panic!("Non Position::Position passed to posOffset")
+        }
+    }
+
+    pub fn file(&self) -> String {
+        if let Position::Position { ref file, .. } = *self {
+            file.clone()
+        } else {
+            panic!("Non Position::Position passed to posFile")
+        }
+    }
+
+    pub fn row(&self) -> isize {
+        if let Position::Position { row, .. } = *self {
+            row
+        } else {
+            panic!("Non Position::Position passed to posRow")
+        }
+    }
+
+    pub fn column(&self) -> isize {
+        if let Position::Position { column, .. } = *self {
+            column
+        } else {
+            panic!("Non Position::Position passed to posColumn")
+        }
+    }
+
+    pub fn isSource(&self) -> bool {
+        match *self {
+            Position::Position { .. } => true,
+            _ => false,
+        }
+    }
+
+    pub fn isNone(&self) -> bool {
+        self == &NoPosition
+    }
+
+    pub fn isBuiltin(&self) -> bool {
+        self == &BuiltinPosition
+    }
+
+    pub fn isInternal(&self) -> bool {
+        self == &InternalPosition
+    }
+
+    pub fn inc(self, by: isize) -> Position {
+        match self {
+            Position::Position { offset, file, row, column } =>
+                Self::new(offset + by, file, row, column + by),
+            p => p,
+        }
+    }
+
+    pub fn retPos(self) -> Position {
+        match self {
+            Position::Position { offset, file, row, .. } =>
+                Self::new(offset + 1, file, row + 1, 1),
+            p => p,
+        }
+    }
+
+    pub fn adjust(self, new_file: FilePath, row: isize) -> Position {
+        match self {
+            Position::Position { offset, .. } =>
+                Self::new(offset, new_file.into(), row, 1),
+            p => p,
+        }
+    }
+
+    pub fn incOffset(self, by: isize) -> Position {
+        match self {
+            Position::Position { offset, file, row, column } =>
+                Self::new(offset + by, file, row, column),
+            p => p,
+        }
     }
 }
 
 pub type PosLength = (Position, isize);
-
-pub fn position(posOffset: isize, posFile: String, posRow: isize, posColumn: isize) -> Position {
-    Position::Position { posOffset, posFile, posRow, posColumn }
-}
 
 // class of type which aggregate a source code location
 pub trait Pos {
@@ -71,81 +141,4 @@ pub trait Pos {
 }
 pub fn posOf<P: Pos>(input: P) -> Position {
     input.posOf()
-}
-
-pub fn initPos(file: FilePath) -> Position {
-    position(0, file.into(), 1, 1)
-}
-
-pub fn isSourcePos(_0: Position) -> bool {
-    match (_0) {
-        Position::Position { .. } => true,
-        _ => false,
-    }
-}
-
-pub fn nopos() -> Position {
-    NoPosition
-}
-
-pub fn isNoPos(_0: Position) -> bool {
-    match (_0) {
-        NoPosition => true,
-        _ => false,
-    }
-}
-
-pub fn builtinPos() -> Position {
-    BuiltinPosition
-}
-
-pub fn isBuiltinPos(_0: Position) -> bool {
-    match (_0) {
-        BuiltinPosition => true,
-        _ => false,
-    }
-}
-
-pub fn internalPos() -> Position {
-    InternalPosition
-}
-
-pub fn isInternalPos(_0: Position) -> bool {
-    match (_0) {
-        InternalPosition => true,
-        _ => false,
-    }
-}
-
-pub fn incPos(_0: Position, _1: isize) -> Position {
-    match (_0, _1) {
-        (Position::Position {posOffset: offs, posFile: fname, posRow: row, posColumn: col }, n) => position(((offs + n)), fname, row, ((col + n))),
-        (p, _) => p,
-    }
-}
-
-pub fn retPos(_0: Position) -> Position {
-    match (_0) {
-        Position::Position {posOffset: offs, posFile: fname, posRow: row, ..}  => position(((offs + 1)), fname, ((row + 1)), 1),
-        p => p,
-    }
-}
-
-pub fn adjustPos(_0: FilePath, _1: isize, _2: Position) -> Position {
-    match (_0, _1, _2) {
-        (fname, row, Position::Position {posOffset: offs, .. }) => position(offs, fname.into(), row, 1),
-        (_, _, p) => p,
-    }
-}
-
-pub fn incOffset(_0: Position, _1: isize) -> Position {
-    match (_0, _1) {
-        (Position::Position {
-            posOffset: o,
-            posFile: f, 
-            posRow: r,
-            posColumn: c
-        }, n) => position(((o + n)), f, r, c),
-        (p, _) => p,
-    }
 }

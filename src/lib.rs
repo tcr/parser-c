@@ -52,7 +52,7 @@ use corollary_support::*;
 use syntax::preprocess::*;
 use syntax::ast::*;
 use data::input_stream::readInputStream;
-use data::position::initPos;
+use data::position::Position;
 use parser::parser_monad::ParseError;
 use parser::parser::parseC;
 use data::input_stream::inputStreamFromString;
@@ -71,11 +71,11 @@ fn parseCFile<C: Preprocessor>(cpp: C,
                                    -> Result<CTranslUnit, ParseError> {
 
     let handleCppError = |_0| match (_0) {
-        Err(exitCode) => __error!(format!("Preprocessor failed with {}", exitCode)),
+        Err(exitCode) => panic!("Preprocessor failed with {:?}", exitCode),
         Ok(ok) => ok,
     };
 
-    let input_stream = if !isPreprocessed(input_file.clone().into()) {
+    let input_stream = if !isPreprocessed(&input_file.path) {
         let cpp_args = __assign!((rawCppArgs(args, input_file.clone())), {
             cppTmpDir: tmp_dir_opt
         });
@@ -84,12 +84,12 @@ fn parseCFile<C: Preprocessor>(cpp: C,
         readInputStream(input_file.clone())
     };
 
-    parseC(input_stream, initPos(input_file))
+    parseC(input_stream, Position::from_file(input_file))
 }
 
 fn parseCFilePre(file: FilePath) -> Result<CTranslUnit, ParseError> {
     let input_stream = readInputStream(file.clone());
-    parseC(input_stream, initPos(file))
+    parseC(input_stream, Position::from_file(file))
 }
 
 /// Basic public API. Accepts C source and a filename.
@@ -106,6 +106,6 @@ pub fn parse(input: &str, filename: &str) -> Result<CTranslUnit, ParseError> {
     thread::Builder::new().stack_size(32 * 1024 * 1024).spawn(move || {
         let input_stream = inputStreamFromString(input);
 
-        parseC(input_stream, (initPos(FilePath::from(filename))))
+        parseC(input_stream, Position::from_file(FilePath::from(filename)))
     }).unwrap().join().unwrap()
 }

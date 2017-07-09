@@ -46,7 +46,7 @@ pub fn getCCharAsInt(_0: CChar) -> isize {
     match (_0) {
         CChar(c, _) => fromIntegral(c as isize),
         CChars(_cs, _) => {
-            __error!("integer value of multi-character character constants is implementation defined".to_string())
+            panic!("integer value of multi-character character constants is implementation defined")
         }
     }
 }
@@ -273,13 +273,6 @@ pub fn isSChar(_0: char) -> bool {
     }
 }
 
-pub fn showOct_q(i: isize) -> String {
-
-    let s = showOct(i).show_s("".to_string());
-
-    __op_addadd(replicate(((3 - length(s.clone()))), '0').into_iter().collect(), s)
-}
-
 pub fn escapeChar(_0: char) -> String {
     match (_0) {
         '\\' => "\\\\".to_string(),
@@ -293,9 +286,9 @@ pub fn escapeChar(_0: char) -> String {
         '\u{b}' => "\\v".to_string(),
         c => {
             if ord(c) < 512 {
-                format!("\\{}", showOct_q(ord(c)))
+                format!("\\{:03o}", ord(c))
             } else {
-                format!("\\x{}", showHex(ord(c)).show_s("".to_string()))
+                format!("\\x{:x}", ord(c))
             }
         }
     }
@@ -322,14 +315,14 @@ pub fn unescapeChar(_0: String) -> (char, String) {
             '\'' => ('\'', cs),
             '\"' => ('\"', cs),
             'x' => {
-                match head_q("bad escape sequence".to_string(),
-                    (readHex(cs).read_s())) {
+                match head_q("bad escape sequence",
+                             readHex(cs).read_s()) {
                     (i, cs_q) => (i, cs_q),
                 }
             }
             _ => {
-                match head_q("bad escape sequence".to_string(),
-                                (readOct_q((__op_concat(c, cs))).read_s())) {
+                match head_q("bad escape sequence",
+                             readOct_q(format!("{}{}", c, cs)).read_s()) {
                     (i, cs_q) => (i, cs_q),
                 }
             }
@@ -344,7 +337,7 @@ pub fn unescapeChar(_0: String) -> (char, String) {
     }
 
     // []
-    __error!("unescape char: empty string".to_string())
+    panic!("unescape char: empty string")
 }
 
 pub fn readOct_q(s: String) -> Box<ReadS<char>> {
@@ -363,7 +356,7 @@ pub fn unescapeString(cs: String) -> String {
         cs
     } else {
         match unescapeChar(cs) {
-            (c, cs_q) => __op_concat(c, unescapeString(cs_q)),
+            (c, cs_q) => format!("{}{}", c, unescapeString(cs_q)),
         }
     }
 }
@@ -376,19 +369,19 @@ pub fn dQuote(s: String) -> Box<ShowS> {
     box showString(format!("\"{}\"", s))
 }
 
-pub fn head_q<a>(_0: String, mut _1: Vec<a>) -> a {
+pub fn head_q<a>(msg: &str, mut _1: Vec<a>) -> a {
     if _1.is_empty() {
-        __error!(_0);
+        panic!("{}", msg);
     } else {
         _1.remove(0)
     }
 }
 
-pub fn head_q_str(_0: String, _1: String) -> char {
+pub fn head_q_str(msg: &str, _1: String) -> char {
     if let Some(c) = _1.chars().next() {
-       c 
+       c
     } else {
-        __error!(_0);
+        panic!("{}", msg);
     }
 }
 

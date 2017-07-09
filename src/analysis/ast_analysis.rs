@@ -51,7 +51,7 @@ pub fn analyseAST(CTranslationUnit(decls, _file_node): CTranslUnit) -> GlobalDec
     {
         mapRecoverM_(analyseExt, decls);
         __op_bind(getDefTable, |dt| if !((inFileScope(dt))) {
-            __error!("Internal Error: Not in filescope after analysis".to_string())
+            panic!("Internal Error: Not in filescope after analysis")
         });
         liftM(globalDefs, getDefTable)
     }
@@ -173,7 +173,7 @@ pub fn extFunProto(VarDeclInfo(var_name, fun_spec, storage_spec, attrs, ty, node
                 Some(f) => declStorage(f),
             }
         }
-        _ => __error!(__op_addadd("funDeclLinkage: ".to_string(), show(storage_spec))),
+        _ => panic!("funDeclLinkage: {}" storage_spec),
     };
 
     /*do*/
@@ -979,7 +979,7 @@ pub fn tDesignator(_0: Type, _1: Vec<CDesignator>) -> m<Type> {
                       "array designator in compound initializer".to_string())
         }
         (t, []) => t,
-        (_t, _) => __error!("unepxected type with designator".to_string()),
+        (_t, _) => panic!("unepxected type with designator"),
     }
 }
 

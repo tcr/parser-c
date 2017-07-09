@@ -33262,7 +33262,7 @@ pub fn readCOctal(s: String) -> Result<CInteger, String> {
             readCInteger(DecRepr, s)
         }
     }  else {
-        __error!("ReadOctal: string does not start with `0\'".to_string())
+        panic!("ReadOctal: string does not start with `0'")
     }
 }
 
@@ -33517,19 +33517,16 @@ pub fn idkwtok(_0: String, _curry_1: Position) -> P<CToken> {
                 box move |name| {
                     let pos = pos.clone();
 
-                    let len = match length(cs.clone()) {
-                            l => {
-                                l
-                            },
-                        };
+                    let len = cs.len();
 
                     let ident = mkIdent(pos.clone(), cs.clone(), name);
 
                     thenP(isTypeIdent(ident.clone()), box move |tyident| {
 
-                    if tyident {                     
-__return((CTokTyIdent((pos.clone(), len), ident.clone())))} else {
-__return((CTokIdent((pos.clone(), len), ident.clone())))
+                    if tyident {
+                        __return(CTokTyIdent((pos.clone(), len as isize), ident.clone()))
+                    } else {
+                        __return(CTokIdent((pos.clone(), len as isize), ident.clone()))
                     }
                     })
                 })
@@ -33569,7 +33566,7 @@ pub fn adjustLineDirective(pragmaLen: isize, __str: String, pos: Position) -> Po
         dropWhile((|c| { (c == ' ') || (c == '\t') }), input)
     }
 
-    let offs_q = ((posOffset(pos.clone())) + pragmaLen);
+    let offs_q = pos.offset() + pragmaLen;
 
     let str_q = dropWhite(drop_str(1, __str));
 
@@ -33582,7 +33579,7 @@ pub fn adjustLineDirective(pragmaLen: isize, __str: String, pos: Position) -> Po
 
     let fnameStr = takeWhile_str(|x| { x != '\"' }, drop_str(1, str_q_q_q.clone()));
 
-    let fname = posFile(pos.clone());
+    let fname = pos.file();
 
     let fname_q = if str_q_q_q.len() == 0 || head_str(str_q_q_q) != '"' {
         fname
@@ -33593,7 +33590,7 @@ pub fn adjustLineDirective(pragmaLen: isize, __str: String, pos: Position) -> Po
         fnameStr
     };
 
-    position(offs_q, fname_q, row_q, 1)
+    Position::new(offs_q, fname_q, row_q, 1)
 }
 
 pub fn unescapeMultiChars(cs: String) -> String {
@@ -33604,7 +33601,7 @@ pub fn unescapeMultiChars(cs: String) -> String {
     } else if cs.len() == 1 && cs.chars().nth(0).unwrap() == '\'' {
         "".to_string()
     } else {
-        __error!("Unexpected end of multi-char constant".to_string())
+        panic!("Unexpected end of multi-char constant")
     }
 }
 
@@ -33637,7 +33634,7 @@ pub fn token_plus<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
 pub type AlexInput = (Position, InputStream);
 
 pub fn alexInputPrevChar(_: AlexInput) -> char {
-    __error!("alexInputPrevChar not used".to_string())
+    panic!("alexInputPrevChar not used")
 }
 
 pub fn alexGetByte((p, is): AlexInput) -> Option<(Word8, AlexInput)> {
@@ -33651,20 +33648,12 @@ pub fn alexGetByte((p, is): AlexInput) -> Option<(Word8, AlexInput)> {
     }
 }
 
-pub fn alexMove(_0: Position, _1: char) -> Position {
-    match (_0, _1) {
-        (pos, ' ') => {
-            incPos(pos, 1)
-        },
-        (pos, '\n') => {
-            retPos(pos)
-        },
-        (pos, '\r') => {
-            incOffset(pos, 1)
-        },
-        (pos, _) => {
-            incPos(pos, 1)
-        },
+pub fn alexMove(pos: Position, ch: char) -> Position {
+    match ch {
+        ' '  => pos.inc(1),
+        '\n' => pos.retPos(),
+        '\r' => pos.incOffset(1),
+        _    => pos.inc(1),
     }
 }
 
@@ -33676,10 +33665,10 @@ pub fn lexicalError<a: 'static>() -> P<a> {
                 let (c, _) = takeChar(input);
                 let pos = pos.clone();
 
-        failP(pos, vec![
-                "Lexical error !".to_string(),
-                __op_addadd("The character ".to_string(), __op_addadd(show(c), " does not fit here.".to_string())),
-            ])
+                failP(pos, vec![
+                    "Lexical error !".to_string(),
+                    format!("The character {} does not fit here.", c),
+                ])
             })
         })
     }
@@ -33689,9 +33678,9 @@ pub fn parseError<a: 'static>() -> P<a> {
     /*do*/ {
         thenP(getLastToken(), box move |lastTok| {
 
-        failP((posOf(lastTok.clone())), vec![
+            failP((posOf(lastTok.clone())), vec![
                 "Syntax error !".to_string(),
-                __op_addadd("The symbol `".to_string(), __op_addadd(show(lastTok), "\' does not fit here.".to_string())),
+                format!("The symbol `{}' does not fit here.", lastTok),
             ])
         })
     }

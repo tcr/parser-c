@@ -261,6 +261,6 @@ pub fn posLenOfTok(_0: CToken) -> (Position, isize) {
         CTokTyIdent(pos, _) => pos,
         CTokGnuC(_, pos) => pos,
         CTokClangC(pos, _) => pos,
-        CTokEof => __error!("tokenPos: Eof".to_string()),
+        CTokEof => panic!("tokenPos: Eof"),
     }
 }

@@ -170,7 +170,7 @@ pub fn baseType(_0: Type) -> Type {
     match (_0) {
         PtrType(t, _, _) => t,
         ArrayType(t, _, _, _) => t,
-        _ => __error!("base of non-pointer type".to_string()),
+        _ => panic!("base of non-pointer type"),
     }
 }
 
@@ -219,7 +219,7 @@ pub fn isVariablyModifiedType(t: Type) -> bool {
     }
 
     match derefTypeDef(t) {
-        TypeDefType {} => __error!("impossible: derefTypeDef t returned a TypeDefType".to_string()),
+        TypeDefType {} => panic!("impossible: derefTypeDef t returned a TypeDefType"),
         DirectType {} => false,
         PtrType(ptr_ty, _, _) => isVariablyModifiedType(ptr_ty),
         ArrayType(_, sz, _, _) => isVariableArraySize(sz),
@@ -231,10 +231,10 @@ pub fn sameType(t1: Type, t2: Type) -> bool {
 
     let sameType_q = match (derefTypeDef(t1), derefTypeDef(t2)) {
         (TypeDefType {}, _) => {
-            __error!("impossible: derefTypeDef t1 returned a TypeDefType".to_string())
+            panic!("impossible: derefTypeDef t1 returned a TypeDefType")
         }
         (_, TypeDefType {}) => {
-            __error!("impossible: derefTypeDef t2 returned a TypeDefType".to_string())
+            panic!("impossible: derefTypeDef t2 returned a TypeDefType")
         }
         (DirectType(tn1, q1, _a1), DirectType(tn2, q2, _a2)) => {
             (sameTypeName(tn1, tn2) && sameQuals(q1, q2))

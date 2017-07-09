@@ -15,12 +15,7 @@ pub trait OpAddable {
 pub fn __op_addadd<A: OpAddable>(left: A, right: A) -> A {
     OpAddable::add(left, right)
 }
-impl OpAddable for String {
-    fn add(mut self, right: Self) -> Self {
-        self.push_str(&right);
-        self
-    }
-}
+
 impl<A> OpAddable for Vec<A> {
     fn add(mut self, right: Self) -> Self {
         self.extend(right);
@@ -36,12 +31,6 @@ pub trait OpConcatable {
 pub fn __op_concat<A: OpConcatable>(left: A::Item, right: A) -> A {
     OpConcatable::concat(right, left)
 }
-impl OpConcatable for String {
-    type Item = char;
-    fn concat(self, right: Self::Item) -> Self {
-        format!("{}{}", right, self)
-    }
-}
 impl<A> OpConcatable for Vec<A> {
     type Item = A;
     fn concat(mut self, right: Self::Item) -> Self {
@@ -51,32 +40,12 @@ impl<A> OpConcatable for Vec<A> {
 }
 
 
-pub struct IO<A: Sized>(A);
-
-pub fn assertEqual<A: Eq + Sized>(desc: String, left: A, right: A) -> IO<()> {
-    if left != right {
-        panic!("{}", desc);
-    }
-    IO(())
-}
-
-pub fn putStrLn(line: String) -> IO<()> {
-    println!("{}", line);
-    IO(())
-}
-
 pub mod List {
     pub fn reverse<A>(mut input: Vec<A>) -> Vec<A> {
         input.reverse();
         input
     }
 }
-
-pub fn __op_index<F, T: ::std::ops::Index<F>>(a: T, pos: F) -> (<T as std::ops::Index<F>>::Output)
-where <T as std::ops::Index<F>>::Output: std::marker::Sized + Clone {
-    a[pos].clone()
-}
-
 #[macro_export]
 macro_rules! __assign {
     ($left: expr, {
@@ -113,42 +82,18 @@ pub fn show<A: Display>(a: A) -> String {
     format!("{}", a)
 }
 
+#[derive(Debug)]
 pub enum ExitCode {
     ExitSuccess,
     ExitFailure(isize),
 }
 pub use self::ExitCode::*;
 
-pub fn isSuffixOf(a: String, r: String) -> bool {
-    r.ends_with(&a)
-}
-
-pub fn isPrefixOf(a: String, r: String) -> bool {
-    r.starts_with(&a)
-}
-
-pub fn elem<T: PartialEq>(item: T, value: Vec<T>) -> bool {
-    value.contains(&item)
-}
-
-pub fn replicate<T: Clone>(rep: isize, item: T) -> Vec<T> {
-    (0..rep).map(|_| item.clone()).collect()
-}
-
-pub fn words(input: String) -> Vec<String> {
-    input.split_whitespace().map(|x| x.to_string()).collect()
-}
-
 pub trait Lengthable {
     fn get_len(&self) -> isize;
 }
 pub fn length<A: Lengthable>(left: A) -> isize {
     Lengthable::get_len(&left)
-}
-impl Lengthable for String {
-    fn get_len(&self) -> isize {
-        self.len() as isize
-    }
 }
 impl<T> Lengthable for Vec<T> {
     fn get_len(&self) -> isize {
@@ -366,12 +311,12 @@ pub fn hasExtension(fp: FilePath) -> bool {
     false
 }
 
-pub fn replaceExtension(fp: FilePath, ext: String) -> FilePath {
+pub fn replaceExtension(fp: FilePath, ext: &str) -> FilePath {
     // TODO
     fp
 }
 
-pub fn addExtension(fp: FilePath, ext: String) -> FilePath {
+pub fn addExtension(fp: FilePath, ext: &str) -> FilePath {
     // TODO
     fp
 }
@@ -715,14 +660,6 @@ macro_rules! __concatMap {
         $target.into_iter()
             .flat_map($fn)
             .collect::<Vec<_>>()
-    }
-}
-
-#[macro_export]
-macro_rules! __error {
-    ($fn: expr) => {
-        // TODO
-        panic!("ERROR!")
     }
 }
 

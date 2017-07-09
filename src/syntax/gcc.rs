@@ -83,9 +83,7 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), Stri
         if a.len() > 0 {
             let flag = a[0].clone();
             let rest = a[1..].to_vec();
-            if (flag == "-c".to_string()) ||
-                (flag == "-S".to_string()) ||
-                isPrefixOf("-M".to_string(), flag.clone()) {
+            if flag == "-c" || flag == "-S" || flag.starts_with("-M") {
                 return mungeArgs((cpp_args, (extra, snoc(other, flag))), rest)
             }
         }
@@ -115,7 +113,7 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), Stri
         if a.len() > 0 {
             let cfile = a[0].clone();
             let rest = a[1..].to_vec();
-            if (any(|x| { isSuffixOf(cfile.clone(), x.clone()) }, (words(".c .hc .h".to_string())))) {
+            if [".c", ".hc", ".h"].iter().any(|suf| cfile.ends_with(suf)) {
                 return if isJust(inp) {
                     Err("two input files given".to_string())
                 } else {
@@ -165,20 +163,13 @@ pub fn buildCppArgs(CppArgs {
     let tOption = |_0| match (_0) {
         IncludeDir(incl) => vec!["-I".to_string(), incl.to_string()],
         Define(key, value) => {
-            vec![__op_addadd("-D".to_string(),
-                             __op_addadd(key,
-                                         (__op_addadd(if value.is_empty() {
-                                                          "".to_string()
-                                                      } else {
-                                                          "=".to_string()
-                                                      },
-                                                      value))))]
+            vec![format!("-D{}{}{}", key, if value.is_empty() { "" } else { "=" }, value)]
         }
-        Undefine(key) => vec![__op_addadd("-U".to_string(), key)],
+        Undefine(key) => vec![format!("-U{}", key)],
         IncludeFile(f) => vec!["-include".to_string(), f.to_string()],
     };
-    
-    let outputFileOpt = output_file_opt.map(|x| vec!["-o".to_string(), x.to_string()]).unwrap_or(vec![]);
+
+    let outputFileOpt = output_file_opt.map_or(vec![], |x| vec!["-o".to_string(), x.to_string()]);
 
     __op_addadd((__concatMap!(tOption, options)),
                 __op_addadd(outputFileOpt,

@@ -1,7 +1,7 @@
 extern crate parser_c;
 
 use parser_c::parser::parser::parseC;
-use parser_c::data::position::initPos;
+use parser_c::data::position::Position;
 use parser_c::support::FilePath;
 use parser_c::data::input_stream::readInputStream;
 
@@ -12,7 +12,7 @@ fn simple() {
     };
     let input_stream = readInputStream(input_file.clone());
 
-    let todo = parseC(input_stream, (initPos(input_file)));
+    let todo = parseC(input_stream, Position::from_file(input_file));
 
     println!("OUT {:#?}", todo);
 }

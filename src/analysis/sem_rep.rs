@@ -426,7 +426,7 @@ pub use self::VarName::*;
 
 pub fn identOfVarName(_0: VarName) -> Ident {
     match (_0) {
-        NoName => __error!("identOfVarName: NoName".to_string()),
+        NoName => panic!("identOfVarName: NoName"),
         VarName(ident, _) => ident,
     }
 }
