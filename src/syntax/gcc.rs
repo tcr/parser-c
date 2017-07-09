@@ -28,8 +28,19 @@ pub fn newGCC(gccPath: FilePath) -> GCC {
     GCC { gccPath }
 }
 
-pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), String> {
+// impl Preprocessor for GCC {
+//     fn parseCPPArgs(_0: Vec<String>) { gccParseCPPArgs(_0) }
+//     fn runCPP(self, cpp_args: ) {
+//         do  -- copy the input to the outputfile, because in case the input is preprocessed,
+//             -- gcc -E will do nothing.
+//             maybe (return()) (copyWritable (inputFile cpp_args)) (outputFile cpp_args)
+//             rawSystem (gccPath gcc) (buildCppArgs cpp_args)
+//                 where copyWritable source target = do copyFile source target
+//                                                       p <- getPermissions target
+//                                                       setPermissions target p{writable=True}
+// }
 
+pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), String> {
 
     fn getDefine(opt: String) -> CppOption {
         let (key, val) = __break_str(|x| { '=' == x}, opt);

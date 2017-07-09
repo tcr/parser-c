@@ -1,9 +1,3 @@
-extern crate parser_c;
-
-use parser_c::parse;
-
-const INPUT: &'static str = r#"
- 
 int main()
 {
    int n, first = 0, second = 1, next, c;
@@ -27,18 +21,4 @@ int main()
    }
  
    return 0;
-}
-
-"#;
-
-#[test]
-fn fibonacci() {
-    match parse(INPUT, "fibonacci.c") {
-        Err(err) => {
-            panic!("error: {:?}", err);
-        }
-        Ok(ast) => {
-            println!("success: {:?}", ast);
-        }
-    }
 }
