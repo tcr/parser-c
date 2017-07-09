@@ -49,6 +49,7 @@ use data::r_list::Reversed;
 use data::node::*;
 use data::r_list::snoc;
 use data::ident::*;
+use data::name::*;
 use syntax::ops::*;
 use parser::lexer::{lexC, parseError};
 use parser::builtin::builtinTypeNames;
@@ -292,9 +293,9 @@ translation_unit
   : ext_decl_list {%
                       let decls = reverse($1);
                       if decls.len() == 0 {
-                          thenP(getNewName(), box move |n| {
+                          thenP(getNewName(), box move |n: Name| {
                               let decls = decls.clone();
-                              thenP(getCurrentPosition(), box move |p| {
+                              thenP(getCurrentPosition(), box move |p: Position| {
                                   let decls = decls.clone();
                                   __return(CTranslationUnit::<NodeInfo>(
                                       decls.clone(),
@@ -783,7 +784,7 @@ default_declaring_list
   : declaration_qualifier_list identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
             let declspecs = reverse($1.clone());
-            thenP(withAsmNameAttrs($3, $2), box move |declr| {
+            thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
                 clones!($4, $1, declspecs);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent(declspecs.clone(), declr.clone());
@@ -795,7 +796,7 @@ default_declaring_list
   | type_qualifier_list identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
             let declspecs = liftTypeQuals($1.clone());
-            thenP(withAsmNameAttrs($3, $2), box move |declr| {
+            thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
                 clones!($4, $1, declspecs);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent(declspecs.clone(), declr.clone());
@@ -807,7 +808,7 @@ default_declaring_list
   | type_qualifier_list attrs identifier_declarator asm_attrs_opt {-{}-} initializer_opt -- FIX 1600
         {%
             let declspecs = liftTypeQuals($1.clone());
-            thenP(withAsmNameAttrs($4, $3), box move |declr| {
+            thenP(withAsmNameAttrs($4, $3), box move |declr: CDeclrR| {
                 clones!($2, $5, declspecs);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent(declspecs.clone(), declr.clone());
@@ -820,7 +821,7 @@ default_declaring_list
   | attrs identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
             let declspecs = liftCAttrs($1.clone());
-            thenP(withAsmNameAttrs($3, $2), box move |declr| {
+            thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
                 clones!($4, declspecs);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent(declspecs.clone(), declr.clone());
@@ -833,7 +834,7 @@ default_declaring_list
         {%
             if let CDecl(declspecs, dies, at) = $1 {
                 clones!($5);
-                thenP(withAsmNameAttrs((fst($5.clone()), __op_addadd(snd($5), $3)), $4), box move |declr| {
+                thenP(withAsmNameAttrs((fst($5.clone()), __op_addadd(snd($5), $3)), $4), box move |declr: CDeclrR| {
                     clones!($6, declspecs, dies, at);
                     // TODO: the return value here should not be ignored!
                     doDeclIdent(declspecs.clone(), declr.clone());
@@ -863,7 +864,7 @@ declaring_list :: { CDecl }
 declaring_list
   : declaration_specifier declarator asm_attrs_opt initializer_opt
         {%
-            thenP(withAsmNameAttrs($3, $2), box move |declr| {
+            thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
                 clones!($1, $4);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent($1.clone(), declr.clone());
@@ -873,7 +874,7 @@ declaring_list
 
   | type_specifier declarator asm_attrs_opt initializer_opt
         {%
-            thenP(withAsmNameAttrs($3, $2), box move |declr| {
+            thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
                 clones!($1, $4);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent($1.clone(), declr.clone());
@@ -884,7 +885,7 @@ declaring_list
   | declaring_list ',' attrs_opt declarator asm_attrs_opt initializer_opt
         {%
             if let CDecl(declspecs, dies, at) = $1 {
-                thenP(withAsmNameAttrs((fst($5.clone()), __op_addadd(snd($5), $3)), $4), box move |declr| {
+                thenP(withAsmNameAttrs((fst($5.clone()), __op_addadd(snd($5), $3)), $4), box move |declr: CDeclrR| {
                     // TODO: the return value here should not be ignored!
                     doDeclIdent(declspecs.clone(), declr.clone());
                     __return(CDecl(declspecs.clone(), __op_concat((Some(reverseDeclr(declr)),
@@ -2463,12 +2464,12 @@ fn withNodeInfo<a: Clone + 'static, node: Pos + Clone + 'static>(
     node: node, mkAttrNode: Box<Fn(NodeInfo) -> a>) -> P<a>
 {
     let mkAttrNode = Rc::new(mkAttrNode);
-    thenP(getNewName(), box move |name| {
+    thenP(getNewName(), box move |name: Name| {
         let node = node.clone();
         let mkAttrNode = mkAttrNode.clone();
         thenP(getSavedToken(), box move |lastTok| {
             let firstPos = posOf(node.clone());
-            let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok), name.clone());
+            let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok), name);
             __return(mkAttrNode(attrs))
         })
     })

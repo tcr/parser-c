@@ -17,6 +17,7 @@ use data::r_list::Reversed;
 use data::node::*;
 use data::r_list::snoc;
 use data::ident::*;
+use data::name::*;
 use syntax::ops::*;
 use parser::lexer::{lexC, parseError};
 use parser::builtin::builtinTypeNames;
@@ -192,11 +193,11 @@ enum HappyAbsSyn {
 use self::HappyAbsSyn::*;
 
 
-type ActionReturn = Box<Fn(isize, (CToken), HappyState<(CToken), Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
-                           Vec<HappyState<(CToken), Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
+type ActionReturn = Box<FnBox(isize, (CToken), HappyState<(CToken), Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
+                           Vec<HappyState<(CToken), Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
                            HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>;
-type Action<A, B> = Box<Fn(isize, isize, (CToken), HappyState<(CToken), Box<Fn(B) -> P<A>>>,
-                           Vec<HappyState<(CToken), Box<Fn(B) -> P<A>>>>, B) -> P<A>>;
+type Action<A, B> = Box<Fn(isize, isize, (CToken), HappyState<(CToken), Box<FnBox(B) -> P<A>>>,
+                           Vec<HappyState<(CToken), Box<FnBox(B) -> P<A>>>>, B) -> P<A>>;
 
 fn action_0(i: isize) -> ActionReturn {
     match i {
@@ -15708,9 +15709,9 @@ refute! { fn happyReduction_4<T>(HappyStk(HappyAbsSyn8(happy_var_1), Some(box ha
     happyThen({
                       let decls = reverse(happy_var_1);
                       if decls.len() == 0 {
-                          thenP(getNewName(), box move |n| {
+                          thenP(getNewName(), box move |n: Name| {
                               let decls = decls.clone();
-                              thenP(getCurrentPosition(), box move |p| {
+                              thenP(getCurrentPosition(), box move |p: Position| {
                                   let decls = decls.clone();
                                   __return(CTranslationUnit::<NodeInfo>(
                                       decls.clone(),
@@ -16697,7 +16698,7 @@ fn happyReduce_92() -> ActionReturn {
 refute! { fn happyReduction_92<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             let declspecs = reverse(happy_var_1.clone());
-            thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr| {
+            thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 clones!(happy_var_4, happy_var_1, declspecs);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent(declspecs.clone(), declr.clone());
@@ -16715,7 +16716,7 @@ fn happyReduce_93() -> ActionReturn {
 refute! { fn happyReduction_93<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             let declspecs = liftTypeQuals(happy_var_1.clone());
-            thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr| {
+            thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 clones!(happy_var_4, happy_var_1, declspecs);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent(declspecs.clone(), declr.clone());
@@ -16733,7 +16734,7 @@ fn happyReduce_94() -> ActionReturn {
 refute! { fn happyReduction_94<T>(HappyStk(HappyAbsSyn94(happy_var_5), Some(box HappyStk(HappyAbsSyn35(happy_var_4), Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             let declspecs = liftTypeQuals(happy_var_1.clone());
-            thenP(withAsmNameAttrs(happy_var_4, happy_var_3), box move |declr| {
+            thenP(withAsmNameAttrs(happy_var_4, happy_var_3), box move |declr: CDeclrR| {
                 clones!(happy_var_2, happy_var_5, declspecs);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent(declspecs.clone(), declr.clone());
@@ -16751,7 +16752,7 @@ fn happyReduce_95() -> ActionReturn {
 refute! { fn happyReduction_95<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             let declspecs = liftCAttrs(happy_var_1.clone());
-            thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr| {
+            thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 clones!(happy_var_4, declspecs);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent(declspecs.clone(), declr.clone());
@@ -16770,7 +16771,7 @@ refute! { fn happyReduction_96<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box 
     happyThen({
             if let CDecl(declspecs, dies, at) = happy_var_1 {
                 clones!(happy_var_5);
-                thenP(withAsmNameAttrs((fst(happy_var_5.clone()), __op_addadd(snd(happy_var_5), happy_var_3)), happy_var_4), box move |declr| {
+                thenP(withAsmNameAttrs((fst(happy_var_5.clone()), __op_addadd(snd(happy_var_5), happy_var_3)), happy_var_4), box move |declr: CDeclrR| {
                     clones!(happy_var_6, declspecs, dies, at);
                     // TODO: the return value here should not be ignored!
                     doDeclIdent(declspecs.clone(), declr.clone());
@@ -16803,7 +16804,7 @@ fn happyReduce_98() -> ActionReturn {
 
 refute! { fn happyReduction_98<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
-            thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr| {
+            thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 clones!(happy_var_1, happy_var_4);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent(happy_var_1.clone(), declr.clone());
@@ -16819,7 +16820,7 @@ fn happyReduce_99() -> ActionReturn {
 
 refute! { fn happyReduction_99<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
-            thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr| {
+            thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 clones!(happy_var_1, happy_var_4);
                 // TODO: the return value here should not be ignored!
                 doDeclIdent(happy_var_1.clone(), declr.clone());
@@ -16836,7 +16837,7 @@ fn happyReduce_100() -> ActionReturn {
 refute! { fn happyReduction_100<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box HappyStk(HappyAbsSyn35(happy_var_5), Some(box HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             if let CDecl(declspecs, dies, at) = happy_var_1 {
-                thenP(withAsmNameAttrs((fst(happy_var_5.clone()), __op_addadd(snd(happy_var_5), happy_var_3)), happy_var_4), box move |declr| {
+                thenP(withAsmNameAttrs((fst(happy_var_5.clone()), __op_addadd(snd(happy_var_5), happy_var_3)), happy_var_4), box move |declr: CDeclrR| {
                     // TODO: the return value here should not be ignored!
                     doDeclIdent(declspecs.clone(), declr.clone());
                     __return(CDecl(declspecs.clone(), __op_concat((Some(reverseDeclr(declr)),
@@ -21232,21 +21233,19 @@ refute! { fn happyReduction_488(HappyStk(_, Some(box HappyStk(_, Some(box HappyS
 }
 
 
-fn happyNewToken<T: 'static, S: 'static + Clone>(action: Action<T, S>, sts: Vec<HappyState<(CToken), Box<Fn(S) -> P<T>>>>, stk: S) -> P<T> {
+fn happyNewToken<T: 'static, S: 'static + Clone>(action: Action<T, S>, sts: Vec<HappyState<(CToken), Box<FnBox(S) -> P<T>>>>, stk: S) -> P<T> {
     let action = Rc::new(action);
     lexC(box move |tk| {
         let tk_ = tk.clone();
-        let stk_ = stk.clone();
         let sts_ = sts.clone();
+        let stk_ = stk.clone();
         let action_ = action.clone();
-        let cont = box move |i| {
-            (action_.clone())(i, i, tk_.clone(), HappyState(Rc::new(apply_5_1_clone!(action_.clone()))), sts_.clone(), stk_.clone())
+        let cont = move |i| {
+            let action__ = action_.clone();
+            action_(i, i, tk_, HappyState(Rc::new(apply_5_1_clone!(action__))), sts_, stk_)
         };
         match tk {
-            CTokEof => {
-                let action_ = action.clone();
-                action(247, 247, tk, HappyState(Rc::new(apply_5_1_clone!(action_))), sts.clone(), stk.clone())
-            },
+            CTokEof => cont(247),
             CTokLParen(_) => cont(138),
             CTokRParen(_) => cont(139),
             CTokLBracket(_) => cont(140),
@@ -21365,13 +21364,13 @@ fn happyError_<T: 'static>(_: isize, tk: (CToken)) -> P<T> {
 }
 
 
-fn happyThen<A: 'static, B: 'static>(m: P<A>, f: Box<Fn(A) -> P<B>>) -> P<B> {
+fn happyThen<A: 'static, B: 'static>(m: P<A>, f: Box<FnBox(A) -> P<B>>) -> P<B> {
     thenP(m, f)
 }
 fn happyReturn<A: 'static + Clone>(v: A) -> P<A> {
     __return(v)
 }
-fn happyThen1<A: 'static, B: 'static>(m: P<A>, f: Box<Fn(A) -> P<B>>) -> P<B> {
+fn happyThen1<A: 'static, B: 'static>(m: P<A>, f: Box<FnBox(A) -> P<B>>) -> P<B> {
     thenP(m, f)
 }
 fn happyReturn1<A: 'static + Clone>(v: A) -> P<A> {
@@ -21435,12 +21434,12 @@ fn withNodeInfo<a: Clone + 'static, node: Pos + Clone + 'static>(
     node: node, mkAttrNode: Box<Fn(NodeInfo) -> a>) -> P<a>
 {
     let mkAttrNode = Rc::new(mkAttrNode);
-    thenP(getNewName(), box move |name| {
+    thenP(getNewName(), box move |name: Name| {
         let node = node.clone();
         let mkAttrNode = mkAttrNode.clone();
         thenP(getSavedToken(), box move |lastTok| {
             let firstPos = posOf(node.clone());
-            let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok), name.clone());
+            let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok), name);
             __return(mkAttrNode(attrs))
         })
     })
@@ -21786,7 +21785,7 @@ pub fn expressionP() -> P<CExpr> {
 
 
 // Original location: "<command-line>", line 8
-// Original location: "/tmp/ghc31580_0/ghc_2.h", line 1
+// Original location: "/tmp/ghc25861_0/ghc_2.h", line 1
 
 
 
@@ -22034,7 +22033,7 @@ pub struct HappyStk<a>(a, Option<Box<HappyStk<a>>>);
 
 // -----------------------------------------------------------------------------
 /// starting the parse
-fn happyParse(start_state: Box<Fn(isize, isize, CToken, HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>) -> P<HappyAbsSyn> {
+fn happyParse(start_state: Action<HappyAbsSyn, HappyStk<HappyAbsSyn>>) -> P<HappyAbsSyn> {
     // TODO this is lazy failure
     happyNewToken(start_state, vec![], HappyStk(HappyAbsSyn::HappyErrorToken(0), None))
 }
@@ -22045,7 +22044,7 @@ fn happyParse(start_state: Box<Fn(isize, isize, CToken, HappyState<CToken, Box<F
 /// If the current token is (1), it means we've just accepted a partial
 /// parse (a %partial parser).  We must ignore the saved token on the top of
 /// the stack in this case.
-fn happyAccept(_0: isize, _1: CToken, _2: HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, _3: Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, _4: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+fn happyAccept(_0: isize, _1: CToken, _2: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, _3: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, _4: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
     match (_0, _1, _2, _3, _4) {
         (1, tk, st, sts, HappyStk(_, Some(box HappyStk(ans, _)))) => {
             happyReturn1(ans)
@@ -22068,202 +22067,192 @@ impl<b, c> Clone for HappyState<b, c> {
 
 // -----------------------------------------------------------------------------
 /// Shifting a token
-fn happyShift(_0: Box<Fn(isize, isize, CToken, HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>, _1: isize, _2: CToken, _3: HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, _4: Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, _5: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
-    match (_0, _1, _2, _3, _4, _5) {
-        (new_state, 1, tk, st, sts, stk) => {
-            {
-                let HappyStk(x, _) = stk.clone();
-                let i = (match x {
-                        HappyErrorToken(i) => {
-                            i
-                        },
-                        _ => unreachable!(),
-                    });
+fn happyShift(new_state: Action<HappyAbsSyn, HappyStk<HappyAbsSyn>>, _1: isize, tk: CToken,
+              st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
+              sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
+              stk: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+    match _1 {
+        1 => {
+            let HappyStk(x, _) = stk.clone();
+            let i = (match x {
+                HappyErrorToken(i) => {
+                    i
+                },
+                _ => unreachable!(),
+            });
 
             let new_state = Rc::new(new_state);
             let new_state_ = new_state.clone();
-            new_state(i, i, tk, (HappyState(Rc::new(apply_5_1_clone!(new_state_)))), (__op_concat(st, sts)), stk)            }
-        },
-        (new_state, i, tk, st, sts, stk) => {
-            happyNewToken(new_state, (__op_concat(st, sts)), (HappyStk((HappyTerminal(tk)), Some(box stk))))
+            new_state(i, i, tk, (HappyState(Rc::new(apply_5_1_clone!(new_state_)))), __op_concat(st, sts), stk)
+        }
+        i => {
+            happyNewToken(new_state, __op_concat(st, sts), (HappyStk(HappyTerminal(tk), Some(box stk))))
         },
     }
 }
 
 // happyReduce is specialised for the common cases.
 
-fn happySpecReduce_0(_0: isize, _1: HappyAbsSyn, _2: isize, _3: CToken, _4: HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, _5: Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, _6: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
-    match (_0, _1, _2, _3, _4, _5, _6) {
-        (i, __fn, 1, tk, st, sts, stk) => {
-            happyFail( (1), tk, st, sts, stk)
-        },
-        (nt, __fn, j, tk, st, sts, stk) => {
+fn happySpecReduce_0(nt: isize, __fn: HappyAbsSyn, _2: isize, tk: CToken,
+                     st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
+                     sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
+                     stk: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+    match _2 {
+        1 => happyFail(1, tk, st, sts, stk),
+        j => {
             let HappyState(action) = st.clone();
-            action(nt, j, tk, st.clone(), (__op_concat(st, sts)))((HappyStk(__fn, Some(box stk))))
+            action(nt, j, tk, st.clone(), __op_concat(st, sts))(HappyStk(__fn, Some(box stk)))
         },
     }
 }
 
-fn happySpecReduce_1(_0: isize, _1: Box<Fn(HappyAbsSyn) -> HappyAbsSyn>, _2: isize, _3: CToken, _4: HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, _5: Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, _6: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
-    match (_0, _1, _2, _3, _4, _5, _6) {
-        (i, __fn, 1, tk, st, sts, stk) => {
-            happyFail((1), tk, st, sts, stk)
-        },
-        (nt, __fn, j, tk, _, sts, HappyStk(v1, stk_q)) => {
-            {
-                // TODO assert len > 0?
-                let st = sts.clone().remove(0);
-                let HappyState(action) = st.clone();
-                let r = __fn(v1);
+fn happySpecReduce_1(nt: isize, __fn: Box<FnBox(HappyAbsSyn) -> HappyAbsSyn>, _2: isize, tk: CToken,
+                     st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
+                     sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
+                     stk: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+    match (_2, stk) {
+        (1, stk) => happyFail(1, tk, st, sts, stk),
+        (j, HappyStk(v1, stk_q)) => {
+            // TODO assert len > 0?
+            let st = sts.clone().remove(0);
+            let HappyState(action) = st.clone();
+            let r = __fn(v1);
 
-            happySeq(r.clone(), (action(nt, j, tk, st, sts)((HappyStk(r, stk_q)))))            }
-        },
-    }
-}
-
-fn happySpecReduce_2(_0: isize, _1: Box<Fn(HappyAbsSyn, HappyAbsSyn) -> HappyAbsSyn>, _2: isize, _3: CToken, _4: HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, _5: Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, _6: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
-    match (_0, _1, _2, _3, _4, _5, _6) {
-        (i, __fn, 1, tk, st, sts, stk) => {
-            happyFail( (1), tk, st, sts, stk)
-        },
-        (nt, __fn, j, tk, _, mut sts, HappyStk(v1, Some(box HappyStk(v2, Some(box stk_q))))) => {
-            {
-                sts.remove(0);
-                let st = sts.clone().remove(0);
-                let HappyState(action) = st.clone();
-
-                let r = __fn(v1, v2);
-
-            happySeq(r.clone(), (action(nt, j, tk, st, sts)((HappyStk(r, Some(box stk_q))))))            }
-        },
-        _ => {
-            panic!("IRREFUTABLE PATTERN")
+            action(nt, j, tk, st, sts)(HappyStk(r, stk_q))
         }
     }
 }
 
-fn happySpecReduce_3(_0: isize, _1: Box<Fn(HappyAbsSyn, HappyAbsSyn, HappyAbsSyn) -> HappyAbsSyn>, _2: isize, _3: CToken, _4: HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, _5: Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, _6: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
-    match (_0, _1, _2, _3, _4, _5, _6) {
-        (i, __fn, 1, tk, st, sts, stk) => {
-            happyFail( (1), tk, st, sts, stk)
-        },
-        (nt, __fn, j, tk, _, mut stses, HappyStk(v1, Some(box HappyStk(v2, Some(box HappyStk(v3, stk_q)))))) => {
-            {
-                stses.remove(0);
-                stses.remove(0);
-                let sts = stses.clone();
-                let st = stses.clone().remove(0);
-                let HappyState(action) = st.clone();
-
-                let r = __fn(v1, v2, v3);
-
-            happySeq(r.clone(), (action(nt, j, tk, st, sts)(HappyStk(r, stk_q))))            }
+fn happySpecReduce_2(nt: isize, __fn: Box<FnBox(HappyAbsSyn, HappyAbsSyn) -> HappyAbsSyn>,
+                     _2: isize, tk: CToken,
+                     st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
+                     mut sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
+                     stk: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+    match (_2, stk) {
+        (1, stk) => happyFail(1, tk, st, sts, stk),
+        (j, HappyStk(v1, Some(box HappyStk(v2, Some(box stk_q))))) => {
+            sts.remove(0);
+            let st = sts.clone().remove(0);
+            let HappyState(action) = st.clone();
+            let r = __fn(v1, v2);
+            action(nt, j, tk, st, sts)(HappyStk(r, Some(box stk_q)))
         },
         _ => {
-            panic!("IRREFUTABLE PATTERN");
+            panic!("irrefutable pattern")
         }
     }
 }
 
-fn happyReduce<a00: 'static>(_0: isize, _1: isize, _2: Box<Fn(HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn>>, _3: isize, _4: CToken, _5: HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<a00>>>, _6: Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<a00>>>>, _7: HappyStk<HappyAbsSyn>) -> P<a00> {
-    match (_0, _1, _2, _3, _4, _5, _6, _7) {
-        (k, i, __fn, 1, tk, st, sts, stk) => {
-            happyFail( (1), tk, st, sts, stk)
-        },
-        (k, nt, __fn, j, tk, st, sts, stk) => {
-            match happyDrop(((k - ((1)))), sts) {
-                sts1 => {
-                    {
-                        let st1 = sts1.clone().remove(0);
-                        let HappyState(action) = st1.clone();
+fn happySpecReduce_3(nt: isize, __fn: Box<FnBox(HappyAbsSyn, HappyAbsSyn, HappyAbsSyn) -> HappyAbsSyn>,
+                     _2: isize, tk: CToken,
+                     st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
+                     mut stses: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
+                     stk: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+    match (_2, stk) {
+        (1, stk) => happyFail(1, tk, st, stses, stk),
+        (j, HappyStk(v1, Some(box HappyStk(v2, Some(box HappyStk(v3, stk_q)))))) => {
+            stses.remove(0);
+            stses.remove(0);
+            let sts = stses.clone();
+            let st = stses.clone().remove(0);
+            let HappyState(action) = st.clone();
 
-                        // it doesn't hurt to always seq here...
-                        let r = __fn(stk);
-
-                    happyDoSeq(r.clone(), (action(nt, j, tk, st1, sts1)(r)))                    }
-                },
-            }
-        },
-    }
-}
-
-fn happyMonadReduce<b00: 'static>(_0: isize, _1: isize, _2: Box<Fn(HappyStk<HappyAbsSyn>, CToken) -> P<HappyAbsSyn>>, _3: isize, _4: CToken, _5: HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<b00>>>, _6: Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<b00>>>>, _7: HappyStk<HappyAbsSyn>) -> P<b00> {
-    match (_0, _1, _2, _3, _4, _5, _6, _7) {
-        (k, nt, __fn, 1, tk, st, sts, stk) => {
-            happyFail((1), tk, st, sts, stk)
-        },
-        (k, nt, __fn, j, tk, st, sts, stk) => {
-            match happyDrop(k, (__op_concat(st, sts))) {
-                sts1 => {
-                    {
-                        let st1 = sts1.clone().remove(0);
-                        let HappyState(action) = st1.clone();
-
-                        let drop_stk = happyDropStk(k, stk.clone());
-
-                    happyThen1((__fn(stk.clone(), tk.clone())), (box move |r| { clones!(sts1, drop_stk, st1, tk);
-                        action(nt, j, tk, st1, sts1)((HappyStk(r, Some(box drop_stk)))) }))                    }
-                },
-            }
-        },
-    }
-}
-
-fn happyMonad2Reduce<b00: 'static, t0>(_0: isize, _1: t0, _2: Box<Fn(HappyStk<HappyAbsSyn>, CToken) -> P<HappyAbsSyn>>, _3: isize, _4: CToken, _5: HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<b00>>>, _6: Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<b00>>>>, _7: HappyStk<HappyAbsSyn>) -> P<b00> {
-    match (_0, _1, _2, _3, _4, _5, _6, _7) {
-        (k, nt, __fn, 1, tk, st, sts, stk) => {
-            happyFail( (1), tk, st, sts, stk)
-        },
-        (k, nt, __fn, j, tk, st, sts, stk) => {
-            match happyDrop(k, (__op_concat(st, sts))) {
-                sts1 => { {
-                        let st1 = sts1.clone().remove(0);
-                        let HappyState(action) = st1.clone();
-
-                        let drop_stk = happyDropStk(k, stk.clone());
-
-                        let new_state = action;
-
-                    happyThen1(__fn(stk, tk),
-                        box move |r| { clones!(drop_stk, sts1, new_state);
-                            happyNewToken(curry_5_1!(new_state), sts1, (HappyStk(r, Some(box drop_stk))))
-                        }
-                    ) }
-                },
-            }
-        },
-    }
-}
-
-fn happyDrop<t0>(_0: isize, _1: Vec<t0>) -> Vec<t0> {
-    match (_0, _1) {
-        (0, l) => {
-            l
-        },
-        (n, mut t) => {
-            t.remove(0); // TODO this can panic, how does Haskell do this
-            happyDrop(((n - ((1)))), t)
-        },
-    }
-}
-
-fn happyDropStk<t0>(_0: isize, _1: HappyStk<t0>) -> HappyStk<t0> {
-    match (_0, _1) {
-        (0, l) => {
-            l
-        },
-        (n, HappyStk(x, Some(box xs))) => {
-            happyDropStk(((n - ((1)))), xs)
+            let r = __fn(v1, v2, v3);
+            action(nt, j, tk, st, sts)(HappyStk(r, stk_q))
         },
         _ => {
-            panic!("REFUTABLE PATTERN");
+            panic!("irrefutable pattern")
         }
+    }
+}
+
+fn happyReduce<T: 'static>(k: isize, nt: isize,
+                           __fn: Box<FnBox(HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn>>,
+                           _3: isize, tk: CToken,
+                           st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>,
+                           sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>>,
+                           stk: HappyStk<HappyAbsSyn>) -> P<T> {
+    match _3 {
+        1 => happyFail(1, tk, st, sts, stk),
+        j => {
+            let sts1 = happyDrop(k - 1, sts);
+            let st1 = sts1.clone().remove(0);
+            let HappyState(action) = st1.clone();
+            let r = __fn(stk);
+            action(nt, j, tk, st1, sts1)(r)
+        },
+    }
+}
+
+fn happyMonadReduce<T: 'static>(k: isize, nt: isize,
+                                __fn: Box<FnBox(HappyStk<HappyAbsSyn>, CToken) -> P<HappyAbsSyn>>,
+                                _3: isize, tk: CToken,
+                                st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>,
+                                sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>>,
+                                stk: HappyStk<HappyAbsSyn>) -> P<T> {
+    match _3 {
+        1 => happyFail(1, tk, st, sts, stk),
+        j => {
+            let sts1 = happyDrop(k, __op_concat(st, sts));
+            let st1 = sts1.clone().remove(0);
+            let HappyState(action) = st1.clone();
+
+            let drop_stk = happyDropStk(k, stk.clone());
+
+            happyThen1(__fn(stk.clone(), tk.clone()), box move |r| {
+                clones!(sts1, drop_stk, st1, tk);
+                action(nt, j, tk, st1, sts1)(HappyStk(r, Some(box drop_stk)))
+            })
+        }
+    }
+}
+
+fn happyMonad2Reduce<T: 'static, U>(k: isize, nt: U,
+                                    __fn: Box<FnBox(HappyStk<HappyAbsSyn>, CToken) -> P<HappyAbsSyn>>,
+                                    _3: isize, tk: CToken,
+                                    st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>,
+                                    sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>>,
+                                    stk: HappyStk<HappyAbsSyn>) -> P<T> {
+    match _3 {
+        1 => happyFail(1, tk, st, sts, stk),
+        j => {
+            let sts1 = happyDrop(k, __op_concat(st, sts));
+            let st1 = sts1.clone().remove(0);
+            let HappyState(action) = st1.clone();
+
+            let drop_stk = happyDropStk(k, stk.clone());
+
+            let new_state = action;
+
+            happyThen1(__fn(stk, tk), box move |r| {
+                clones!(drop_stk, sts1, new_state);
+                happyNewToken(curry_5_1!(new_state), sts1, HappyStk(r, Some(box drop_stk)))
+            })
+        }
+    }
+}
+
+fn happyDrop<T>(n: isize, mut l: Vec<T>) -> Vec<T> {
+    if n == 0 { l } else {
+        l.remove(0);
+        happyDrop(n - 1, l)
+    }
+}
+
+fn happyDropStk<T>(n: isize, stk: HappyStk<T>) -> HappyStk<T> {
+    match (n, stk) {
+        (0, stk) => stk,
+        (n, HappyStk(x, Some(box xs))) => happyDropStk(n - 1, xs),
+        _ => panic!("irrefutable pattern"),
     }
 }
 
 // -----------------------------------------------------------------------------
 /// Moving to a new state after a reduction
-fn happyGoto(action: Box<Fn(isize, isize, CToken, HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>, j: isize, tk: CToken, st: HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, _curry_4: Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, _curry_5: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+fn happyGoto(action: Action<HappyAbsSyn, HappyStk<HappyAbsSyn>>, j: isize, tk: CToken,
+             st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
+             _curry_4: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
+             _curry_5: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
     let action = Rc::new(action);
     let action_ = action.clone();
     action(j, j, tk, (HappyState(Rc::new(apply_5_1_clone!(action_)))), _curry_4, _curry_5)
@@ -22271,21 +22260,20 @@ fn happyGoto(action: Box<Fn(isize, isize, CToken, HappyState<CToken, Box<Fn(Happ
 
 // -----------------------------------------------------------------------------
 /// Error recovery ((1) is the error token)
-fn happyFail<a0: 'static>(_0: isize, _1: CToken, _2: HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<a0>>>, _3: Vec<HappyState<CToken, Box<Fn(HappyStk<HappyAbsSyn>) -> P<a0>>>>, _4: HappyStk<HappyAbsSyn>) -> P<a0> {
-    match (_0, _1, _2, _3, _4) {
-        (1, tk, old_st, _, HappyStk(x, Some(_))) => {
-            {
-                let i = (match x {
-                        HappyErrorToken(i) => {
-                            i
-                        },
-                        _ => unreachable!(),
-                    });
-
-            happyError_(i, tk)            }
+fn happyFail<T: 'static>(i: isize, tk: CToken,
+                         old_st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>,
+                         sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>>,
+                         stk: HappyStk<HappyAbsSyn>) -> P<T> {
+    match (i, old_st, stk) {
+        (1, old_st, HappyStk(x, Some(_))) => {
+            let i = match x {
+                HappyErrorToken(i) => i,
+                _ => unreachable!(),
+            };
+            happyError_(i, tk)
         },
-        (i, tk, HappyState(action), sts, stk) => {
-            action((1), (1), tk, (HappyState(action.clone())), sts)((HappyStk((HappyErrorToken(i)), Some(box stk))))
+        (i, HappyState(action), stk) => {
+            action(1, 1, tk, HappyState(action.clone()), sts)(HappyStk(HappyErrorToken(i), Some(box stk)))
         },
     }
 }

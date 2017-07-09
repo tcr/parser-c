@@ -33498,7 +33498,7 @@ pub fn alexMove(pos: Position, ch: char) -> Position {
 }
 
 pub fn lexicalError<a: 'static>() -> P<a> {
-    thenP(getPos(), box move |pos| {
+    thenP(getPos(), box move |pos: Position| {
         thenP(getInput(), box move |input| {
             let (c, _) = takeChar(input);
             let pos = pos.clone();
@@ -33511,7 +33511,7 @@ pub fn lexicalError<a: 'static>() -> P<a> {
 }
 
 pub fn parseError<a: 'static>() -> P<a> {
-    thenP(getLastToken(), box move |lastTok| {
+    thenP(getLastToken(), box move |lastTok: CToken| {
         failP(posOf(lastTok.clone()), vec![
             "Syntax error !".to_string(),
             format!("The symbol `{}' does not fit here.", lastTok)
@@ -33537,35 +33537,28 @@ pub fn lexToken() -> P<CToken> {
 }
 
 pub fn lexToken_q(modifyCache: bool) -> P<CToken> {
-    thenP(getPos(), box move |pos| {
-
-        thenP(getInput(), box move |inp| {
-            let pos = pos.clone();
-
+    thenP(getPos(), box move |pos: Position| {
+        thenP(getInput(), box move |inp: InputStream| {
             match alexScan((pos.clone(), inp.clone()), 0) {
                 AlexEOF => {
-                    thenP(handleEofToken(), box move |_| __return(CTokEof))
+                    rshift_monad(handleEofToken(), returnP(CTokEof))
                 },
                 AlexError(_inp) => {
                     lexicalError()
                 },
                 AlexSkip((pos_q, inp_q), _len) => {
-                    let _0 = setPos(pos_q);
-                    let _1 = setInput(inp_q);
-                    let _2 = lexToken_q(modifyCache);
-                    thenP(_0, box move |_| { let _2 = _2.clone(); thenP(_1.clone(), box move |_| _2.clone()) })
+                    rshift_monad(setPos(pos_q), rshift_monad(setInput(inp_q), lexToken_q(modifyCache)))
                 },
                 AlexToken((pos_q, inp_q), len, action) => {
-                    let _0 = setPos(pos_q);
-                    let _1 = setInput(inp_q);
-                    let _2 = thenP(action(pos, len, inp), box move |nextTok| {
-                        if modifyCache {
-                            thenP(setLastToken(nextTok.clone()), box move |_| __return(nextTok.clone()))
-                        } else {
-                            __return(nextTok)
-                        }
-                    });
-                    thenP(_0, box move |_| { let _2 = _2.clone(); thenP(_1.clone(), box move |_| _2.clone()) })
+                    rshift_monad(setPos(pos_q), rshift_monad(
+                        setInput(inp_q),
+                        thenP(action(pos, len, inp), box move |nextTok: CToken| {
+                            if modifyCache {
+                                rshift_monad(setLastToken(nextTok.clone()), returnP(nextTok))
+                            } else {
+                                returnP(nextTok)
+                            }
+                        })))
                 },
             }
         })
@@ -33573,9 +33566,7 @@ pub fn lexToken_q(modifyCache: bool) -> P<CToken> {
 }
 
 pub fn lexC<a: 'static>(cont: Box<Fn(CToken) -> P<a>>) -> P<a> {
-    thenP(lexToken(), box move |nextTok| {
-        cont(nextTok)
-    })
+    thenP(lexToken(), box move |tok| cont(tok))
 }
 
 
