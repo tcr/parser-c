@@ -84,23 +84,23 @@ fn scopes(a: PState) -> Vec<Set<Ident>> {
 }
 
 #[must_use]
-pub struct P<a>(pub Rc<Box<Fn(PState) -> ParseResult<a>>>);
+pub struct P<a>(pub Box<FnBox(PState) -> ParseResult<a>>);
 
-pub fn unP<a>(p: P<a>) -> Rc<Box<Fn(PState) -> ParseResult<a>>> {
+pub fn unP<a>(p: P<a>) -> Box<FnBox(PState) -> ParseResult<a>> {
     p.0
 }
 
 impl<a> P<a> {
-    fn with(item: Box<Fn(PState) -> ParseResult<a>>) -> P<a> {
-        P(Rc::new(item))
+    fn with(item: Box<FnBox(PState) -> ParseResult<a>>) -> P<a> {
+        P(item)
     }
 }
 
-impl<a> Clone for P<a> {
-    fn clone(&self) -> Self {
-        P(self.0.clone())
-    }
-}
+// impl<a> Clone for P<a> {
+//     fn clone(&self) -> Self {
+//         P(self.0.clone())
+//     }
+// }
 
 impl<A: Clone + 'static> From<A> for P<A> {
     fn from(item: A) -> P<A> {
@@ -135,7 +135,7 @@ pub fn returnP<a: Clone + 'static>(a: a) -> P<a> {
     P::with(box move |s| POk(s, a.clone()))
 }
 
-pub fn thenP<a: 'static, b: 'static>(P(m): P<a>, k: Box<Fn(a) -> P<b>>) -> P<b> {
+pub fn thenP<a: 'static, b: 'static>(P(m): P<a>, k: Box<FnBox(a) -> P<b>>) -> P<b> {
     P::with(box move |s| match m(s) {
           POk(s_q, a) => (unP((k(a))))(s_q),
           PFailed(err, pos) => PFailed(err, pos),
@@ -222,9 +222,9 @@ pub fn getSavedToken() -> P<CToken> {
 
 pub fn setLastToken(_0: CToken) -> P<()> {
     match (_0) {
-        CTokEof => P::with(box |s| POk(__assign!(s.clone(), { savedToken: s.prevToken.clone() }), ())),
+        CTokEof => P::with(box |s: PState| POk(__assign!(s.clone(), { savedToken: s.prevToken.clone() }), ())),
         tok => {
-            P::with(box move |s| {
+            P::with(box move |s: PState| {
                   POk(__assign!(s.clone(), {
                           prevToken: Some(tok.clone()),
                           savedToken: s.prevToken.clone(),
@@ -246,5 +246,5 @@ pub fn getCurrentPosition() -> P<Position> {
 // --------
 
 pub fn rshift_monad<a: 'static, b: 'static>(a: P<a>, b: P<b>) -> P<b> {
-    thenP(a, box move |_| b.clone())
+    thenP(a, box move |_| b)
 }
