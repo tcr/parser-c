@@ -105,7 +105,7 @@ impl ToPrimitive for CIntFlag {
 pub struct CInteger(pub isize, pub CIntRepr, pub Flags<CIntFlag>);
 
 
-pub fn readCInteger(repr: CIntRepr, __str: String) -> Either<String, CInteger> {
+pub fn readCInteger(repr: CIntRepr, __str: String) -> Result<CInteger, String> {
 
     let readNum: Box<Fn(String) -> Box<ReadS<isize>>> = match repr {
         DecRepr => box |x| box readDec(x),
@@ -113,21 +113,18 @@ pub fn readCInteger(repr: CIntRepr, __str: String) -> Either<String, CInteger> {
         OctalRepr => box |x| box readOct(x),
     };
 
-    fn readSuffix(input: String) -> Either<String, Flags<CIntFlag>> {
+    fn readSuffix(input: String) -> Result<Flags<CIntFlag>, String> {
         parseFlags(noFlags(), input)
     }
 
-    let mkCInt = |n: isize, suffix: String| -> Either<String, CInteger> {
-        match readSuffix(suffix) {
-            Left(s) => Left(s),
-            Right(s) => Right(CInteger(n, repr, s))
-        }
+    let mkCInt = |n: isize, suffix: String| -> Result<CInteger, String> {
+        readSuffix(suffix).map(|s| CInteger(n, repr, s))
     };
 
-    fn parseFlags(flags: Flags<CIntFlag>, _1: String) -> Either<String, Flags<CIntFlag>> {
+    fn parseFlags(flags: Flags<CIntFlag>, _1: String) -> Result<Flags<CIntFlag>, String> {
         // []
         if _1.len() == 0 {
-            return Right(flags);
+            return Ok(flags);
         }
         // ['l', 'l', fs...]
         if _1.starts_with("ll") {
@@ -142,7 +139,7 @@ pub fn readCInteger(repr: CIntRepr, __str: String) -> Either<String, CInteger> {
         // [f, fs..]
         let f = _1.chars().next().unwrap();
         let fs: String = _1.chars().skip(2).collect();
-        
+
         let go1 = |flag: CIntFlag| {
             parseFlags((setFlag(flag, flags)), fs)
         };
@@ -156,7 +153,7 @@ pub fn readCInteger(repr: CIntRepr, __str: String) -> Either<String, CInteger> {
             'I' => go1(FlagImag),
             'j' => go1(FlagImag),
             'J' => go1(FlagImag),
-            _ => Left(__op_addadd("Unexpected flag ".to_string(), show(f))),
+            _ => Err(format!("Unexpected flag {}", f)),
         }
     }
 
@@ -165,7 +162,7 @@ pub fn readCInteger(repr: CIntRepr, __str: String) -> Either<String, CInteger> {
         let (n, suffix) = s[0].clone();
         mkCInt(n, suffix)
     } else {
-        Left(format!("Bad Integer literal: {:?}", s))
+        Err(format!("Bad Integer literal: {:?}", s))
     }
 }
 

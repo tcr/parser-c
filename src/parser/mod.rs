@@ -28,9 +28,6 @@ use parser::parser_monad::ParseError;
 use data::position::Position;
 use data::input_stream::InputStream;
 
-pub fn execParser_<a: 'static>(parser: P<a>, input: InputStream, pos: Position) -> Either<ParseError, a> {
-    match execParser(parser, input, pos, builtinTypeNames(), newNameSupply()) {
-        Left(s) => Left(s),
-        Right((v, _)) => Right(v)
-    }
+pub fn execParser_<a: 'static>(parser: P<a>, input: InputStream, pos: Position) -> Result<a, ParseError> {
+    execParser(parser, input, pos, builtinTypeNames(), newNameSupply()).map(|(v, _)| v)
 }

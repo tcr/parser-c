@@ -2,18 +2,18 @@
 //!
 //! ```rust,no_run
 //! extern crate parser_c;
-//! 
+//!
 //! use parser_c::parse;
-//! 
+//!
 //! const INPUT: &'static str = r#"
-//! 
+//!
 //! int main() {
 //!     printf("hello world!");
 //!     return 0;
 //! }
-//! 
+//!
 //! "#;
-//! 
+//!
 //! fn main() {
 //!     match parse(INPUT, "simple.c") {
 //!         Err(err) => {
@@ -31,13 +31,15 @@
 #![feature(proc_macro)]
 #![feature(slice_patterns, box_syntax, box_patterns, fnbox)]
 #![allow(unused_parens)]
+// Cut down on number of warnings until we manage it.
+#![allow(non_snake_case, non_camel_case_types, unused_imports, unused_variables, dead_code)]
 #![recursion_limit="500"]
 
 extern crate num;
 #[macro_use] extern crate matches;
-#[macro_use] extern crate num_derive;
+extern crate num_derive;
 extern crate parser_c_macro;
-#[macro_use] extern crate lazy_static;
+extern crate lazy_static;
 
 // pub mod analysis;
 #[macro_use] pub mod support;
@@ -66,38 +68,28 @@ fn parseCFile<C: Preprocessor>(cpp: C,
                                    tmp_dir_opt: Option<FilePath>,
                                    args: Vec<String>,
                                    input_file: FilePath)
-                                   -> Either<ParseError, CTranslUnit> {
+                                   -> Result<CTranslUnit, ParseError> {
 
     let handleCppError = |_0| match (_0) {
-        Left(exitCode) => __error!(__op_addadd("Preprocessor failed with ".to_string(), show(exitCode))),
-        Right(ok) => ok,
+        Err(exitCode) => __error!(format!("Preprocessor failed with {}", exitCode)),
+        Ok(ok) => ok,
     };
 
-    /*do*/
-    {
-        let input_stream = if !isPreprocessed(input_file.clone().into()) {
-            {
-                let cpp_args = __assign!((rawCppArgs(args, input_file.clone())), {
-                    cppTmpDir: tmp_dir_opt
-                });
+    let input_stream = if !isPreprocessed(input_file.clone().into()) {
+        let cpp_args = __assign!((rawCppArgs(args, input_file.clone())), {
+            cppTmpDir: tmp_dir_opt
+        });
 
-                handleCppError(runPreprocessor(cpp, cpp_args))
-            }
-        } else {
-            readInputStream(input_file.clone())
-        };
+        handleCppError(runPreprocessor(cpp, cpp_args))} else {
+        readInputStream(input_file.clone())
+    };
 
-        parseC(input_stream, (initPos(input_file)))
-    }
+    parseC(input_stream, initPos(input_file))
 }
 
-fn parseCFilePre(file: FilePath) -> Either<ParseError, CTranslUnit> {
-    /*do*/
-    {
-        let input_stream = readInputStream(file.clone());
-
-        parseC(input_stream, (initPos(file)))
-    }
+fn parseCFilePre(file: FilePath) -> Result<CTranslUnit, ParseError> {
+    let input_stream = readInputStream(file.clone());
+    parseC(input_stream, initPos(file))
 }
 
 /// Basic public API. Accepts C source and a filename.
@@ -114,15 +106,6 @@ pub fn parse(input: &str, filename: &str) -> Result<CTranslUnit, ParseError> {
     thread::Builder::new().stack_size(32 * 1024 * 1024).spawn(move || {
         let input_stream = inputStreamFromString(input);
 
-        let todo = parseC(input_stream, (initPos(FilePath::from(filename))));
-
-        match todo {
-            Left(err) => {
-                Err(err)
-            }
-            Right(ast) => {
-                Ok(ast)
-            }
-        }
+        parseC(input_stream, (initPos(FilePath::from(filename))))
     }).unwrap().join().unwrap()
 }

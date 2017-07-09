@@ -113,7 +113,7 @@ pub fn execParser<a>(P(parser): P<a>,
                      pos: Position,
                      builtins: Vec<Ident>,
                      names: Vec<Name>)
-                     -> Either<ParseError, (a, Vec<Name>)> {
+                     -> Result<(a, Vec<Name>), ParseError> {
 
     let initialState = PState {
         curPos: pos,
@@ -126,8 +126,8 @@ pub fn execParser<a>(P(parser): P<a>,
     };
 
     match parser(initialState) {
-        PFailed(message, errpos) => Left((ParseError((message, errpos)))),
-        POk(st, result) => Right((result, namesupply(st))),
+        PFailed(message, errpos) => Err(ParseError((message, errpos))),
+        POk(st, result) => Ok((result, namesupply(st))),
     }
 }
 

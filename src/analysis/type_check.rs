@@ -32,11 +32,13 @@ use analysis::type_utils::*;
 use analysis::trav_monad::*;
 use data::ident::*;
 
+pub type TcResult<T> = Result<T, String>;
+
 pub fn pType() -> String {
     render(pretty)
 }
 
-pub fn typeErrorOnLeft<a>(_0: NodeInfo, _1: Either<String, a>) -> m<a> {
+pub fn typeErrorOnLeft<a>(_0: NodeInfo, _1: TcResult<a>) -> m<a> {
     match (_0, _1) {
         (ni, Left(err)) => typeError(ni, err),
         (_, Right(v)) => v,
@@ -47,7 +49,7 @@ pub fn typeError<a>() -> m<a> {
     astError
 }
 
-pub fn notFound<a>(i: Ident) -> Either<String, a> {
+pub fn notFound<a>(i: Ident) -> TcResult<a> {
     Left(__op_addadd("not found: ".to_string(), identToString(i)))
 }
 
@@ -71,7 +73,7 @@ pub fn conditionalType_q(ni: NodeInfo, t1: Type, t2: Type) -> m<Type> {
     typeErrorOnLeft(ni, conditionalType(t1, t2))
 }
 
-pub fn checkScalar(t: Type) -> Either<String, ()> {
+pub fn checkScalar(t: Type) -> TcResult<()> {
     match canonicalType(t) {
         DirectType(_, _, _) => (),
         PtrType(_, _, _) => (),
@@ -120,11 +122,11 @@ pub fn constType(_0: CConst) -> m<Type> {
     }
 }
 
-pub fn compatible(t1: Type, t2: Type) -> Either<String, ()> {
+pub fn compatible(t1: Type, t2: Type) -> TcResult<()> {
     void(compositeType(t1, t2))
 }
 
-pub fn compositeType(_0: Type, _1: Type) -> Either<String, Type> {
+pub fn compositeType(_0: Type, _1: Type) -> TcResult<Type> {
     match (_0, _1) {
         (t1, DirectType(TyBuiltin(TyAny), _, _)) => t1,
         (DirectType(TyBuiltin(TyAny), _, _), t2) => t2,
@@ -254,7 +256,7 @@ pub fn compositeType(_0: Type, _1: Type) -> Either<String, Type> {
     }
 }
 
-pub fn compositeSize(_0: ArraySize, _1: ArraySize) -> Either<String, ArraySize> {
+pub fn compositeSize(_0: ArraySize, _1: ArraySize) -> TcResult<ArraySize> {
     match (_0, _1) {
         (UnknownArraySize(_), s2) => s2,
         (s1, UnknownArraySize(_)) => s1,
@@ -276,7 +278,7 @@ pub fn mergeAttrs() -> Attributes {
     (__op_addadd)
 }
 
-pub fn compositeParamDecl(_0: ParamDecl, _1: ParamDecl) -> Either<String, ParamDecl> {
+pub fn compositeParamDecl(_0: ParamDecl, _1: ParamDecl) -> TcResult<ParamDecl> {
     match (_0, _1) {
         (ParamDecl(vd1, ni1), ParamDecl(vd2, _)) => compositeParamDecl_q(ParamDecl, vd1, vd2, ni1),
         (AbstractParamDecl(vd1, _), ParamDecl(vd2, ni2)) => {
@@ -295,7 +297,7 @@ pub fn compositeParamDecl_q(f: fn(VarDecl) -> fn(NodeInfo) -> ParamDecl,
                             VarDecl(n1, attrs1, t1): VarDecl,
                             VarDecl(n2, attrs2, t2): VarDecl,
                             dni: NodeInfo)
-                            -> Either<String, ParamDecl> {
+                            -> TcResult<ParamDecl> {
 
     let t1_q = canonicalType(t1);
 
@@ -311,7 +313,7 @@ pub fn compositeParamDecl_q(f: fn(VarDecl) -> fn(NodeInfo) -> ParamDecl,
 
 pub fn compositeVarDecl(VarDecl(n1, attrs1, t1): VarDecl,
                         VarDecl(_, attrs2, t2): VarDecl)
-                        -> Either<String, VarDecl> {
+                        -> TcResult<VarDecl> {
     /*do*/
     {
         let t = compositeType(t1, t2);
@@ -326,14 +328,14 @@ pub fn compositeDeclAttrs(DeclAttrs(inl, stor, attrs1): DeclAttrs,
     DeclAttrs(inl, stor, (mergeAttrs(attrs1, attrs2)))
 }
 
-pub fn castCompatible(t1: Type, t2: Type) -> Either<String, ()> {
+pub fn castCompatible(t1: Type, t2: Type) -> TcResult<()> {
     match (canonicalType(t1), canonicalType(t2)) {
         (DirectType(TyVoid, _, _), _) => (),
         (_, _) => __op_rshift(checkScalar(t1), checkScalar(t2)),
     }
 }
 
-pub fn assignCompatible(_0: CAssignOp, _1: Type, _2: Type) -> Either<String, ()> {
+pub fn assignCompatible(_0: CAssignOp, _1: Type, _2: Type) -> TcResult<()> {
     match (_0, _1, _2) {
         (CAssignOp, t1, t2) => {
             match (canonicalType(t1), canonicalType(t2)) {
@@ -369,7 +371,7 @@ pub fn assignCompatible(_0: CAssignOp, _1: Type, _2: Type) -> Either<String, ()>
     }
 }
 
-pub fn binopType(op: CBinaryOp, t1: Type, t2: Type) -> Either<String, Type> {
+pub fn binopType(op: CBinaryOp, t1: Type, t2: Type) -> TcResult<Type> {
     match (op, canonicalType(t1), canonicalType(t2)) {
         (_, t1_q, t2_q) if isLogicOp(op) => {
             __op_rshift(checkScalar(t1_q), __op_rshift(checkScalar(t2_q), boolType))
@@ -443,7 +445,7 @@ pub fn binopType(op: CBinaryOp, t1: Type, t2: Type) -> Either<String, Type> {
     }
 }
 
-pub fn conditionalType(t1: Type, t2: Type) -> Either<String, Type> {
+pub fn conditionalType(t1: Type, t2: Type) -> TcResult<Type> {
     match (canonicalType(t1), canonicalType(t2)) {
         (PtrType(DirectType(TyVoid, _, _), _, _), t2_q) if isPointerType(t2_q) => t2,
         (t1_q, PtrType(DirectType(TyVoid, _, _), _, _)) if isPointerType(t1_q) => t1,
@@ -468,7 +470,7 @@ pub fn conditionalType(t1: Type, t2: Type) -> Either<String, Type> {
     }
 }
 
-pub fn derefType(_0: Type) -> Either<String, Type> {
+pub fn derefType(_0: Type) -> TcResult<Type> {
     match (_0) {
         PtrType(t, _, _) => t,
         ArrayType(t, _, _, _) => t,
@@ -482,7 +484,7 @@ pub fn derefType(_0: Type) -> Either<String, Type> {
     }
 }
 
-pub fn varAddrType(d: IdentDecl) -> Either<String, Type> {
+pub fn varAddrType(d: IdentDecl) -> TcResult<Type> {
 
     let t = declType(d);
 

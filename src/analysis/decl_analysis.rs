@@ -59,12 +59,12 @@ pub fn tParamDecl(_0: CDecl) -> m<ParamDecl> {
     }
 }
 
-pub fn computeParamStorage(_0: NodeInfo, _1: StorageSpec) -> Either<BadSpecifierError, Storage> {
+pub fn computeParamStorage(_0: NodeInfo, _1: StorageSpec) -> Result<Storage, BadSpecifierError> {
     match (_0, _1) {
-        (_, NoStorageSpec) => Right((Auto(false))),
-        (_, RegSpec) => Right((Auto(true))),
+        (_, NoStorageSpec) => Ok((Auto(false))),
+        (_, RegSpec) => Ok((Auto(true))),
         (node, spec) => {
-            Left(badSpecifierError(node,
+            Err(badSpecifierError(node,
                                    __op_addadd("Bad storage specified for parameter: "
                                                    .to_string(),
                                                show(spec))))
