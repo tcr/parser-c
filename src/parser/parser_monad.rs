@@ -102,9 +102,9 @@ impl<a> P<a> {
 //     }
 // }
 
-impl<A: Clone + 'static> From<A> for P<A> {
+impl<A: 'static> From<A> for P<A> {
     fn from(item: A) -> P<A> {
-        P::with(box move |state| POk(state, item.clone()))
+        P::with(box move |state| POk(state, item))
     }
 }
 
