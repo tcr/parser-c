@@ -47,6 +47,9 @@ pub mod data;
 pub mod parser;
 pub mod syntax;
 
+
+use std::thread;
+
 use support as corollary_support;
 use corollary_support::*;
 use syntax::preprocess::*;
@@ -80,24 +83,25 @@ fn parseCFile<C: Preprocessor>(cpp: C,
             cppTmpDir: tmp_dir_opt
         });
 
-        handleCppError(runPreprocessor(cpp, cpp_args))} else {
+        handleCppError(runPreprocessor(cpp, cpp_args))
+    } else {
         readInputStream(input_file.clone())
     };
 
     parseC(input_stream, Position::from_file(input_file))
 }
 
-fn parseCFilePre(file: FilePath) -> Result<CTranslUnit, ParseError> {
-    let input_stream = readInputStream(file.clone());
-    parseC(input_stream, Position::from_file(file))
+pub fn parseCFilePre(file: FilePath) -> Result<CTranslUnit, ParseError> {
+    thread::Builder::new().stack_size(32 * 1024 * 1024).spawn(move || {
+        let input_stream = readInputStream(file.clone());
+        parseC(input_stream, Position::from_file(file))
+    }).unwrap().join().unwrap()
 }
 
 /// Basic public API. Accepts C source and a filename.
 pub fn parse(input: &str, filename: &str) -> Result<CTranslUnit, ParseError> {
     // This doesn't represent possible final functionality of the crate,
     // but makes it usable at this early stage.
-
-    use std::thread;
 
     let input = input.to_string();
     let filename = filename.to_string();
