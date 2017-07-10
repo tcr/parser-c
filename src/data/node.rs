@@ -107,10 +107,18 @@ impl NodeInfo {
         }
     }
 
+    // TODO: necessary, or is pos_ref enough?
     pub fn pos(self) -> Position {
         match self {
             OnlyPos(pos, _) => pos,
             NodeInfo(pos, _, _) => pos,
+        }
+    }
+
+    pub fn pos_ref(&self) -> &Position {
+        match *self {
+            OnlyPos(ref pos, _) => pos,
+            NodeInfo(ref pos, _, _) => pos,
         }
     }
 }

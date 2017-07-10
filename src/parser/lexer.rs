@@ -33354,7 +33354,7 @@ pub fn idkwtok(id: String, pos: Position) -> P<CToken> {
                 getNewName(),
                 box move |name| {
                     let len = id.len() as isize;
-                    let ident = mkIdent(pos.clone(), id, name);
+                    let ident = Ident::new(pos.clone(), id, name);
 
                     thenP(isTypeIdent(ident.clone()), box move |tyident| {
                         if tyident {

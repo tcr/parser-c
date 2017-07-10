@@ -21517,7 +21517,7 @@ fn happyReduce_480() -> ActionReturn {
 
 refute! {
 fn happyReduction_480<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, box move |_0| Some(CAttribute(internalIdent("const".to_string()), vec![], _0))) },
+    happyThen({ withNodeInfo(happy_var_1, box move |_0| Some(CAttribute(Ident::internal("const".into()), vec![], _0))) },
               box move |r| happyReturn(HappyAbsSyn136(r)))
 }
 }
