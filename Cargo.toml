@@ -3,6 +3,7 @@ name = "parser-c"
 version = "0.2.1"
 authors = [
   "Tim Ryan <tim@timryan.org>",
+  "Georg Brandl <georg@python.org>",
 ]
 description = "Parses C into an AST."
 repository = "http://github.com/tcr/parser-c"
