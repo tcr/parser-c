@@ -62,6 +62,7 @@ use syntax::constants::*;
 use parser::parser_monad::*;
 use parser::tokens::*;
 use std::str::FromStr;
+use std::boxed::FnBox;
 
 // fn(A, B) -> fn(C) -> {eval fn(A, B, C)}
 #[allow(unused_macros)]
@@ -409,23 +410,18 @@ pub fn idkwtok(id: String, pos: Position) -> P<CToken> {
         "volatile" => tok(8, box CTokVolatile, pos),
         "__volatile__" => tok(12, box CTokVolatile, pos),
         "while" => tok(5, box CTokWhile, pos),
-        cs => {
-            // TODO
-            let cs = cs.to_owned();
-            let pos = pos.clone();
-
+        _ => {
             thenP(
-                /* let name = */ getNewName(),
+                getNewName(),
                 box move |name| {
-                    let pos = pos.clone();
-                    let len = cs.len() as isize;
-                    let ident = mkIdent(pos.clone(), cs.clone(), name);
+                    let len = id.len() as isize;
+                    let ident = mkIdent(pos.clone(), id, name);
 
                     thenP(isTypeIdent(ident.clone()), box move |tyident| {
                         if tyident {
-                            returnP(CTokTyIdent((pos.clone(), len), ident.clone()))
+                            returnP(CTokTyIdent((pos, len), ident))
                         } else {
-                            returnP(CTokIdent((pos.clone(), len), ident.clone()))
+                            returnP(CTokIdent((pos, len), ident))
                         }
                     })
                 })
@@ -539,6 +535,7 @@ pub fn alexInputPrevChar(_: AlexInput) -> char {
 }
 
 pub fn alexGetByte((p, is): AlexInput) -> Option<(Word8, AlexInput)> {
+    // No clone after removing ByteString API
     if inputStreamEmpty(is.clone()) {
         None
     } else {
@@ -562,7 +559,6 @@ pub fn lexicalError<a: 'static>() -> P<a> {
     thenP(getPos(), box move |pos: Position| {
         thenP(getInput(), box move |input| {
             let (c, _) = takeChar(input);
-            let pos = pos.clone();
             failP(pos, vec![
                 "Lexical error !".to_string(),
                 format!("The character {} does not fit here.", c),
@@ -628,8 +624,8 @@ pub fn lexToken_q(modifyCache: bool) -> P<CToken> {
     })
 }
 
-pub fn lexC<a: 'static>(cont: Box<Fn(CToken) -> P<a>>) -> P<a> {
-    thenP(lexToken(), box move |tok| cont(tok))
+pub fn lexC<a: 'static>(cont: Box<FnBox(CToken) -> P<a>>) -> P<a> {
+    thenP(lexToken(), cont)
 }
 
 }

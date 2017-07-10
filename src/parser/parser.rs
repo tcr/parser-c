@@ -21619,14 +21619,11 @@ fn happyReduction_488(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(_, Some
 
 fn happyNewToken<T: 'static, S: 'static + Clone>(action: Action<T, S>, sts: Vec<HappyState<(CToken), Box<FnBox(S) -> P<T>>>>, stk: S) -> P<T> {
     let action = Rc::new(action);
-    lexC(box move |tk| {
+    lexC(box move |tk: Token| {
         let tk_ = tk.clone();
-        let sts_ = sts.clone();
-        let stk_ = stk.clone();
-        let action_ = action.clone();
         let cont = move |i| {
-            let action__ = action_.clone();
-            action_(i, i, tk_, HappyState(Rc::new(apply_5_1_clone!(action__))), sts_, stk_)
+            let action_ = action.clone();
+            action(i, i, tk_, HappyState(Rc::new(apply_5_1_clone!(action_))), sts, stk)
         };
         match tk {
             CTokEof => cont(247),
@@ -22148,7 +22145,7 @@ pub fn expressionP() -> P<CExpr> {
 
 
 // Original location: "<command-line>", line 8
-// Original location: "/tmp/ghc20480_0/ghc_2.h", line 1
+// Original location: "/tmp/ghc25396_0/ghc_2.h", line 1
 
 
 
