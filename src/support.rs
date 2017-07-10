@@ -374,19 +374,6 @@ pub fn dropWhile<F: Fn(char) -> bool>(cond: F, input: String) -> String {
     out.into_iter().collect()
 }
 
-pub fn span<F: Fn(char) -> bool>(cond: F, input: String) -> (String, String) {
-    let mut left = vec![];
-    let mut right = vec![];
-    for item in input.chars() {
-        if cond(item.clone()) && right.is_empty() {
-            left.push(item);
-        } else {
-            right.push(item);
-        }
-    }
-    (left.into_iter().collect(), right.into_iter().collect())
-}
-
 pub fn chr(input: isize) -> char {
     input as u8 as char
 }
@@ -546,87 +533,6 @@ impl ReadS<isize> for readDec {
         }
     }
 }
-
-
-
-
-
-
-// BSC
-
-
-// Char8
-//TODO make this deal with u8's, not chars
-pub mod BSC {
-    pub fn head(input: Vec<u8>) -> char {
-        input[0] as char
-    }
-
-    pub fn tail(input: Vec<u8>) -> Vec<u8> {
-        if input.len() > 0 {
-            input[1..].to_vec()
-        } else {
-            vec![]
-        }
-    }
-
-    pub fn null(input: Vec<u8>) -> bool {
-        input.is_empty()
-    }
-
-    pub fn lines(input: Vec<u8>) -> Vec<Vec<u8>> {
-        //TODO
-        vec![]
-    }
-
-    pub fn pack(input: String) -> Vec<u8> {
-        input.chars().map(|x| x as u8).collect()
-    }
-
-    pub fn unpack(input: Vec<u8>) -> String {
-        input.into_iter().map(|x| x as char).collect()
-    }
-
-    pub fn take(len: isize, input: Vec<u8>) -> Vec<u8> {
-        input.into_iter().take(len as usize).collect()
-    }
-}
-
-// ByteString
-pub mod BSW {
-    use FilePath;
-
-    pub fn null(input: Vec<u8>) -> bool {
-        input.is_empty()
-    }
-
-    pub fn head(input: Vec<u8>) -> u8 {
-        input[0]
-    }
-
-    pub fn tail(input: Vec<u8>) -> Vec<u8> {
-        if input.len() > 0 {
-            input[1..].to_vec()
-        } else {
-            vec![]
-        }
-    }
-
-    pub fn readFile(f: FilePath) -> Vec<u8> {
-        use std::fs::File;
-        use std::io::Read;
-
-        // TODO
-        let mut items = vec![];
-        File::open(f.path).unwrap().read_to_end(&mut items).unwrap();
-        items
-    }
-}
-
-pub type ByteString = Vec<u8>;
-
-pub type Word8 = u8;
-
 
 
 // Map stuff
