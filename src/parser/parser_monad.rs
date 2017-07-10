@@ -33,6 +33,9 @@ use data::name::Name;
 use data::error::*;
 use std::boxed::FnBox;
 use std::rc::Rc;
+use std::mem;
+use std::collections::HashSet;
+use std::iter::FromIterator;
 
 #[derive(Debug)]
 pub struct ParseError(pub (Vec<String>, Position));
@@ -40,71 +43,34 @@ pub struct ParseError(pub (Vec<String>, Position));
 // instance Show ParseError where
 //     show (ParseError (msgs,pos)) = showErrorInfo "Syntax Error !" (ErrorInfo LevelError pos msgs)
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum ParseResult<a> {
     POk(PState, a),
     PFailed(Vec<String>, Position),
 }
 pub use self::ParseResult::*;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct PState {
     curPos: Position,
     curInput: InputStream,
     prevToken: Option<CToken>,
     savedToken: Option<CToken>,
     namesupply: Vec<Name>,
-    tyidents: Set<Ident>,
-    scopes: Vec<Set<Ident>>,
-}
-fn curPos(a: PState) -> Position {
-    a.curPos
-}
-fn curInput(a: PState) -> InputStream {
-    a.curInput
-}
-fn prevToken(a: PState) -> CToken {
-    // a.prevToken.unwrap_or(CToken::CTokStar((NoPosition, 0)))
-    //TODO
-    a.prevToken.expect("CLexer.execParser: Touched undefined token!")
-}
-fn savedToken(a: PState) -> CToken {
-    // a.savedToken.unwrap_or(CToken::CTokStar((NoPosition, 0)))
-    //TODO
-    a.savedToken.expect("CLexer.execParser: Touched undefined token (safed token)!")
-}
-fn namesupply(a: PState) -> Vec<Name> {
-    a.namesupply
-}
-fn tyidents(a: PState) -> Set<Ident> {
-    a.tyidents
-}
-fn scopes(a: PState) -> Vec<Set<Ident>> {
-    a.scopes
+    tyidents: HashSet<Ident>,
+    scopes: Vec<HashSet<Ident>>,
 }
 
 #[must_use]
-pub struct P<a>(pub Box<FnBox(PState) -> ParseResult<a>>);
+pub struct P<a>(Box<FnBox(PState) -> ParseResult<a>>);
 
 pub fn unP<a>(p: P<a>) -> Box<FnBox(PState) -> ParseResult<a>> {
     p.0
 }
 
-impl<a> P<a> {
-    fn with(item: Box<FnBox(PState) -> ParseResult<a>>) -> P<a> {
-        P(item)
-    }
-}
-
-// impl<a> Clone for P<a> {
-//     fn clone(&self) -> Self {
-//         P(self.0.clone())
-//     }
-// }
-
 impl<A: 'static> From<A> for P<A> {
     fn from(item: A) -> P<A> {
-        P::with(box move |state| POk(state, item))
+        P(box move |state| POk(state, item))
     }
 }
 
@@ -121,126 +87,151 @@ pub fn execParser<a>(P(parser): P<a>,
         prevToken: None,
         savedToken: None,
         namesupply: names,
-        tyidents: Set::fromList(builtins),
+        tyidents: HashSet::from_iter(builtins),
         scopes: vec![],
     };
 
     match parser(initialState) {
         PFailed(message, errpos) => Err(ParseError((message, errpos))),
-        POk(st, result) => Ok((result, namesupply(st))),
+        POk(st, result) => Ok((result, st.namesupply)),
     }
 }
 
-pub fn returnP<a: Clone + 'static>(a: a) -> P<a> {
-    P::with(box move |s| POk(s, a.clone()))
+pub fn returnP<T: 'static>(a: T) -> P<T> {
+    P(box move |s| POk(s, a))
 }
 
-pub fn thenP<a: 'static, b: 'static>(P(m): P<a>, k: Box<FnBox(a) -> P<b>>) -> P<b> {
-    P::with(box move |s| match m(s) {
-          POk(s_q, a) => (unP((k(a))))(s_q),
-          PFailed(err, pos) => PFailed(err, pos),
-      })
+pub fn thenP<T: 'static, U: 'static>(P(m): P<T>, k: Box<FnBox(T) -> P<U>>) -> P<U> {
+    P(box move |s| match m(s) {
+        POk(s_q, a) => unP(k(a))(s_q),
+        PFailed(err, pos) => PFailed(err, pos),
+    })
 }
 
-pub fn failP<a>(pos: Position, msg: Vec<String>) -> P<a> {
-    P::with(box move |_| PFailed(msg.clone(), pos.clone()))
+pub fn failP<T>(pos: Position, msg: Vec<String>) -> P<T> {
+    P(box move |_| PFailed(msg, pos))
 }
 
 pub fn getNewName() -> P<Name> {
-    P::with(box move |s: PState| {
-        let mut ns = s.namesupply.clone();
-        let n = ns.remove(0);
-        seq(n.clone(), POk(__assign!(s, { namesupply: ns }), n))
+    P(box move |mut s: PState| {
+        let n = s.namesupply.remove(0);
+        POk(s, n)
     })
 }
 
 
 pub fn setPos(pos: Position) -> P<()> {
-    P::with(box move |s: PState| POk(__assign!(s, { curPos: pos.clone() }), ()))
-}
-
-pub fn getPos() -> P<Position> {
-    P::with(box move |s: PState| POk(s.clone(), s.curPos.clone()))
-}
-
-pub fn addTypedef(ident: Ident) -> P<()> {
-    P::with(box move |s: PState| POk(__assign!(s.clone(), { tyidents: Set::insert(ident.clone(), s.tyidents.clone()) }), ()))
-}
-
-pub fn shadowTypedef(ident: Ident) -> P<()> {
-    P::with(box move |s: PState| {
-        POk(__assign!(s.clone(), {
-                tyidents: (if Set::member(ident.clone(), s.tyidents.clone()) {
-                    Set::delete(ident.clone(), s.tyidents.clone())
-                } else {
-                    s.tyidents.clone()
-                }),
-            }),
-            ())
+    P(box move |mut s: PState| {
+        s.curPos = pos;
+        POk(s, ())
     })
 }
 
+pub fn getPos() -> P<Position> {
+    P(box move |s: PState| {
+        let pos = s.curPos.clone();
+        POk(s, pos)
+    })
+}
+
+pub fn addTypedef(ident: Ident) -> P<()> {
+    P(box move |mut s: PState| {
+        s.tyidents.insert(ident);
+        POk(s, ())
+    })
+}
+
+// TODO take reference
+pub fn shadowTypedef(ident: Ident) -> P<()> {
+    P(box move |mut s: PState| {
+        s.tyidents.remove(&ident);
+        POk(s, ())
+    })
+}
+
+// TODO take reference
 pub fn isTypeIdent(ident: Ident) -> P<bool> {
-    P::with(box move |s: PState| POk(s.clone(), Set::member(ident.clone(), s.tyidents.clone())))
+    P(box move |s: PState| {
+        let is_member = s.tyidents.contains(&ident);
+        POk(s, is_member)
+    })
 }
 
 pub fn enterScope() -> P<()> {
-    P::with(box move |s: PState| POk(__assign!(s.clone(), { scopes: __op_concat(s.tyidents.clone(), s.scopes.clone()) }), ()))
+    P(box move |mut s: PState| {
+        s.scopes.insert(0, s.tyidents.clone());
+        POk(s, ())
+    })
 }
 
 pub fn leaveScope() -> P<()> {
-    P::with(box |s: PState| {
-        let mut ss = s.scopes.clone();
-        if ss.is_empty() {
+    P(box |mut s: PState| {
+        if s.scopes.is_empty() {
             panic!("leaveScope: already in global scope");
         } else {
-            let tyids = ss.remove(0);
-            let ss_q = ss;
-            POk(__assign!(s, {
-                tyidents: tyids,
-                scopes: ss_q,
-            }), ())
+            s.tyidents = s.scopes.remove(0);
+            POk(s, ())
         }
     })
 }
 
 pub fn getInput() -> P<InputStream> {
-    P::with(box |s: PState| POk(s.clone(), s.curInput.clone()))
+    P(box |s: PState| {
+        let input = s.curInput.clone();
+        POk(s, input)
+    })
 }
 
 pub fn setInput(i: InputStream) -> P<()> {
-    P::with(box move |s: PState| POk(__assign!(s, { curInput: i.clone() }), ()))
+    P(box move |mut s: PState| {
+        s.curInput = i;
+        POk(s, ())
+    })
 }
 
 pub fn getLastToken() -> P<CToken> {
-    P::with(box |s: PState| POk(s.clone(), prevToken(s).clone()))
+    P(box |s: PState| {
+        let tok = s.prevToken.clone().expect("touched undefined token");
+        POk(s, tok)
+    })
 }
 
 pub fn getSavedToken() -> P<CToken> {
-    P::with(box |s: PState| POk(s.clone(), savedToken(s).clone()))
+    P(box |s: PState| {
+        let tok = s.savedToken.clone().expect("touched undefined token");
+        POk(s, tok)
+    })
 }
 
-pub fn setLastToken(_0: CToken) -> P<()> {
-    match (_0) {
-        CTokEof => P::with(box |s: PState| POk(__assign!(s.clone(), { savedToken: s.prevToken.clone() }), ())),
+pub fn setLastToken(tk: CToken) -> P<()> {
+    match tk {
+        CTokEof => {
+            P(box |mut s: PState| {
+                s.savedToken = s.prevToken.clone();
+                POk(s, ())
+            })
+        }
         tok => {
-            P::with(box move |s: PState| {
-                  POk(__assign!(s.clone(), {
-                          prevToken: Some(tok.clone()),
-                          savedToken: s.prevToken.clone(),
-                      }),
-                      ())
-              })
+            P(box move |mut s: PState| {
+                s.savedToken = mem::replace(&mut s.prevToken, Some(tok));
+                POk(s, ())
+            })
         }
     }
 }
 
 pub fn handleEofToken() -> P<()> {
-    P::with(box |s: PState| POk(__assign!(s.clone(), { savedToken: s.prevToken.clone() }), ()))
+    P(box |mut s: PState| {
+        s.savedToken = s.prevToken.clone();
+        POk(s, ())
+    })
 }
 
 pub fn getCurrentPosition() -> P<Position> {
-    P::with(box |s: PState| POk(s.clone(), s.curPos.clone()))
+    P(box |s: PState| {
+        let pos = s.curPos.clone();
+        POk(s, pos)
+    })
 }
 
 // --------
