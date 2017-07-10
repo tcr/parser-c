@@ -23,11 +23,11 @@ pub mod tokens;
 
 use parser::parser_monad::execParser;
 use parser::builtin::*;
-use data::name::*;
+use data::name::new_name_supply;
 use parser::parser_monad::ParseError;
 use data::position::Position;
 use data::input_stream::InputStream;
 
 pub fn execParser_<a: 'static>(parser: P<a>, input: InputStream, pos: Position) -> Result<a, ParseError> {
-    execParser(parser, input, pos, builtinTypeNames(), newNameSupply()).map(|(v, _)| v)
+    execParser(parser, input, pos, builtinTypeNames(), new_name_supply()).map(|(v, _)| v)
 }

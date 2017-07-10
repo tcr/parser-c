@@ -1,21 +1,11 @@
 // Original file: "Name.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
-
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Data::Ix;
-// use Data::Generics;
-
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
-pub struct Name(pub isize);
+pub struct Name(usize);
 
-pub fn newNameSupply() -> Vec<Name> {
-    namesStartingFrom(0)
-}
+pub type NameSupply = Box<Iterator<Item=Name>>;
 
-pub fn namesStartingFrom(k: isize) -> Vec<Name> {
-    // TODO fix this to be an infinite iterator
-    (0..1024).map(|k| Name(k)).collect()
+pub fn new_name_supply() -> NameSupply {
+    Box::new((0..).map(Name))
 }

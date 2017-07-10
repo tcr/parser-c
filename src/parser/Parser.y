@@ -52,7 +52,7 @@ use data::name::*;
 use syntax::ops::*;
 use parser::lexer::{lexC, parseError};
 use parser::builtin::builtinTypeNames;
-use data::name::namesStartingFrom;
+use data::name::new_name_supply;
 
 // fn(A, B) -> fn(C) -> {eval fn(A, B, C)}
 macro_rules! partial_1 {
@@ -2676,7 +2676,7 @@ fn happyError<a: 'static>() -> P<a> {
 }
 
 pub fn parseC(input: InputStream, initialPosition: Position) -> Result<CTranslationUnit<NodeInfo>, ParseError> {
-    execParser(translUnitP(), input, initialPosition, builtinTypeNames(), namesStartingFrom(0))
+    execParser(translUnitP(), input, initialPosition, builtinTypeNames(), new_name_supply())
         .map(|x| x.0)
 }
 
