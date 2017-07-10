@@ -29,7 +29,7 @@ use data::position::Position::NoPosition;
 use parser::tokens::*;
 use data::input_stream::*;
 use data::ident::Ident;
-use data::name::Name;
+use data::name::{Name, NameSupply};
 use data::error::*;
 use std::boxed::FnBox;
 use std::rc::Rc;
@@ -43,20 +43,18 @@ pub struct ParseError(pub (Vec<String>, Position));
 // instance Show ParseError where
 //     show (ParseError (msgs,pos)) = showErrorInfo "Syntax Error !" (ErrorInfo LevelError pos msgs)
 
-#[derive(Debug)]
 pub enum ParseResult<a> {
     POk(PState, a),
     PFailed(Vec<String>, Position),
 }
 pub use self::ParseResult::*;
 
-#[derive(Debug)]
 pub struct PState {
     curPos: Position,
     curInput: InputStream,
     prevToken: Option<CToken>,
     savedToken: Option<CToken>,
-    namesupply: Vec<Name>,
+    nameSupply: NameSupply,
     tyidents: HashSet<Ident>,
     scopes: Vec<HashSet<Ident>>,
 }
@@ -72,22 +70,22 @@ pub fn execParser<a>(P(parser): P<a>,
                      input: InputStream,
                      pos: Position,
                      builtins: Vec<Ident>,
-                     names: Vec<Name>)
-                     -> Result<(a, Vec<Name>), ParseError> {
+                     names: NameSupply)
+                     -> Result<(a, NameSupply), ParseError> {
 
     let initialState = PState {
         curPos: pos,
         curInput: input,
         prevToken: None,
         savedToken: None,
-        namesupply: names,
+        nameSupply: names,
         tyidents: HashSet::from_iter(builtins),
         scopes: vec![],
     };
 
     match parser(initialState) {
         PFailed(message, errpos) => Err(ParseError((message, errpos))),
-        POk(st, result) => Ok((result, st.namesupply)),
+        POk(st, result) => Ok((result, st.nameSupply)),
     }
 }
 
@@ -112,7 +110,7 @@ pub fn seqP<a: 'static, b: 'static>(a: P<a>, b: P<b>) -> P<b> {
 
 pub fn getNewName() -> P<Name> {
     P(box move |mut s: PState| {
-        let n = s.namesupply.remove(0);
+        let n = s.nameSupply.next().unwrap();
         POk(s, n)
     })
 }
