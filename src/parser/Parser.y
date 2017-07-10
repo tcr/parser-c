@@ -291,7 +291,7 @@ translation_unit
                           thenP(getNewName(), box |n: Name| {
                               thenP(getCurrentPosition(), box move |p: Position| {
                                   let nodeinfo = NodeInfo::new(p.clone(), (p, 0), n);
-                                  __return(CTranslationUnit(decls, nodeinfo))
+                                  returnP(CTranslationUnit(decls, nodeinfo))
                               })
                           })
                       } else {
@@ -345,31 +345,31 @@ external_declaration
 function_definition :: { CFunDef }
 function_definition
   :                            function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, vec![], $1, vec![], $2))) }
 
   | attrs                      function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, liftCAttrs($1), $2, vec![], $3))) }
 
   | declaration_specifier      function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, $1, $2, vec![], $3))) }
 
   | type_specifier             function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, $1, $2, vec![], $3))) }
 
   | declaration_qualifier_list function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, reverse($1), $2, vec![], $3))) }
 
   | type_qualifier_list        function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, liftTypeQuals($1), $2, vec![], $3))) }
 
   | type_qualifier_list  attrs function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), $3, vec![], $4))) }
 
   -- old function declarators
@@ -402,7 +402,7 @@ function_declarator
   : identifier_declarator
         {%
             let declr = reverseDeclr($1);
-            rshift_monad(enterScope(), rshift_monad(doFuncParamDeclIdent(declr.clone()), __return(declr)))
+            seqP(enterScope(), seqP(doFuncParamDeclIdent(declr.clone()), returnP(declr)))
         }
 
 
@@ -474,23 +474,23 @@ nested_declaration
 nested_function_definition :: { CFunDef }
 nested_function_definition
   : declaration_specifier      function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, $1, $2, vec![], $3))) }
 
   | type_specifier             function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, $1, $2, vec![], $3))) }
 
   | declaration_qualifier_list function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, reverse($1), $2, vec![], $3))) }
 
   | type_qualifier_list   function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, liftTypeQuals($1), $2, vec![], $3))) }
 
   | type_qualifier_list   attrs function_declarator compound_statement
-        {% rshift_monad(leaveScope(), withNodeInfo($1.clone(), partial_1!(
+        {% seqP(leaveScope(), withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), $3, vec![], $4))) }
 
 
@@ -762,7 +762,7 @@ default_declaring_list
         {%
             let declspecs = reverse($1.clone());
             thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     // TODO: borrow these instead
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo($1, partial_1!(CDecl, declspecs,
@@ -774,7 +774,7 @@ default_declaring_list
         {%
             let declspecs = liftTypeQuals($1.clone());
             thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo($1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), $4, None)])))
@@ -785,7 +785,7 @@ default_declaring_list
         {%
             let declspecs = liftTypeQuals($1.clone());
             thenP(withAsmNameAttrs($4, $3), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo($1, partial_1!(CDecl, __op_addadd(declspecs, liftCAttrs($2)),
                                                 vec![(Some(reverseDeclr(declr)), $5, None)])))
@@ -797,7 +797,7 @@ default_declaring_list
         {%
             let declspecs = liftCAttrs($1.clone());
             thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo($1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), $4, None)])))
@@ -809,7 +809,7 @@ default_declaring_list
             if let CDecl(declspecs, dies, at) = $1 {
                 let (f, s) = $5;
                 thenP(withAsmNameAttrs((f, __op_addadd(s, $3)), $4), box move |declr: CDeclrR| {
-                    rshift_monad(
+                    seqP(
                         doDeclIdent(declspecs.clone(), declr.clone()),
                         withLength(at, partial_1!(CDecl, declspecs,
                                                   __op_concat((Some(reverseDeclr(declr)), $6, None), dies))))
@@ -837,7 +837,7 @@ declaring_list
   : declaration_specifier declarator asm_attrs_opt initializer_opt
         {%
             thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     doDeclIdent($1.clone(), declr.clone()),
                     withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr(declr)), $4, None)])))
             })
@@ -846,7 +846,7 @@ declaring_list
   | type_specifier declarator asm_attrs_opt initializer_opt
         {%
             thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     doDeclIdent($1.clone(), declr.clone()),
                     withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr(declr)), $4, None)])))
             })
@@ -857,9 +857,9 @@ declaring_list
             if let CDecl(declspecs, dies, at) = $1 {
                 let (f, s) = $5;
                 thenP(withAsmNameAttrs((f, __op_addadd(s, $3)), $4), box move |declr: CDeclrR| {
-                    rshift_monad(
+                    seqP(
                         doDeclIdent(declspecs.clone(), declr.clone()),
-                        __return(CDecl(declspecs, __op_concat((Some(reverseDeclr(declr)), $6, None),
+                        returnP(CDecl(declspecs, __op_concat((Some(reverseDeclr(declr)), $6, None),
                                                               dies), at)))
                 })
             } else {
@@ -2430,7 +2430,7 @@ fn withNodeInfo<T: 'static, N: Pos + 'static>(node: N, mkAttrNode: Box<FnBox(Nod
         thenP(getSavedToken(), box move |lastTok| {
             let firstPos = posOf(node);
             let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok), name);
-            __return(mkAttrNode(attrs))
+            returnP(mkAttrNode(attrs))
         })
     })
 }
@@ -2440,7 +2440,7 @@ fn withLength<a: Clone + 'static>(nodeinfo: NodeInfo, mkAttrNode: Box<FnBox(Node
         let firstPos = nodeinfo.clone().pos();
         let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok),
                                   nodeinfo.name().unwrap_or_else(|| panic!("nameOfNode")));
-        __return(mkAttrNode(attrs))
+        returnP(mkAttrNode(attrs))
     })
 }
 
@@ -2472,7 +2472,7 @@ fn withAttribute<node: Pos + 'static>(node: node, cattrs: Vec<CAttribute<NodeInf
     thenP(getNewName(), box move |name| {
         let attrs = NodeInfo::with_pos_name(node.posOf(), name);
         let newDeclr = appendDeclrAttrs(cattrs.clone(), mkDeclrNode(attrs));
-        __return(newDeclr)
+        returnP(newDeclr)
     })
 }
 
@@ -2486,7 +2486,7 @@ fn withAttributePF<N: Pos + 'static>(
         let newDeclr: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |_0| {
             appendDeclrAttrs(cattrs.clone(), mkDeclrCtor(attrs.clone(), _0))
         });
-        __return(newDeclr)
+        returnP(newDeclr)
     })
 }
 
@@ -2519,7 +2519,7 @@ fn setAsmName(mAsmName: Option<CStringLiteral<NodeInfo>>,
                   vec!["Duplicate assembler name: ".to_string(), showName(n1), showName(n2)])
         },
         Right(newName) => {
-            __return(CDeclrR(ident, indirections, newName, cattrs, at))
+            returnP(CDeclrR(ident, indirections, newName, cattrs, at))
         },
     }
 }
@@ -2628,7 +2628,7 @@ fn doDeclIdent(declspecs: Vec<CDeclSpec>, CDeclrR(mIdent, _, _, _, _): CDeclrR) 
     };
 
     match mIdent {
-        None => __return(()),
+        None => returnP(()),
         Some(ident) => {
             if any(iypedef, declspecs) { addTypedef(ident) }
             else { shadowTypedef(ident) }
@@ -2656,7 +2656,7 @@ fn doFuncParamDeclIdent(_0: CDeclarator<NodeInfo>) -> P<()> {
             // TODO thread P through this
         },
         _ => {
-            __return(())
+            returnP(())
         },
     }
 }

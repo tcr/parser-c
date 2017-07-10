@@ -15636,7 +15636,7 @@ fn happyReduction_4<T>(HappyStk(HappyAbsSyn8(happy_var_1), Some(box happyRest)):
                           thenP(getNewName(), box |n: Name| {
                               thenP(getCurrentPosition(), box move |p: Position| {
                                   let nodeinfo = NodeInfo::new(p.clone(), (p, 0), n);
-                                  __return(CTranslationUnit(decls, nodeinfo))
+                                  returnP(CTranslationUnit(decls, nodeinfo))
                               })
                           })
                       } else {
@@ -15735,7 +15735,7 @@ fn happyReduce_12() -> ActionReturn {
 
 refute! {
 fn happyReduction_12<T>(HappyStk(HappyAbsSyn12(happy_var_2), Some(box HappyStk(HappyAbsSyn11(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, vec![], happy_var_1, vec![], happy_var_2))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -15748,7 +15748,7 @@ fn happyReduce_13() -> ActionReturn {
 
 refute! {
 fn happyReduction_13<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, liftCAttrs(happy_var_1), happy_var_2, vec![], happy_var_3))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -15761,7 +15761,7 @@ fn happyReduce_14() -> ActionReturn {
 
 refute! {
 fn happyReduction_14<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -15774,7 +15774,7 @@ fn happyReduce_15() -> ActionReturn {
 
 refute! {
 fn happyReduction_15<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -15787,7 +15787,7 @@ fn happyReduce_16() -> ActionReturn {
 
 refute! {
 fn happyReduction_16<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, reverse(happy_var_1), happy_var_2, vec![], happy_var_3))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -15800,7 +15800,7 @@ fn happyReduce_17() -> ActionReturn {
 
 refute! {
 fn happyReduction_17<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, liftTypeQuals(happy_var_1), happy_var_2, vec![], happy_var_3))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -15813,7 +15813,7 @@ fn happyReduce_18() -> ActionReturn {
 
 refute! {
 fn happyReduction_18<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn11(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, vec![], happy_var_4))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -15913,7 +15913,7 @@ refute! {
 fn happyReduction_26<T>(HappyStk(HappyAbsSyn66(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             let declr = reverseDeclr(happy_var_1);
-            rshift_monad(enterScope(), rshift_monad(doFuncParamDeclIdent(declr.clone()), __return(declr))) },
+            seqP(enterScope(), seqP(doFuncParamDeclIdent(declr.clone()), returnP(declr))) },
               box move |r| happyReturn(HappyAbsSyn11(r)))
 }
 }
@@ -16186,7 +16186,7 @@ fn happyReduce_49() -> ActionReturn {
 
 refute! {
 fn happyReduction_49<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -16199,7 +16199,7 @@ fn happyReduce_50() -> ActionReturn {
 
 refute! {
 fn happyReduction_50<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -16212,7 +16212,7 @@ fn happyReduce_51() -> ActionReturn {
 
 refute! {
 fn happyReduction_51<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, reverse(happy_var_1), happy_var_2, vec![], happy_var_3))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -16225,7 +16225,7 @@ fn happyReduce_52() -> ActionReturn {
 
 refute! {
 fn happyReduction_52<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, liftTypeQuals(happy_var_1), happy_var_2, vec![], happy_var_3))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -16238,7 +16238,7 @@ fn happyReduce_53() -> ActionReturn {
 
 refute! {
 fn happyReduction_53<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn11(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
+    happyThen({ seqP(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
             CFunctionDef, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, vec![], happy_var_4))) },
               box move |r| happyReturn(HappyAbsSyn10(r)))
 }
@@ -16710,7 +16710,7 @@ fn happyReduction_92<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(H
     happyThen({
             let declspecs = reverse(happy_var_1.clone());
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     // TODO: borrow these instead
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
@@ -16730,7 +16730,7 @@ fn happyReduction_93<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(H
     happyThen({
             let declspecs = liftTypeQuals(happy_var_1.clone());
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
@@ -16749,7 +16749,7 @@ fn happyReduction_94<T>(HappyStk(HappyAbsSyn94(happy_var_5), Some(box HappyStk(H
     happyThen({
             let declspecs = liftTypeQuals(happy_var_1.clone());
             thenP(withAsmNameAttrs(happy_var_4, happy_var_3), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, __op_addadd(declspecs, liftCAttrs(happy_var_2)),
                                                 vec![(Some(reverseDeclr(declr)), happy_var_5, None)])))
@@ -16768,7 +16768,7 @@ fn happyReduction_95<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(H
     happyThen({
             let declspecs = liftCAttrs(happy_var_1.clone());
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
@@ -16788,7 +16788,7 @@ fn happyReduction_96<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box HappyStk(H
             if let CDecl(declspecs, dies, at) = happy_var_1 {
                 let (f, s) = happy_var_5;
                 thenP(withAsmNameAttrs((f, __op_addadd(s, happy_var_3)), happy_var_4), box move |declr: CDeclrR| {
-                    rshift_monad(
+                    seqP(
                         doDeclIdent(declspecs.clone(), declr.clone()),
                         withLength(at, partial_1!(CDecl, declspecs,
                                                   __op_concat((Some(reverseDeclr(declr)), happy_var_6, None), dies))))
@@ -16821,7 +16821,7 @@ refute! {
 fn happyReduction_98<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     doDeclIdent(happy_var_1.clone(), declr.clone()),
                     withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
             }) },
@@ -16838,7 +16838,7 @@ refute! {
 fn happyReduction_99<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
-                rshift_monad(
+                seqP(
                     doDeclIdent(happy_var_1.clone(), declr.clone()),
                     withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
             }) },
@@ -16857,9 +16857,9 @@ fn happyReduction_100<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box HappyStk(
             if let CDecl(declspecs, dies, at) = happy_var_1 {
                 let (f, s) = happy_var_5;
                 thenP(withAsmNameAttrs((f, __op_addadd(s, happy_var_3)), happy_var_4), box move |declr: CDeclrR| {
-                    rshift_monad(
+                    seqP(
                         doDeclIdent(declspecs.clone(), declr.clone()),
-                        __return(CDecl(declspecs, __op_concat((Some(reverseDeclr(declr)), happy_var_6, None),
+                        returnP(CDecl(declspecs, __op_concat((Some(reverseDeclr(declr)), happy_var_6, None),
                                                               dies), at)))
                 })
             } else {
@@ -21751,14 +21751,14 @@ fn happyError_<T: 'static>(_: isize, tk: (CToken)) -> P<T> {
 fn happyThen<A: 'static, B: 'static>(m: P<A>, f: Box<FnBox(A) -> P<B>>) -> P<B> {
     thenP(m, f)
 }
-fn happyReturn<A: 'static + Clone>(v: A) -> P<A> {
-    __return(v)
+fn happyReturn<A: 'static>(v: A) -> P<A> {
+    returnP(v)
 }
 fn happyThen1<A: 'static, B: 'static>(m: P<A>, f: Box<FnBox(A) -> P<B>>) -> P<B> {
     thenP(m, f)
 }
-fn happyReturn1<A: 'static + Clone>(v: A) -> P<A> {
-    __return(v)
+fn happyReturn1<A: 'static>(v: A) -> P<A> {
+    returnP(v)
 }
 fn happyError_q<A: 'static>(tk: (CToken)) -> P<A> {
     // TODO
@@ -21818,7 +21818,7 @@ fn withNodeInfo<T: 'static, N: Pos + 'static>(node: N, mkAttrNode: Box<FnBox(Nod
         thenP(getSavedToken(), box move |lastTok| {
             let firstPos = posOf(node);
             let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok), name);
-            __return(mkAttrNode(attrs))
+            returnP(mkAttrNode(attrs))
         })
     })
 }
@@ -21828,7 +21828,7 @@ fn withLength<a: Clone + 'static>(nodeinfo: NodeInfo, mkAttrNode: Box<FnBox(Node
         let firstPos = nodeinfo.clone().pos();
         let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok),
                                   nodeinfo.name().unwrap_or_else(|| panic!("nameOfNode")));
-        __return(mkAttrNode(attrs))
+        returnP(mkAttrNode(attrs))
     })
 }
 
@@ -21860,7 +21860,7 @@ fn withAttribute<node: Pos + 'static>(node: node, cattrs: Vec<CAttribute<NodeInf
     thenP(getNewName(), box move |name| {
         let attrs = NodeInfo::with_pos_name(node.posOf(), name);
         let newDeclr = appendDeclrAttrs(cattrs.clone(), mkDeclrNode(attrs));
-        __return(newDeclr)
+        returnP(newDeclr)
     })
 }
 
@@ -21874,7 +21874,7 @@ fn withAttributePF<N: Pos + 'static>(
         let newDeclr: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |_0| {
             appendDeclrAttrs(cattrs.clone(), mkDeclrCtor(attrs.clone(), _0))
         });
-        __return(newDeclr)
+        returnP(newDeclr)
     })
 }
 
@@ -21907,7 +21907,7 @@ fn setAsmName(mAsmName: Option<CStringLiteral<NodeInfo>>,
                   vec!["Duplicate assembler name: ".to_string(), showName(n1), showName(n2)])
         },
         Right(newName) => {
-            __return(CDeclrR(ident, indirections, newName, cattrs, at))
+            returnP(CDeclrR(ident, indirections, newName, cattrs, at))
         },
     }
 }
@@ -22016,7 +22016,7 @@ fn doDeclIdent(declspecs: Vec<CDeclSpec>, CDeclrR(mIdent, _, _, _, _): CDeclrR) 
     };
 
     match mIdent {
-        None => __return(()),
+        None => returnP(()),
         Some(ident) => {
             if any(iypedef, declspecs) { addTypedef(ident) }
             else { shadowTypedef(ident) }
@@ -22044,7 +22044,7 @@ fn doFuncParamDeclIdent(_0: CDeclarator<NodeInfo>) -> P<()> {
             // TODO thread P through this
         },
         _ => {
-            __return(())
+            returnP(())
         },
     }
 }
@@ -22148,7 +22148,7 @@ pub fn expressionP() -> P<CExpr> {
 
 
 // Original location: "<command-line>", line 8
-// Original location: "/tmp/ghc16004_0/ghc_2.h", line 1
+// Original location: "/tmp/ghc20480_0/ghc_2.h", line 1
 
 
 

@@ -68,12 +68,6 @@ pub fn unP<a>(p: P<a>) -> Box<FnBox(PState) -> ParseResult<a>> {
     p.0
 }
 
-impl<A: 'static> From<A> for P<A> {
-    fn from(item: A) -> P<A> {
-        P(box move |state| POk(state, item))
-    }
-}
-
 pub fn execParser<a>(P(parser): P<a>,
                      input: InputStream,
                      pos: Position,
@@ -112,6 +106,10 @@ pub fn failP<T>(pos: Position, msg: Vec<String>) -> P<T> {
     P(box move |_| PFailed(msg, pos))
 }
 
+pub fn seqP<a: 'static, b: 'static>(a: P<a>, b: P<b>) -> P<b> {
+    thenP(a, box move |_| b)
+}
+
 pub fn getNewName() -> P<Name> {
     P(box move |mut s: PState| {
         let n = s.namesupply.remove(0);
@@ -141,7 +139,6 @@ pub fn addTypedef(ident: Ident) -> P<()> {
     })
 }
 
-// TODO take reference
 pub fn shadowTypedef(ident: Ident) -> P<()> {
     P(box move |mut s: PState| {
         s.tyidents.remove(&ident);
@@ -149,7 +146,6 @@ pub fn shadowTypedef(ident: Ident) -> P<()> {
     })
 }
 
-// TODO take reference
 pub fn isTypeIdent(ident: Ident) -> P<bool> {
     P(box move |s: PState| {
         let is_member = s.tyidents.contains(&ident);
@@ -232,10 +228,4 @@ pub fn getCurrentPosition() -> P<Position> {
         let pos = s.curPos.clone();
         POk(s, pos)
     })
-}
-
-// --------
-
-pub fn rshift_monad<a: 'static, b: 'static>(a: P<a>, b: P<b>) -> P<b> {
-    thenP(a, box move |_| b)
 }
