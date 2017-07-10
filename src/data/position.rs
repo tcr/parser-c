@@ -4,9 +4,6 @@
 #[macro_use]
 use corollary_support::*;
 
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Data::Generics;
-
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum Position {
     Position {
@@ -135,10 +132,8 @@ impl Position {
 
 pub type PosLength = (Position, isize);
 
-// class of type which aggregate a source code location
+// class of types which aggregate a source code location
 pub trait Pos {
-    fn posOf(self) -> Position;
-}
-pub fn posOf<P: Pos>(input: P) -> Position {
-    input.posOf()
+    fn pos(&self) -> &Position;
+    fn into_pos(self) -> Position;
 }

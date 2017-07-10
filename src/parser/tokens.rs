@@ -126,8 +126,12 @@ pub enum CToken {
 pub use self::CToken::*;
 
 impl Pos for CToken {
-    fn posOf(self) -> Position {
-        posLenOfTok(self).0
+    fn pos(&self) -> &Position {
+        &posLenOfTok(self).0
+    }
+
+    fn into_pos(self) -> Position {
+        movePosLenOfTok(self).0
     }
 }
 
@@ -156,8 +160,117 @@ pub struct ClangCTok(pub ClangCVersion);
 pub type ClangCVersionTok = ClangCTok;
 
 
-pub fn posLenOfTok(_0: CToken) -> (Position, isize) {
-    match (_0) {
+pub fn posLenOfTok(tok: &CToken) -> &(Position, isize) {
+    match *tok {
+        CTokLParen(ref pos) => pos,
+        CTokRParen(ref pos) => pos,
+        CTokLBracket(ref pos) => pos,
+        CTokRBracket(ref pos) => pos,
+        CTokArrow(ref pos) => pos,
+        CTokDot(ref pos) => pos,
+        CTokExclam(ref pos) => pos,
+        CTokTilde(ref pos) => pos,
+        CTokInc(ref pos) => pos,
+        CTokDec(ref pos) => pos,
+        CTokPlus(ref pos) => pos,
+        CTokMinus(ref pos) => pos,
+        CTokStar(ref pos) => pos,
+        CTokSlash(ref pos) => pos,
+        CTokPercent(ref pos) => pos,
+        CTokAmper(ref pos) => pos,
+        CTokShiftL(ref pos) => pos,
+        CTokShiftR(ref pos) => pos,
+        CTokLess(ref pos) => pos,
+        CTokLessEq(ref pos) => pos,
+        CTokHigh(ref pos) => pos,
+        CTokHighEq(ref pos) => pos,
+        CTokEqual(ref pos) => pos,
+        CTokUnequal(ref pos) => pos,
+        CTokHat(ref pos) => pos,
+        CTokBar(ref pos) => pos,
+        CTokAnd(ref pos) => pos,
+        CTokOr(ref pos) => pos,
+        CTokQuest(ref pos) => pos,
+        CTokColon(ref pos) => pos,
+        CTokAssign(ref pos) => pos,
+        CTokPlusAss(ref pos) => pos,
+        CTokMinusAss(ref pos) => pos,
+        CTokStarAss(ref pos) => pos,
+        CTokSlashAss(ref pos) => pos,
+        CTokPercAss(ref pos) => pos,
+        CTokAmpAss(ref pos) => pos,
+        CTokHatAss(ref pos) => pos,
+        CTokBarAss(ref pos) => pos,
+        CTokSLAss(ref pos) => pos,
+        CTokSRAss(ref pos) => pos,
+        CTokComma(ref pos) => pos,
+        CTokSemic(ref pos) => pos,
+        CTokLBrace(ref pos) => pos,
+        CTokRBrace(ref pos) => pos,
+        CTokEllipsis(ref pos) => pos,
+        CTokAlignof(ref pos) => pos,
+        CTokAlignas(ref pos) => pos,
+        CTokAsm(ref pos) => pos,
+        CTokAtomic(ref pos) => pos,
+        CTokAuto(ref pos) => pos,
+        CTokBreak(ref pos) => pos,
+        CTokBool(ref pos) => pos,
+        CTokCase(ref pos) => pos,
+        CTokChar(ref pos) => pos,
+        CTokConst(ref pos) => pos,
+        CTokContinue(ref pos) => pos,
+        CTokComplex(ref pos) => pos,
+        CTokDefault(ref pos) => pos,
+        CTokDo(ref pos) => pos,
+        CTokDouble(ref pos) => pos,
+        CTokElse(ref pos) => pos,
+        CTokEnum(ref pos) => pos,
+        CTokExtern(ref pos) => pos,
+        CTokFloat(ref pos) => pos,
+        CTokFor(ref pos) => pos,
+        CTokGeneric(ref pos) => pos,
+        CTokGoto(ref pos) => pos,
+        CTokInt(ref pos) => pos,
+        CTokInt128(ref pos) => pos,
+        CTokInline(ref pos) => pos,
+        CTokIf(ref pos) => pos,
+        CTokLong(ref pos) => pos,
+        CTokLabel(ref pos) => pos,
+        CTokNoreturn(ref pos) => pos,
+        CTokNullable(ref pos) => pos,
+        CTokNonnull(ref pos) => pos,
+        CTokRegister(ref pos) => pos,
+        CTokRestrict(ref pos) => pos,
+        CTokReturn(ref pos) => pos,
+        CTokShort(ref pos) => pos,
+        CTokSigned(ref pos) => pos,
+        CTokSizeof(ref pos) => pos,
+        CTokStatic(ref pos) => pos,
+        CTokStaticAssert(ref pos) => pos,
+        CTokStruct(ref pos) => pos,
+        CTokSwitch(ref pos) => pos,
+        CTokTypedef(ref pos) => pos,
+        CTokTypeof(ref pos) => pos,
+        CTokThread(ref pos) => pos,
+        CTokUnion(ref pos) => pos,
+        CTokUnsigned(ref pos) => pos,
+        CTokVoid(ref pos) => pos,
+        CTokVolatile(ref pos) => pos,
+        CTokWhile(ref pos) => pos,
+        CTokCLit(ref pos, _) => pos,
+        CTokILit(ref pos, _) => pos,
+        CTokFLit(ref pos, _) => pos,
+        CTokSLit(ref pos, _) => pos,
+        CTokIdent(ref pos, _) => pos,
+        CTokTyIdent(ref pos, _) => pos,
+        CTokGnuC(_, ref pos) => pos,
+        CTokClangC(ref pos, _) => pos,
+        CTokEof => panic!("tokenPos: Eof"),
+    }
+}
+
+pub fn movePosLenOfTok(tok: CToken) -> (Position, isize) {
+    match tok {
         CTokLParen(pos) => pos,
         CTokRParen(pos) => pos,
         CTokLBracket(pos) => pos,

@@ -118,7 +118,7 @@ pub struct UnsupportedFeature(pub String, pub Position);
 
 
 pub fn unsupportedFeature<P: Pos>(msg: String, a: P) -> UnsupportedFeature {
-    UnsupportedFeature(msg, a.posOf())
+    UnsupportedFeature(msg, a.into_pos())
 }
 
 pub fn unsupportedFeature_(msg: String) -> UnsupportedFeature {

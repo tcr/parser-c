@@ -1208,8 +1208,8 @@ struct_or_union_specifier
 
 struct_or_union :: { Located<CStructTag> }
 struct_or_union
-  : struct                      { Located(CStructTag, posOf($1)) }
-  | union                       { Located(CUnionTag, posOf($1)) }
+  : struct                      { Located(CStructTag, $1.into_pos()) }
+  | union                       { Located(CUnionTag, $1.into_pos()) }
 
 
 struct_declaration_list :: { Reversed<Vec<CDecl>> }
@@ -2027,12 +2027,12 @@ unary_expression
 
 unary_operator :: { Located<CUnaryOp> }
 unary_operator
-  : '&'         { Located(CAdrOp,  posOf($1)) }
-  | '*'         { Located(CIndOp,  posOf($1)) }
-  | '+'         { Located(CPlusOp, posOf($1)) }
-  | '-'         { Located(CMinOp,  posOf($1)) }
-  | '~'         { Located(CCompOp, posOf($1)) }
-  | '!'         { Located(CNegOp,  posOf($1)) }
+  : '&'         { Located(CAdrOp,  $1.into_pos()) }
+  | '*'         { Located(CIndOp,  $1.into_pos()) }
+  | '+'         { Located(CPlusOp, $1.into_pos()) }
+  | '-'         { Located(CMinOp,  $1.into_pos()) }
+  | '~'         { Located(CCompOp, $1.into_pos()) }
+  | '!'         { Located(CNegOp,  $1.into_pos()) }
 
 
 -- parse C cast expression (C99 6.5.4)
@@ -2209,17 +2209,17 @@ assignment_expression
 
 assignment_operator :: { Located<CAssignOp> }
 assignment_operator
-  : '='                 { Located(CAssignOp, posOf($1)) }
-  | "*="                { Located(CMulAssOp, posOf($1)) }
-  | "/="                { Located(CDivAssOp, posOf($1)) }
-  | "%="                { Located(CRmdAssOp, posOf($1)) }
-  | "+="                { Located(CAddAssOp, posOf($1)) }
-  | "-="                { Located(CSubAssOp, posOf($1)) }
-  | "<<="               { Located(CShlAssOp, posOf($1)) }
-  | ">>="               { Located(CShrAssOp, posOf($1)) }
-  | "&="                { Located(CAndAssOp, posOf($1)) }
-  | "^="                { Located(CXorAssOp, posOf($1)) }
-  | "|="                { Located(COrAssOp,  posOf($1)) }
+  : '='                 { Located(CAssignOp, $1.into_pos()) }
+  | "*="                { Located(CMulAssOp, $1.into_pos()) }
+  | "/="                { Located(CDivAssOp, $1.into_pos()) }
+  | "%="                { Located(CRmdAssOp, $1.into_pos()) }
+  | "+="                { Located(CAddAssOp, $1.into_pos()) }
+  | "-="                { Located(CSubAssOp, $1.into_pos()) }
+  | "<<="               { Located(CShlAssOp, $1.into_pos()) }
+  | ">>="               { Located(CShrAssOp, $1.into_pos()) }
+  | "&="                { Located(CAndAssOp, $1.into_pos()) }
+  | "^="                { Located(CXorAssOp, $1.into_pos()) }
+  | "|="                { Located(COrAssOp,  $1.into_pos()) }
 
 
 -- parse C expression (C99 6.5.17)
@@ -2416,7 +2416,10 @@ fn reverseList<a>(l: Vec<a>) -> Reversed<Vec<a>> {
 pub struct Located<T>(T, Position);
 
 impl<T> Pos for Located<T> {
-    fn posOf(self) -> Position {
+    fn pos(&self) -> &Position {
+        &self.1
+    }
+    fn into_pos(self) -> Position {
         self.1
     }
 }
@@ -2428,8 +2431,8 @@ fn unL<T>(Located(a, pos): Located<T>) -> T {
 fn withNodeInfo<T: 'static, N: Pos + 'static>(node: N, mkAttrNode: Box<FnBox(NodeInfo) -> T>) -> P<T> {
     thenP(getNewName(), box |name: Name| {
         thenP(getSavedToken(), box move |lastTok| {
-            let firstPos = posOf(node);
-            let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok), name);
+            let firstPos = node.into_pos();
+            let attrs = NodeInfo::new(firstPos, movePosLenOfTok(lastTok), name);
             returnP(mkAttrNode(attrs))
         })
     })
@@ -2438,7 +2441,7 @@ fn withNodeInfo<T: 'static, N: Pos + 'static>(node: N, mkAttrNode: Box<FnBox(Nod
 fn withLength<a: Clone + 'static>(nodeinfo: NodeInfo, mkAttrNode: Box<FnBox(NodeInfo) -> a>) -> P<a> {
     thenP(getSavedToken(), box move |lastTok| {
         let firstPos = nodeinfo.pos().clone();
-        let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok),
+        let attrs = NodeInfo::new(firstPos, movePosLenOfTok(lastTok),
                                   nodeinfo.name().unwrap_or_else(|| panic!("nameOfNode")));
         returnP(mkAttrNode(attrs))
     })
@@ -2452,14 +2455,11 @@ pub struct CDeclrR(Option<Ident>,
                    NodeInfo);
 
 impl CNode for CDeclrR {
-    fn nodeInfo(self) -> NodeInfo {
-        self.4
+    fn node_info(&self) -> &NodeInfo {
+        &self.4
     }
-}
-
-impl Pos for CDeclrR {
-    fn posOf(self) -> Position {
-        posOf(self.4)
+    fn into_node_info(self) -> NodeInfo {
+        self.4
     }
 }
 
@@ -2470,7 +2470,7 @@ fn reverseDeclr(CDeclrR(ide, reversedDDs, asmname, cattrs, at): CDeclrR) -> CDec
 fn withAttribute<node: Pos + 'static>(node: node, cattrs: Vec<CAttribute<NodeInfo>>,
                                       mkDeclrNode: Box<FnBox(NodeInfo) -> CDeclrR>) -> P<CDeclrR> {
     thenP(getNewName(), box move |name| {
-        let attrs = NodeInfo::with_pos_name(node.posOf(), name);
+        let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
         let newDeclr = appendDeclrAttrs(cattrs.clone(), mkDeclrNode(attrs));
         returnP(newDeclr)
     })
@@ -2482,7 +2482,7 @@ fn withAttributePF<N: Pos + 'static>(
 {
     let mkDeclrCtor = Rc::new(mkDeclrCtor);
     thenP(getNewName(), box move |name| {
-        let attrs = NodeInfo::with_pos_name(node.posOf(), name);
+        let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
         let newDeclr: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |_0| {
             appendDeclrAttrs(cattrs.clone(), mkDeclrCtor(attrs.clone(), _0))
         });
@@ -2515,7 +2515,7 @@ fn setAsmName(mAsmName: Option<CStringLiteral<NodeInfo>>,
 
     match combinedName {
         Left((n1, n2)) => {
-            failP(posOf(n2.clone()),
+            failP(n2.pos().clone(),
                   vec!["Duplicate assembler name: ".to_string(), showName(n1), showName(n2)])
         },
         Right(newName) => {
@@ -2599,15 +2599,20 @@ fn addTrailingAttrs(declspecs: Reversed<Vec<CDeclSpec>>,
 // the first thing in the list
 
 impl<A: Pos> Pos for Vec<A> {
-    fn posOf(mut self) -> Position {
-        let item = self.remove(0);
-        posOf(item)
+    fn pos(&self) -> &Position {
+        self[0].pos()
+    }
+    fn into_pos(mut self) -> Position {
+        self.remove(0).into_pos()
     }
 }
 
 impl<A: Pos> Pos for Reversed<A> {
-    fn posOf(self) -> Position {
-        posOf(self.0)
+    fn pos(&self) -> &Position {
+        (self.0).pos()
+    }
+    fn into_pos(self) -> Position {
+        (self.0).into_pos()
     }
 }
 

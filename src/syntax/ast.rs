@@ -10,7 +10,6 @@ use data::node::*;
 use data::ident::*;
 use syntax::ops::*;
 use syntax::constants::*;
-use data::position::posOf;
 use data::position::{Position, Pos};
 
 use parser_c_macro::CNodeable;
