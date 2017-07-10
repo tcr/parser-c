@@ -18390,7 +18390,7 @@ fn happyReduce_237() -> ActionReturn {
 }
 
 refute! { fn happyReduction_237<T>(HappyStk(HappyAbsSyn88(happy_var_2), Some(box HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_1)), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), box |at| { happy_var_2(mkVarDeclr(happy_var_1, at)) }) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+    happyThen({ withNodeInfo(happy_var_1.clone(), box move |at| { happy_var_2(mkVarDeclr(happy_var_1, at)) }) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
 }
 }
 
@@ -20851,8 +20851,9 @@ fn happyReduce_461() -> ActionReturn {
 refute! { fn happyReduction_461<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
                     withNodeInfo(happy_var_1.clone(), box move |_0| {
-                        if let CTokILit(_, i) = happy_var_1 {
-                            CIntConst(i, _0)
+                        // TODO: I don't get why this is a Fn closure...
+                        if let CTokILit(_, ref i) = happy_var_1 {
+                            CIntConst(i.clone(), _0)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -20868,8 +20869,8 @@ fn happyReduce_462() -> ActionReturn {
 refute! { fn happyReduction_462<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
                     withNodeInfo(happy_var_1.clone(), box move |_0| {
-                        if let CTokCLit(_, c) = happy_var_1 {
-                            CCharConst(c, _0)
+                        if let CTokCLit(_, ref c) = happy_var_1 {
+                            CCharConst(c.clone(), _0)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -20885,8 +20886,8 @@ fn happyReduce_463() -> ActionReturn {
 refute! { fn happyReduction_463<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
                     withNodeInfo(happy_var_1.clone(), box move |_0| {
-                        if let CTokFLit(_, f) = happy_var_1 {
-                            CFloatConst(f, _0)
+                        if let CTokFLit(_, ref f) = happy_var_1 {
+                            CFloatConst(f.clone(), _0)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -20902,8 +20903,8 @@ fn happyReduce_464() -> ActionReturn {
 refute! { fn happyReduction_464<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             withNodeInfo(happy_var_1.clone(), box move |_0| {
-                if let CTokSLit(_, s) = happy_var_1 {
-                    CStringLiteral(s, _0)
+                if let CTokSLit(_, ref s) = happy_var_1 {
+                    CStringLiteral(s.clone(), _0)
                 } else {
                     panic!("irrefutable pattern")
                 }
