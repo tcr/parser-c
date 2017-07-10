@@ -48,7 +48,7 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), Stri
         Define(key, (if val.is_empty() { "".to_string() } else { tail_str(val) }))
     }
 
-    fn getArgOpt (cpp_opt: String, mut rest: Vec<String>) -> Option<(CppOption, Vec<String>)> {
+    fn getArgOpt (cpp_opt: String, rest: Vec<String>) -> Option<(CppOption, Vec<String>)> {
         unreachable!()
         // TODO
         // if isPrefixOf("-I".to_string(), cpp_opt) {
