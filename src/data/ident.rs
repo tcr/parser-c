@@ -70,7 +70,7 @@ impl CNode for Ident {
 
 impl Pos for Ident {
     fn posOf(self) -> Position {
-        nodeInfo(self).pos()
+        nodeInfo(self).into_pos()
     }
 }
 
@@ -94,7 +94,7 @@ impl Ident {
     }
 
     pub fn is_internal(&self) -> bool {
-        self.1.pos_ref().isInternal()
+        self.1.pos().isInternal()
     }
 
     pub fn to_string(self) -> String {

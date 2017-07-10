@@ -21822,7 +21822,7 @@ fn withNodeInfo<T: 'static, N: Pos + 'static>(node: N, mkAttrNode: Box<FnBox(Nod
 
 fn withLength<a: Clone + 'static>(nodeinfo: NodeInfo, mkAttrNode: Box<FnBox(NodeInfo) -> a>) -> P<a> {
     thenP(getSavedToken(), box move |lastTok| {
-        let firstPos = nodeinfo.clone().pos();
+        let firstPos = nodeinfo.pos().clone();
         let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok),
                                   nodeinfo.name().unwrap_or_else(|| panic!("nameOfNode")));
         returnP(mkAttrNode(attrs))
