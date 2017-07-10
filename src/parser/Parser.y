@@ -1452,7 +1452,7 @@ parameter_typedef_declarator
         {% withNodeInfo($1.clone(), partial_1!(mkVarDeclr, $1)) }
 
   | tyident postfixing_abstract_declarator
-        {% withNodeInfo($1.clone(), box |at| { $2(mkVarDeclr($1, at)) }) }
+        {% withNodeInfo($1.clone(), box move |at| { $2(mkVarDeclr($1, at)) }) }
 
   | clean_typedef_declarator
         { $1 }
@@ -2273,8 +2273,9 @@ constant :: { CConst }
 constant
   : cint        {%
                     withNodeInfo($1.clone(), box move |_0| {
-                        if let CTokILit(_, i) = $1 {
-                            CIntConst(i, _0)
+                        // TODO: I don't get why this is a Fn closure...
+                        if let CTokILit(_, ref i) = $1 {
+                            CIntConst(i.clone(), _0)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -2282,8 +2283,8 @@ constant
                 }
   | cchar       {%
                     withNodeInfo($1.clone(), box move |_0| {
-                        if let CTokCLit(_, c) = $1 {
-                            CCharConst(c, _0)
+                        if let CTokCLit(_, ref c) = $1 {
+                            CCharConst(c.clone(), _0)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -2291,8 +2292,8 @@ constant
                 }
   | cfloat      {%
                     withNodeInfo($1.clone(), box move |_0| {
-                        if let CTokFLit(_, f) = $1 {
-                            CFloatConst(f, _0)
+                        if let CTokFLit(_, ref f) = $1 {
+                            CFloatConst(f.clone(), _0)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -2305,8 +2306,8 @@ string_literal
   : cstr
         {%
             withNodeInfo($1.clone(), box move |_0| {
-                if let CTokSLit(_, s) = $1 {
-                    CStringLiteral(s, _0)
+                if let CTokSLit(_, ref s) = $1 {
+                    CStringLiteral(s.clone(), _0)
                 } else {
                     panic!("irrefutable pattern")
                 }
@@ -2694,4 +2695,4 @@ pub fn expressionP() -> P<CExpr> {
     expression()
 }
 
- }
+}
