@@ -764,7 +764,7 @@ default_declaring_list
             thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
                 seqP(
                     // TODO: borrow these instead
-                    doDeclIdent(declspecs.clone(), declr.clone()),
+                    doDeclIdent(&declspecs, declr.clone()),
                     withNodeInfo($1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), $4, None)])))
             })
@@ -775,7 +775,7 @@ default_declaring_list
             let declspecs = liftTypeQuals($1.clone());
             thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
                 seqP(
-                    doDeclIdent(declspecs.clone(), declr.clone()),
+                    doDeclIdent(&declspecs, declr.clone()),
                     withNodeInfo($1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), $4, None)])))
             })
@@ -786,7 +786,7 @@ default_declaring_list
             let declspecs = liftTypeQuals($1.clone());
             thenP(withAsmNameAttrs($4, $3), box move |declr: CDeclrR| {
                 seqP(
-                    doDeclIdent(declspecs.clone(), declr.clone()),
+                    doDeclIdent(&declspecs, declr.clone()),
                     withNodeInfo($1, partial_1!(CDecl, __op_addadd(declspecs, liftCAttrs($2)),
                                                 vec![(Some(reverseDeclr(declr)), $5, None)])))
             })
@@ -798,7 +798,7 @@ default_declaring_list
             let declspecs = liftCAttrs($1.clone());
             thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
                 seqP(
-                    doDeclIdent(declspecs.clone(), declr.clone()),
+                    doDeclIdent(&declspecs, declr.clone()),
                     withNodeInfo($1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), $4, None)])))
             })
@@ -810,7 +810,7 @@ default_declaring_list
                 let (f, s) = $5;
                 thenP(withAsmNameAttrs((f, __op_addadd(s, $3)), $4), box move |declr: CDeclrR| {
                     seqP(
-                        doDeclIdent(declspecs.clone(), declr.clone()),
+                        doDeclIdent(&declspecs, declr.clone()),
                         withLength(at, partial_1!(CDecl, declspecs,
                                                   __op_concat((Some(reverseDeclr(declr)), $6, None), dies))))
                 })
@@ -838,7 +838,7 @@ declaring_list
         {%
             thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
                 seqP(
-                    doDeclIdent($1.clone(), declr.clone()),
+                    doDeclIdent(&$1, declr.clone()),
                     withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr(declr)), $4, None)])))
             })
         }
@@ -847,7 +847,7 @@ declaring_list
         {%
             thenP(withAsmNameAttrs($3, $2), box move |declr: CDeclrR| {
                 seqP(
-                    doDeclIdent($1.clone(), declr.clone()),
+                    doDeclIdent(&$1, declr.clone()),
                     withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr(declr)), $4, None)])))
             })
         }
@@ -858,7 +858,7 @@ declaring_list
                 let (f, s) = $5;
                 thenP(withAsmNameAttrs((f, __op_addadd(s, $3)), $4), box move |declr: CDeclrR| {
                     seqP(
-                        doDeclIdent(declspecs.clone(), declr.clone()),
+                        doDeclIdent(&declspecs, declr.clone()),
                         returnP(CDecl(declspecs, __op_concat((Some(reverseDeclr(declr)), $6, None),
                                                               dies), at)))
                 })
@@ -2619,19 +2619,20 @@ fn mkVarDeclr(ident: Ident, ni: NodeInfo) -> CDeclrR {
     CDeclrR(Some(ident), empty(), None, vec![], ni)
 }
 
-fn doDeclIdent(declspecs: Vec<CDeclSpec>, CDeclrR(mIdent, _, _, _, _): CDeclrR) -> P<()> {
-    let iypedef = |_0| {
-        match (_0) {
-            CStorageSpec(CTypedef(_)) => true,
-            _ => false,
-        }
+fn doDeclIdent(declspecs: &[CDeclSpec], CDeclrR(mIdent, _, _, _, _): CDeclrR) -> P<()> {
+    let is_typedef = |declspec: &CDeclSpec| match *declspec {
+        CStorageSpec(CTypedef(_)) => true,
+        _ => false,
     };
 
     match mIdent {
         None => returnP(()),
         Some(ident) => {
-            if any(iypedef, declspecs) { addTypedef(ident) }
-            else { shadowTypedef(ident) }
+            if declspecs.iter().any(is_typedef) {
+                addTypedef(ident)
+            } else {
+                shadowTypedef(ident)
+            }
         },
     }
 }

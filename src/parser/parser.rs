@@ -16712,7 +16712,7 @@ fn happyReduction_92<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(H
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 seqP(
                     // TODO: borrow these instead
-                    doDeclIdent(declspecs.clone(), declr.clone()),
+                    doDeclIdent(&declspecs, declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
             }) },
@@ -16731,7 +16731,7 @@ fn happyReduction_93<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(H
             let declspecs = liftTypeQuals(happy_var_1.clone());
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 seqP(
-                    doDeclIdent(declspecs.clone(), declr.clone()),
+                    doDeclIdent(&declspecs, declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
             }) },
@@ -16750,7 +16750,7 @@ fn happyReduction_94<T>(HappyStk(HappyAbsSyn94(happy_var_5), Some(box HappyStk(H
             let declspecs = liftTypeQuals(happy_var_1.clone());
             thenP(withAsmNameAttrs(happy_var_4, happy_var_3), box move |declr: CDeclrR| {
                 seqP(
-                    doDeclIdent(declspecs.clone(), declr.clone()),
+                    doDeclIdent(&declspecs, declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, __op_addadd(declspecs, liftCAttrs(happy_var_2)),
                                                 vec![(Some(reverseDeclr(declr)), happy_var_5, None)])))
             }) },
@@ -16769,7 +16769,7 @@ fn happyReduction_95<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(H
             let declspecs = liftCAttrs(happy_var_1.clone());
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 seqP(
-                    doDeclIdent(declspecs.clone(), declr.clone()),
+                    doDeclIdent(&declspecs, declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
             }) },
@@ -16789,7 +16789,7 @@ fn happyReduction_96<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box HappyStk(H
                 let (f, s) = happy_var_5;
                 thenP(withAsmNameAttrs((f, __op_addadd(s, happy_var_3)), happy_var_4), box move |declr: CDeclrR| {
                     seqP(
-                        doDeclIdent(declspecs.clone(), declr.clone()),
+                        doDeclIdent(&declspecs, declr.clone()),
                         withLength(at, partial_1!(CDecl, declspecs,
                                                   __op_concat((Some(reverseDeclr(declr)), happy_var_6, None), dies))))
                 })
@@ -16822,7 +16822,7 @@ fn happyReduction_98<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(H
     happyThen({
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 seqP(
-                    doDeclIdent(happy_var_1.clone(), declr.clone()),
+                    doDeclIdent(&happy_var_1, declr.clone()),
                     withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
             }) },
               box move |r| happyReturn(HappyAbsSyn32(r)))
@@ -16839,7 +16839,7 @@ fn happyReduction_99<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(H
     happyThen({
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 seqP(
-                    doDeclIdent(happy_var_1.clone(), declr.clone()),
+                    doDeclIdent(&happy_var_1, declr.clone()),
                     withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
             }) },
               box move |r| happyReturn(HappyAbsSyn32(r)))
@@ -16858,7 +16858,7 @@ fn happyReduction_100<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box HappyStk(
                 let (f, s) = happy_var_5;
                 thenP(withAsmNameAttrs((f, __op_addadd(s, happy_var_3)), happy_var_4), box move |declr: CDeclrR| {
                     seqP(
-                        doDeclIdent(declspecs.clone(), declr.clone()),
+                        doDeclIdent(&declspecs, declr.clone()),
                         returnP(CDecl(declspecs, __op_concat((Some(reverseDeclr(declr)), happy_var_6, None),
                                                               dies), at)))
                 })
@@ -22004,19 +22004,20 @@ fn mkVarDeclr(ident: Ident, ni: NodeInfo) -> CDeclrR {
     CDeclrR(Some(ident), empty(), None, vec![], ni)
 }
 
-fn doDeclIdent(declspecs: Vec<CDeclSpec>, CDeclrR(mIdent, _, _, _, _): CDeclrR) -> P<()> {
-    let iypedef = |_0| {
-        match (_0) {
-            CStorageSpec(CTypedef(_)) => true,
-            _ => false,
-        }
+fn doDeclIdent(declspecs: &[CDeclSpec], CDeclrR(mIdent, _, _, _, _): CDeclrR) -> P<()> {
+    let is_typedef = |declspec: &CDeclSpec| match *declspec {
+        CStorageSpec(CTypedef(_)) => true,
+        _ => false,
     };
 
     match mIdent {
         None => returnP(()),
         Some(ident) => {
-            if any(iypedef, declspecs) { addTypedef(ident) }
-            else { shadowTypedef(ident) }
+            if declspecs.iter().any(is_typedef) {
+                addTypedef(ident)
+            } else {
+                shadowTypedef(ident)
+            }
         },
     }
 }
@@ -22145,7 +22146,7 @@ pub fn expressionP() -> P<CExpr> {
 
 
 // Original location: "<command-line>", line 8
-// Original location: "/tmp/ghc25396_0/ghc_2.h", line 1
+// Original location: "/tmp/ghc1134_0/ghc_2.h", line 1
 
 
 
