@@ -618,7 +618,7 @@ pub mod BSW {
 
         // TODO
         let mut items = vec![];
-        File::open(f.path).unwrap().read_to_end(&mut items);
+        File::open(f.path).unwrap().read_to_end(&mut items).unwrap();
         items
     }
 }

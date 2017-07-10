@@ -149,11 +149,11 @@ pub fn showErrorInfo(short_msg: String, ErrorInfo(level, pos, mut msgs): ErrorIn
     let mut res = String::new();
 
     if pos.isSource() {
-        write!(res, "{}:{}: (column {}) ", pos.file(), pos.row(), pos.column());
+        write!(res, "{}:{}: (column {}) ", pos.file(), pos.row(), pos.column()).unwrap();
     } else {
-        write!(res, "{}:: ", pos);
+        write!(res, "{}:: ", pos).unwrap();
     }
-    write!(res, "[{}]", level);
+    write!(res, "[{}]", level).unwrap();
     if !short_msg.is_empty() {
         msgs.insert(0, short_msg);
     }
@@ -161,7 +161,7 @@ pub fn showErrorInfo(short_msg: String, ErrorInfo(level, pos, mut msgs): ErrorIn
         internalErr("No short message or error message provided.");
     }
     for msg in msgs {
-        write!(res, "{}>>> {}\n", INDENT, msg);
+        write!(res, "{}>>> {}\n", INDENT, msg).unwrap();
     }
 
     res
@@ -170,7 +170,7 @@ pub fn showErrorInfo(short_msg: String, ErrorInfo(level, pos, mut msgs): ErrorIn
 pub fn internalErr(msg: &str) -> ! {
     let mut res = String::new();
     for line in msg.split('\n') {
-        write!(res, "{}{}\n", INDENT, line);
+        write!(res, "{}{}\n", INDENT, line).unwrap();
     }
     panic!("{}\n{}", INTERNAL_ERR_PREFIX, res);
 }

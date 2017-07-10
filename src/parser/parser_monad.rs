@@ -180,7 +180,7 @@ pub fn shadowTypedef(ident: Ident) -> P<()> {
     })
 }
 
-pub fn isTypeIdent(mut ident: Ident) -> P<bool> {
+pub fn isTypeIdent(ident: Ident) -> P<bool> {
     P::with(box move |s: PState| POk(s.clone(), Set::member(ident.clone(), s.tyidents.clone())))
 }
 
