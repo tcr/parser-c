@@ -115,7 +115,7 @@ pub fn runPreprocessor<P: Preprocessor>(cpp: P,
             }));
 
             match exit_code {
-                ExitSuccess => Ok(readInputStream(actual_out_file)),
+                ExitSuccess => Ok(InputStream::from_file(&actual_out_file)),
                 ExitFailure(_) => Err(exit_code),
             }
         }

@@ -54,11 +54,10 @@ use support as corollary_support;
 use corollary_support::*;
 use syntax::preprocess::*;
 use syntax::ast::*;
-use data::input_stream::readInputStream;
+use data::input_stream::InputStream;
 use data::position::Position;
 use parser::parser_monad::ParseError;
 use parser::parser::parseC;
-use data::input_stream::inputStreamFromString;
 
 // NOTE: These imports are advisory. You probably need to change them to support Rust.
 // use Language::C::Data;
@@ -85,7 +84,7 @@ fn parseCFile<C: Preprocessor>(cpp: C,
 
         handleCppError(runPreprocessor(cpp, cpp_args))
     } else {
-        readInputStream(input_file.clone())
+        InputStream::from_file(&input_file)
     };
 
     parseC(input_stream, Position::from_file(input_file))
@@ -93,7 +92,7 @@ fn parseCFile<C: Preprocessor>(cpp: C,
 
 pub fn parseCFilePre(file: FilePath) -> Result<CTranslUnit, ParseError> {
     thread::Builder::new().stack_size(32 * 1024 * 1024).spawn(move || {
-        let input_stream = readInputStream(file.clone());
+        let input_stream = InputStream::from_file(&file);
         parseC(input_stream, Position::from_file(file))
     }).unwrap().join().unwrap()
 }
@@ -108,7 +107,7 @@ pub fn parse(input: &str, filename: &str) -> Result<CTranslUnit, ParseError> {
 
     // TODO which stack size is necessary? Can we eliminate this?
     thread::Builder::new().stack_size(32 * 1024 * 1024).spawn(move || {
-        let input_stream = inputStreamFromString(input);
+        let input_stream = InputStream::from_string(input);
 
         parseC(input_stream, Position::from_file(FilePath::from(filename)))
     }).unwrap().join().unwrap()

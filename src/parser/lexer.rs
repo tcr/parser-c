@@ -33386,37 +33386,23 @@ pub fn tok(len: isize, tc: Box<Fn(PosLength) -> CToken>, pos: Position) -> P<CTo
     returnP(tc((pos, len)))
 }
 
-pub fn adjustLineDirective(pragmaLen: isize, __str: String, pos: Position) -> Position {
-    fn dropWhite(input: String) -> String {
-        dropWhile((|c| { (c == ' ') || (c == '\t') }), input)
-    }
+pub fn adjustLineDirective(pragma: String, pos: Position) -> Position {
+    // note: it is ensured by the lexer that the requisite parts of the line are present
+    // so we just use unwrap()
 
-    // TODO cleanup
-    let offs_q = pos.offset() + pragmaLen;
+    // calculate new offset
+    let offs_q = pos.offset() + pragma.len() as isize;
+    // get the row
+    let row = pragma[1..].split_whitespace().next().unwrap().parse().unwrap();
+    // next, the filename
+    // TODO this isn't necessarily very nice
+    let fname_start = pragma.as_bytes().iter().position(|&ch| ch == b'"').unwrap();
+    let fname_end = pragma[fname_start+1..].as_bytes().iter().position(|&ch| ch == b'"').unwrap();
+    let fname = &pragma[fname_start+1..fname_start+fname_end+1];
 
-    let str_q = dropWhite(drop_str(1, __str));
-
-    let (rowStr, str_q_q) = span(isDigit, str_q);
-
-    // from read(rowStr)
-    let row_q = isize::from_str(&rowStr).unwrap();
-
-    let str_q_q_q = dropWhite(str_q_q);
-
-    let fnameStr = takeWhile_str(|x| { x != '\"' }, drop_str(1, str_q_q_q.clone()));
-
-    let fname = pos.file();
-
-    let fname_q = if str_q_q_q.len() == 0 || head_str(str_q_q_q) != '"' {
-        fname
-    } else if fnameStr == fname {
-        // try and get more sharing of file name strings
-        fname
-    } else {
-        fnameStr
-    };
-
-    Position::new(offs_q, fname_q, row_q, 1)
+    let current_fname = pos.file();
+    let new_fname = if current_fname == fname { current_fname } else { fname.to_string() };
+    Position::new(offs_q, new_fname, row, 1)
 }
 
 /// special utility for the lexer
@@ -33447,14 +33433,14 @@ pub fn token_fail(errmsg: &str, pos: Position, _: isize, _: InputStream) -> P<CT
 /// token that uses the string
 pub fn token<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
                 fromStr: Box<Fn(String) -> a>, pos: Position, len: isize, __str: InputStream) -> P<CToken> {
-    returnP(mkTok((pos, len), fromStr(takeChars_str(len, __str))))
+    returnP(mkTok((pos, len), fromStr(__str.take_string(len))))
 }
 
 /// token that may fail
 pub fn token_plus<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
                      fromStr: Box<Fn(String) -> Result<a, String>>,
                      pos: Position, len: isize, __str: InputStream) -> P<CToken> {
-    match fromStr(takeChars_str(len, __str)) {
+    match fromStr(__str.take_string(len)) {
         Err(err) => {
             failP(pos, vec!["Lexical error ! ".to_string(), err])
         },
@@ -33473,13 +33459,12 @@ pub fn alexInputPrevChar(_: AlexInput) -> char {
     panic!("alexInputPrevChar not used")
 }
 
-pub fn alexGetByte((p, is): AlexInput) -> Option<(Word8, AlexInput)> {
-    // No clone after removing ByteString API
-    if inputStreamEmpty(is.clone()) {
+pub fn alexGetByte((p, is): AlexInput) -> Option<(u8, AlexInput)> {
+    if is.is_empty() {
         None
     } else {
-        let (b, s) = takeByte(is);
-        // this is safe for latin-1, but ugly
+        let (b, s) = is.take_byte();
+        // TODO this is safe for latin-1, but ugly
         let p_q = alexMove(p, chr(fromIntegral(b as isize)));
         Some((b, (p_q, s)))
     }
@@ -33496,8 +33481,8 @@ pub fn alexMove(pos: Position, ch: char) -> Position {
 
 pub fn lexicalError<a: 'static>() -> P<a> {
     thenP(getPos(), box move |pos: Position| {
-        thenP(getInput(), box move |input| {
-            let (c, _) = takeChar(input);
+        thenP(getInput(), box move |input: InputStream| {
+            let (c, _) = input.take_char();
             failP(pos, vec![
                 "Lexical error !".to_string(),
                 format!("The character {} does not fit here.", c),
@@ -33570,12 +33555,12 @@ pub fn lexC<a: 'static>(cont: Box<FnBox(CToken) -> P<a>>) -> P<a> {
 
 fn alex_action_1(pos: Position, len: isize, inp: InputStream) -> P<CToken> {
 
-    seqP(setPos(adjustLineDirective(len, takeChars_str(len, inp), pos)), lexToken_q(false))
+    seqP(setPos(adjustLineDirective(inp.take_string(len), pos)), lexToken_q(false))
   
 }
 
 fn alex_action_4(pos: Position, len: isize, inp: InputStream) -> P<CToken> {
- idkwtok(takeChars_str(len, inp), pos) 
+ idkwtok(inp.take_string(len), pos) 
 }
 
 fn alex_action_5(pos: Position, len: isize, inp: InputStream) -> P<CToken> {
