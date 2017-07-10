@@ -62,15 +62,11 @@ impl PartialEq for Ident {
 
 // -- identifiers are attributed
 impl CNode for Ident {
-    fn nodeInfo(self) -> NodeInfo {
-        let Ident(_, at) = self;
-        at
+    fn node_info(&self) -> &NodeInfo {
+        &self.1
     }
-}
-
-impl Pos for Ident {
-    fn posOf(self) -> Position {
-        nodeInfo(self).into_pos()
+    fn into_node_info(self) -> NodeInfo {
+        self.1
     }
 }
 

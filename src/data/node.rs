@@ -4,28 +4,33 @@
 #[macro_use]
 use corollary_support::*;
 
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Language::C::Data::Position;
-// use Language::C::Data::Name;
-// use Name;
-// use Data::Generics;
-
-use data::name::Name;
-use data::position::*;
 use std::fmt;
 
+use data::name::Name;
+use data::position::{Pos, Position, PosLength};
 
 // a class for convenient access to the attributes of an attributed object
 pub trait CNode {
-    fn nodeInfo(self) -> NodeInfo;
+    fn node_info(&self) -> &NodeInfo;
+    fn into_node_info(self) -> NodeInfo;
 }
 
 impl CNode for NodeInfo {
-    fn nodeInfo(self) -> NodeInfo { self }
+    fn node_info(&self) -> &NodeInfo {
+        self
+    }
+    fn into_node_info(self) -> NodeInfo {
+        self
+    }
 }
 
-pub fn nodeInfo<T: CNode>(n: T) -> NodeInfo {
-    n.nodeInfo()
+impl<T: CNode> Pos for T {
+    fn pos(&self) -> &Position {
+        NodeInfo::pos(self.node_info())
+    }
+    fn into_pos(self) -> Position {
+        NodeInfo::into_pos(self.into_node_info())
+    }
 }
 
 #[derive(Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
@@ -39,15 +44,6 @@ pub use self::NodeInfo::*;
 impl fmt::Debug for NodeInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "..")
-    }
-}
-
-impl Pos for NodeInfo {
-    fn posOf(self) -> Position {
-        match self {
-            NodeInfo::OnlyPos(pos, _) => pos,
-            NodeInfo::NodeInfo(pos, _, _) => pos
-        }
     }
 }
 
@@ -101,14 +97,17 @@ impl NodeInfo {
         }
     }
 
-    pub fn pos(&self) -> &Position {
+    // NOTE: these are not an impl of Pos because that impl is automatic
+    // for all CNodes and falls back to these inherent methods!
+
+    fn pos(&self) -> &Position {
         match *self {
             OnlyPos(ref pos, _) => pos,
             NodeInfo(ref pos, _, _) => pos,
         }
     }
 
-    pub fn into_pos(self) -> Position {
+    fn into_pos(self) -> Position {
         match self {
             OnlyPos(pos, _) => pos,
             NodeInfo(pos, _, _) => pos,
@@ -116,8 +115,9 @@ impl NodeInfo {
     }
 }
 
+// TODO borrow
 pub fn fileOfNode<A: CNode>(obj: A) -> Option<FilePath> {
-    let pos = obj.nodeInfo().into_pos();
+    let pos = obj.into_pos();
     if pos.isSource() {
         Some(FilePath { path: pos.file() })
     } else {
@@ -126,5 +126,5 @@ pub fn fileOfNode<A: CNode>(obj: A) -> Option<FilePath> {
 }
 
 pub fn eqByName<A: CNode>(obj1: A, obj2: A) -> bool {
-    obj1.nodeInfo() == obj2.nodeInfo()
+    obj1.node_info() == obj2.node_info()
 }

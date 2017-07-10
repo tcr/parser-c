@@ -33493,7 +33493,7 @@ pub fn lexicalError<a: 'static>() -> P<a> {
 
 pub fn parseError<a: 'static>() -> P<a> {
     thenP(getLastToken(), box move |lastTok: CToken| {
-        failP(posOf(lastTok.clone()), vec![
+        failP(lastTok.clone().into_pos(), vec![
             "Syntax error !".to_string(),
             format!("The symbol `{}' does not fit here.", lastTok)
         ])

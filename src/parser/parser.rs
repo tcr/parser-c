@@ -17935,7 +17935,7 @@ fn happyReduce_189() -> ActionReturn {
 
 fn happyReduction_189(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn54(Located(CStructTag, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn54(Located(CStructTag, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -17947,7 +17947,7 @@ fn happyReduce_190() -> ActionReturn {
 
 fn happyReduction_190(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn54(Located(CUnionTag, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn54(Located(CUnionTag, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -20518,7 +20518,7 @@ fn happyReduce_400() -> ActionReturn {
 
 fn happyReduction_400(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CAdrOp,  posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CAdrOp,  happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -20530,7 +20530,7 @@ fn happyReduce_401() -> ActionReturn {
 
 fn happyReduction_401(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CIndOp,  posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CIndOp,  happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -20542,7 +20542,7 @@ fn happyReduce_402() -> ActionReturn {
 
 fn happyReduction_402(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CPlusOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CPlusOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -20554,7 +20554,7 @@ fn happyReduce_403() -> ActionReturn {
 
 fn happyReduction_403(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CMinOp,  posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CMinOp,  happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -20566,7 +20566,7 @@ fn happyReduce_404() -> ActionReturn {
 
 fn happyReduction_404(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CCompOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CCompOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -20578,7 +20578,7 @@ fn happyReduce_405() -> ActionReturn {
 
 fn happyReduction_405(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CNegOp,  posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn107(Located(CNegOp,  happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21010,7 +21010,7 @@ fn happyReduce_441() -> ActionReturn {
 
 fn happyReduction_441(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CAssignOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CAssignOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21022,7 +21022,7 @@ fn happyReduce_442() -> ActionReturn {
 
 fn happyReduction_442(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CMulAssOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CMulAssOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21034,7 +21034,7 @@ fn happyReduce_443() -> ActionReturn {
 
 fn happyReduction_443(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CDivAssOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CDivAssOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21046,7 +21046,7 @@ fn happyReduce_444() -> ActionReturn {
 
 fn happyReduction_444(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CRmdAssOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CRmdAssOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21058,7 +21058,7 @@ fn happyReduce_445() -> ActionReturn {
 
 fn happyReduction_445(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CAddAssOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CAddAssOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21070,7 +21070,7 @@ fn happyReduce_446() -> ActionReturn {
 
 fn happyReduction_446(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CSubAssOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CSubAssOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21082,7 +21082,7 @@ fn happyReduce_447() -> ActionReturn {
 
 fn happyReduction_447(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CShlAssOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CShlAssOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21094,7 +21094,7 @@ fn happyReduce_448() -> ActionReturn {
 
 fn happyReduction_448(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CShrAssOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CShrAssOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21106,7 +21106,7 @@ fn happyReduce_449() -> ActionReturn {
 
 fn happyReduction_449(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CAndAssOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CAndAssOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21118,7 +21118,7 @@ fn happyReduce_450() -> ActionReturn {
 
 fn happyReduction_450(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CXorAssOp, posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(CXorAssOp, happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21130,7 +21130,7 @@ fn happyReduce_451() -> ActionReturn {
 
 fn happyReduction_451(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(COrAssOp,  posOf(happy_var_1))),
+        HappyTerminal(happy_var_1) => HappyAbsSyn121(Located(COrAssOp,  happy_var_1.into_pos())),
         _ => notHappyAtAll()
     }
 }
@@ -21801,7 +21801,10 @@ fn reverseList<a>(l: Vec<a>) -> Reversed<Vec<a>> {
 pub struct Located<T>(T, Position);
 
 impl<T> Pos for Located<T> {
-    fn posOf(self) -> Position {
+    fn pos(&self) -> &Position {
+        &self.1
+    }
+    fn into_pos(self) -> Position {
         self.1
     }
 }
@@ -21813,8 +21816,8 @@ fn unL<T>(Located(a, pos): Located<T>) -> T {
 fn withNodeInfo<T: 'static, N: Pos + 'static>(node: N, mkAttrNode: Box<FnBox(NodeInfo) -> T>) -> P<T> {
     thenP(getNewName(), box |name: Name| {
         thenP(getSavedToken(), box move |lastTok| {
-            let firstPos = posOf(node);
-            let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok), name);
+            let firstPos = node.into_pos();
+            let attrs = NodeInfo::new(firstPos, movePosLenOfTok(lastTok), name);
             returnP(mkAttrNode(attrs))
         })
     })
@@ -21823,7 +21826,7 @@ fn withNodeInfo<T: 'static, N: Pos + 'static>(node: N, mkAttrNode: Box<FnBox(Nod
 fn withLength<a: Clone + 'static>(nodeinfo: NodeInfo, mkAttrNode: Box<FnBox(NodeInfo) -> a>) -> P<a> {
     thenP(getSavedToken(), box move |lastTok| {
         let firstPos = nodeinfo.pos().clone();
-        let attrs = NodeInfo::new(firstPos, posLenOfTok(lastTok),
+        let attrs = NodeInfo::new(firstPos, movePosLenOfTok(lastTok),
                                   nodeinfo.name().unwrap_or_else(|| panic!("nameOfNode")));
         returnP(mkAttrNode(attrs))
     })
@@ -21837,14 +21840,11 @@ pub struct CDeclrR(Option<Ident>,
                    NodeInfo);
 
 impl CNode for CDeclrR {
-    fn nodeInfo(self) -> NodeInfo {
-        self.4
+    fn node_info(&self) -> &NodeInfo {
+        &self.4
     }
-}
-
-impl Pos for CDeclrR {
-    fn posOf(self) -> Position {
-        posOf(self.4)
+    fn into_node_info(self) -> NodeInfo {
+        self.4
     }
 }
 
@@ -21855,7 +21855,7 @@ fn reverseDeclr(CDeclrR(ide, reversedDDs, asmname, cattrs, at): CDeclrR) -> CDec
 fn withAttribute<node: Pos + 'static>(node: node, cattrs: Vec<CAttribute<NodeInfo>>,
                                       mkDeclrNode: Box<FnBox(NodeInfo) -> CDeclrR>) -> P<CDeclrR> {
     thenP(getNewName(), box move |name| {
-        let attrs = NodeInfo::with_pos_name(node.posOf(), name);
+        let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
         let newDeclr = appendDeclrAttrs(cattrs.clone(), mkDeclrNode(attrs));
         returnP(newDeclr)
     })
@@ -21867,7 +21867,7 @@ fn withAttributePF<N: Pos + 'static>(
 {
     let mkDeclrCtor = Rc::new(mkDeclrCtor);
     thenP(getNewName(), box move |name| {
-        let attrs = NodeInfo::with_pos_name(node.posOf(), name);
+        let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
         let newDeclr: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |_0| {
             appendDeclrAttrs(cattrs.clone(), mkDeclrCtor(attrs.clone(), _0))
         });
@@ -21900,7 +21900,7 @@ fn setAsmName(mAsmName: Option<CStringLiteral<NodeInfo>>,
 
     match combinedName {
         Left((n1, n2)) => {
-            failP(posOf(n2.clone()),
+            failP(n2.pos().clone(),
                   vec!["Duplicate assembler name: ".to_string(), showName(n1), showName(n2)])
         },
         Right(newName) => {
@@ -21984,15 +21984,20 @@ fn addTrailingAttrs(declspecs: Reversed<Vec<CDeclSpec>>,
 // the first thing in the list
 
 impl<A: Pos> Pos for Vec<A> {
-    fn posOf(mut self) -> Position {
-        let item = self.remove(0);
-        posOf(item)
+    fn pos(&self) -> &Position {
+        self[0].pos()
+    }
+    fn into_pos(mut self) -> Position {
+        self.remove(0).into_pos()
     }
 }
 
 impl<A: Pos> Pos for Reversed<A> {
-    fn posOf(self) -> Position {
-        posOf(self.0)
+    fn pos(&self) -> &Position {
+        (self.0).pos()
+    }
+    fn into_pos(self) -> Position {
+        (self.0).into_pos()
     }
 }
 

@@ -104,56 +104,52 @@ pub fn cnodeable(input: TokenStream) -> TokenStream {
 fn impl_cnodeable(ast: &syn::MacroInput) -> quote::Tokens {
     match ast.body {
         Body::Enum(ref variants) => {
-            let arms = variants.iter().map(|var| {
+            let mut arms = Vec::new();
+            let mut arms_ref = Vec::new();
+            for var in variants {
                 // get args, opaque everything except for node, return node
-                let out: Vec<_> = if let &syn::VariantData::Tuple(ref inner) = &var.data {
-                    inner.iter().map(|item| {
+                let mut has_node = false;
+                let mut args = Vec::new();
+                let mut args_ref = Vec::new();
+                if let &syn::VariantData::Tuple(ref inner) = &var.data {
+                    for item in inner {
                         let mut tokens = Tokens::new();
                         item.to_tokens(&mut tokens);
                         let arg = tokens.to_string();
                         if arg == "a" {
-                            "node"
+                            has_node = true;
+                            args.push(quote!(node));
+                            args_ref.push(quote!(ref node));
                         } else {
-                            "_"
+                            args.push(quote!(_));
+                            args_ref.push(quote!(_));
                         }
-                    }).collect()
+                    }
                 } else {
                     unreachable!("Expected enum tuple.");
-                };
-                let name = &var.ident;
-                let mut args = Tokens::new();
-                syn::parse_type(&format!("({})", out.join(", "))).unwrap().to_tokens(&mut args);
-                if out.iter().position(|&x| x == "node").is_none() {
-                    if name == "CBuiltinExpr" {
-                        quote! {
-                            #name ( node ) => nodeInfo(*node),
-                        }
-                    } else {
-                        quote! {
-                            #name ( node ) => nodeInfo(node),
-                        }
-                    }
-                } else {
-                    quote! {
-                        #name #args => node,
-                    }
                 }
-            })
-            .collect::<Vec<_>>();
+                let name = &var.ident;
+                if !has_node {
+                    arms.push(quote! { #name ( node ) => node.into_node_info(), });
+                    arms_ref.push(quote! { #name ( ref node ) => node.node_info(), });
+                } else {
+                    arms.push(quote! { #name ( #(#args),* ) => node, });
+                    arms_ref.push(quote! { #name ( #(#args_ref),* ) => node, });
+                }
+            }
 
             let name = &ast.ident;
             quote! {
                 impl CNode for #name<NodeInfo> {
-                    fn nodeInfo(self) -> NodeInfo {
+                    fn node_info(&self) -> &NodeInfo {
+                        match *self {
+                            #(#arms_ref)*
+                        }
+                    }
+                    fn into_node_info(self) -> NodeInfo {
                         match self {
                             #(#arms)*
                         }
-                    }
-                }
-
-                impl Pos for #name<NodeInfo> {
-                    fn posOf(self) -> Position {
-                        posOf(nodeInfo(self))
                     }
                 }
             }
@@ -171,28 +167,26 @@ fn impl_cnodeable(ast: &syn::MacroInput) -> quote::Tokens {
                 unreachable!("Expected struct tuple.");
             };
 
-            let mut args = Tokens::new();
-            syn::parse_expr(&(
-                if node_pos.is_none() { //&& var.len() == 1 {
-                    format!("nodeInfo(self.0)")
-                } else if let Some(pos) = node_pos {
-                    format!("self.{}", pos)
-                } else {
-                    unreachable!("Expected struct entry to be valid");
-                }
-            )).unwrap().to_tokens(&mut args);
+            let (args, args_ref) = if node_pos.is_none() { //&& var.len() == 1 {
+                (quote!( (self.0).into_node_info() ),
+                 quote!( (self.0).node_info() ))
+            } else if let Some(pos) = node_pos {
+                // #pos in quote! produces "1usize" which is not a valid tuple index
+                let expr = syn::parse_expr(&format!("{}", pos)).unwrap();
+                (quote!( self.#expr ),
+                 quote!( &self.#expr ))
+            } else {
+                unreachable!("Expected struct entry to be valid");
+            };
 
             let name = &ast.ident;
             quote! {
                 impl CNode for #name<NodeInfo> {
-                    fn nodeInfo(self) -> NodeInfo {
-                        #args
+                    fn node_info(&self) -> &NodeInfo {
+                        #args_ref
                     }
-                }
-
-                impl Pos for #name<NodeInfo> {
-                    fn posOf(self) -> Position {
-                        posOf(nodeInfo(self))
+                    fn into_node_info(self) -> NodeInfo {
+                        #args
                     }
                 }
             }

@@ -415,7 +415,7 @@ pub fn idkwtok(id: String, pos: Position) -> P<CToken> {
                 getNewName(),
                 box move |name| {
                     let len = id.len() as isize;
-                    let ident = mkIdent(pos.clone(), id, name);
+                    let ident = Ident::new(pos.clone(), id, name);
 
                     thenP(isTypeIdent(ident.clone()), box move |tyident| {
                         if tyident {
@@ -554,7 +554,7 @@ pub fn lexicalError<a: 'static>() -> P<a> {
 
 pub fn parseError<a: 'static>() -> P<a> {
     thenP(getLastToken(), box move |lastTok: CToken| {
-        failP(posOf(lastTok.clone()), vec![
+        failP(lastTok.clone().into_pos(), vec![
             "Syntax error !".to_string(),
             format!("The symbol `{}' does not fit here.", lastTok)
         ])
