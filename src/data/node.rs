@@ -77,26 +77,20 @@ impl NodeInfo {
     }
 
     pub fn len(&self) -> Option<isize> {
-        let computeLength = |pos: &Position, &(ref lastPos, lastTokLen): &PosLength| {
-            if lastTokLen < 0 {
+        match *self {
+            NodeInfo(ref firstPos, (ref lastPos, lastTokLen), _) |
+            OnlyPos( ref firstPos, (ref lastPos, lastTokLen)) => if lastTokLen < 0 {
                 None
             } else {
-                Some(lastPos.offset() + lastTokLen - pos.offset())
+                Some(lastPos.offset() + lastTokLen - firstPos.offset())
             }
-        };
-
-        let len = match *self {
-            NodeInfo(ref firstPos, ref lastTok, _) |
-            OnlyPos(ref firstPos, ref lastTok) => computeLength(firstPos, lastTok),
-        };
-
-        len
+        }
     }
 
-    pub fn getLastTokenPos(self) -> PosLength {
-        match self {
-            NodeInfo(_, lastTok, _) => lastTok,
-            OnlyPos(_, lastTok) => lastTok,
+    pub fn get_last_token_pos(&self) -> &PosLength {
+        match *self {
+            NodeInfo(_, ref last, _) => last,
+            OnlyPos(_, ref last) => last,
         }
     }
 
@@ -107,24 +101,23 @@ impl NodeInfo {
         }
     }
 
-    // TODO: necessary, or is pos_ref enough?
-    pub fn pos(self) -> Position {
-        match self {
-            OnlyPos(pos, _) => pos,
-            NodeInfo(pos, _, _) => pos,
-        }
-    }
-
-    pub fn pos_ref(&self) -> &Position {
+    pub fn pos(&self) -> &Position {
         match *self {
             OnlyPos(ref pos, _) => pos,
             NodeInfo(ref pos, _, _) => pos,
         }
     }
+
+    pub fn into_pos(self) -> Position {
+        match self {
+            OnlyPos(pos, _) => pos,
+            NodeInfo(pos, _, _) => pos,
+        }
+    }
 }
 
 pub fn fileOfNode<A: CNode>(obj: A) -> Option<FilePath> {
-    let pos = obj.nodeInfo().pos();
+    let pos = obj.nodeInfo().into_pos();
     if pos.isSource() {
         Some(FilePath { path: pos.file() })
     } else {
