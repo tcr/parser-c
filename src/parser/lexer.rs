@@ -33362,9 +33362,9 @@ pub fn idkwtok(id: String, pos: Position) -> P<CToken> {
 
                     thenP(isTypeIdent(ident.clone()), box move |tyident| {
                         if tyident {
-                            __return(CTokTyIdent((pos.clone(), len), ident.clone()))
+                            returnP(CTokTyIdent((pos.clone(), len), ident.clone()))
                         } else {
-                            __return(CTokIdent((pos.clone(), len), ident.clone()))
+                            returnP(CTokIdent((pos.clone(), len), ident.clone()))
                         }
                     })
                 })
@@ -33376,7 +33376,7 @@ pub fn ignoreAttribute() -> P<()> {
     pub fn skipTokens(n: isize) -> P<()> {
         thenP(lexToken_q(false), box move |ntok| {
             match ntok {
-                CTokRParen(_) if n == 1 => { __return(()) }
+                CTokRParen(_) if n == 1 => { returnP(()) }
                 CTokRParen(_) => { skipTokens(n - 1) }
                 CTokLParen(_) => { skipTokens(n + 1) },
                 _             => { skipTokens(n) },
@@ -33387,7 +33387,7 @@ pub fn ignoreAttribute() -> P<()> {
 }
 
 pub fn tok(len: isize, tc: Box<Fn(PosLength) -> CToken>, pos: Position) -> P<CToken> {
-    __return(tc((pos, len)))
+    returnP(tc((pos, len)))
 }
 
 pub fn adjustLineDirective(pragmaLen: isize, __str: String, pos: Position) -> Position {
@@ -33440,7 +33440,7 @@ pub fn unescapeMultiChars(cs: String) -> String {
 /// token that ignores the string
 pub fn token_(len: isize, mkTok: Box<Fn(PosLength) -> CToken>, pos: Position,
               _: isize, _: InputStream) -> P<CToken> {
-    __return(mkTok((pos, len)))
+    returnP(mkTok((pos, len)))
 }
 
 /// error token
@@ -33451,7 +33451,7 @@ pub fn token_fail(errmsg: &str, pos: Position, _: isize, _: InputStream) -> P<CT
 /// token that uses the string
 pub fn token<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
                 fromStr: Box<Fn(String) -> a>, pos: Position, len: isize, __str: InputStream) -> P<CToken> {
-    __return(mkTok((pos, len), fromStr(takeChars_str(len, __str))))
+    returnP(mkTok((pos, len), fromStr(takeChars_str(len, __str))))
 }
 
 /// token that may fail
@@ -33463,7 +33463,7 @@ pub fn token_plus<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
             failP(pos, vec!["Lexical error ! ".to_string(), err])
         },
         Ok(ok) => {
-            __return(mkTok((pos, len), ok))
+            returnP(mkTok((pos, len), ok))
         },
     }
 }
@@ -33541,24 +33541,26 @@ pub fn lexToken_q(modifyCache: bool) -> P<CToken> {
         thenP(getInput(), box move |inp: InputStream| {
             match alexScan((pos.clone(), inp.clone()), 0) {
                 AlexEOF => {
-                    rshift_monad(handleEofToken(), returnP(CTokEof))
+                    seqP(handleEofToken(), returnP(CTokEof))
                 },
                 AlexError(_inp) => {
                     lexicalError()
                 },
                 AlexSkip((pos_q, inp_q), _len) => {
-                    rshift_monad(setPos(pos_q), rshift_monad(setInput(inp_q), lexToken_q(modifyCache)))
+                    seqP(setPos(pos_q),
+                         seqP(setInput(inp_q),
+                              lexToken_q(modifyCache)))
                 },
                 AlexToken((pos_q, inp_q), len, action) => {
-                    rshift_monad(setPos(pos_q), rshift_monad(
-                        setInput(inp_q),
-                        thenP(action(pos, len, inp), box move |nextTok: CToken| {
-                            if modifyCache {
-                                rshift_monad(setLastToken(nextTok.clone()), returnP(nextTok))
-                            } else {
-                                returnP(nextTok)
-                            }
-                        })))
+                    seqP(setPos(pos_q),
+                         seqP(setInput(inp_q),
+                              thenP(action(pos, len, inp), box move |nextTok: CToken| {
+                                  if modifyCache {
+                                      seqP(setLastToken(nextTok.clone()), returnP(nextTok))
+                                  } else {
+                                      returnP(nextTok)
+                                  }
+                              })))
                 },
             }
         })
@@ -33572,7 +33574,7 @@ pub fn lexC<a: 'static>(cont: Box<Fn(CToken) -> P<a>>) -> P<a> {
 
 fn alex_action_1(pos: Position, len: isize, inp: InputStream) -> P<CToken> {
 
-    rshift_monad(setPos(adjustLineDirective(len, takeChars_str(len, inp), pos)), lexToken_q(false))
+    seqP(setPos(adjustLineDirective(len, takeChars_str(len, inp), pos)), lexToken_q(false))
   
 }
 
