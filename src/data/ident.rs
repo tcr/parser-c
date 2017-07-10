@@ -12,6 +12,8 @@ use corollary_support::*;
 // use Name;
 // use Data::Generics;
 
+use std::hash::{Hash, Hasher};
+
 use data::position::*;
 use data::node::*;
 use data::name::Name;
@@ -30,8 +32,17 @@ pub fn isAnonymousRef(_0: SUERef) -> bool {
     }
 }
 
-#[derive(Clone, Debug, PartialOrd, Hash, Eq)]
+#[derive(Clone, Debug, PartialOrd, Eq)]
 pub struct Ident(pub String, pub isize, pub NodeInfo);
+
+// required because we keep Idents in a HashSet and don't want the set to
+// consider the NodeInfo part important for comparison
+impl Hash for Ident {
+    fn hash<H: Hasher>(&self, h: &mut H) {
+        (self.0).hash(h);
+        (self.1).hash(h);
+    }
+}
 
 // the definition of the equality allows identifiers to be equal that are
 // defined at different source text positions, and aims at speeding up the
