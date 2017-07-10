@@ -2384,7 +2384,7 @@ attribute
   | ident
         {% withNodeInfo($1.clone(), box move |_0| Some(CAttribute($1, vec![], _0))) }
   | const
-        {% withNodeInfo($1, box move |_0| Some(CAttribute(internalIdent("const".to_string()), vec![], _0))) }
+        {% withNodeInfo($1, box move |_0| Some(CAttribute(Ident::internal("const".into()), vec![], _0))) }
   | ident '(' attribute_params ')'
         {% withNodeInfo($1.clone(), box move |_0| Some(CAttribute($1, reverse($3), _0))) }
   | ident '(' ')'
