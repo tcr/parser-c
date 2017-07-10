@@ -12,7 +12,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 num = "0.1"
 num-derive = "0.1"
-parser-c-macro = "0.1.0"
+parser-c-macro = { path = "parser-c-macro" }
 matches = "0.1.6"
 lazy_static = "0.2"
 

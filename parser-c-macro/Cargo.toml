@@ -12,3 +12,4 @@ proc-macro = true
 syn = { version = "0.10.5", features = [ "full" ] }
 quote = "0.3.10"
 regex = "0.2.2"
+lazy_static = "0.2.8"
