@@ -1,6 +1,5 @@
 #![allow(unreachable_patterns)]
 #[macro_use] use corollary_support::*;
-#[macro_use] use matches;
 use std::boxed::FnBox;
 use std::rc::Rc;
 
@@ -51,78 +50,6 @@ macro_rules! apply_5_1_clone {
         }
     )
 }
-macro_rules! clones {
-    ($($value: ident),*) => {
-        $( let $value = $value.clone(); )*
-    }
-}
-
-// Relevant C99 sections:
-//
-// 6.5 Expressions .1 - .17 and 6.6 (almost literally)
-//  Supported GNU extensions:
-//     - Allow a compound statement as an expression
-//     - Various __builtin_* forms that take type parameters
-//     - `alignof' expression or type
-//     - `__extension__' to suppress warnings about extensions
-//     - Allow taking address of a label with: && label
-//     - Omitting the `then' part of conditional expressions
-//     - complex numbers
-//
-// 6.7 C Declarations .1 -.8
-//  Supported GNU extensions:
-//     - '__thread' thread local storage (6.7.1)
-//
-// 6.8 Statements .1 - .8
-//  Supported GNU extensions:
-//    - case ranges (C99 6.8.1)
-//    - '__label__ ident;' declarations (C99 6.8.2)
-//    - computed gotos (C99 6.8.6)
-//
-// 6.9 Translation unit
-//  Supported GNU extensions:
-//     - allow empty translation_unit
-//     - allow redundant ';'
-//     - allow extension keyword before external declaration
-//     - asm definitions
-//
-//  Since some of the grammar productions are quite difficult to read,
-//  (especially those involved with the decleration syntax) we document them
-//  with an extended syntax that allows a more consise representation:
-//
-//  Ordinary rules
-//
-//   foo      named terminal or non-terminal
-//
-//   'c'      terminal, literal character token
-//
-//   A B      concatenation
-//
-//   A | B    alternation
-//
-//   (A)      grouping
-//
-//  Extended rules
-//
-//   A?       optional, short hand for (A|) or [A]{ 0==A || 1==A }
-//
-//   ...      stands for some part of the grammar omitted for clarity
-//
-//   {A}      represents sequences, 0 or more.
-//
-//   <permute> modifier which states that any permutation of the immediate subterms is valid
-//
-//
-//- TODO ----------------------------------------------------------------------
-//
-//  !* We ignore C11 _Atomic type annotations
-//  !* We ignore the C99 static keyword (see C99 6.7.5.3)
-//  !* We do not distinguish in the AST between incomplete array types and
-//      complete variable length arrays ([ '*' ] means the latter). (see C99 6.7.5.2)
-//  !* The AST doesn't allow recording __attribute__ of unnamed struct field
-//     (see , struct_default_declaring_list, struct_identifier_declarator)
-//  !* see `We're being far to liberal here' (... struct definition within structs)
-//  * Documentation isn't complete and consistent yet.
 
 // Parser produced by modified Happy Version 1.19.6
 
@@ -193,12 +120,8 @@ enum HappyAbsSyn {
 use self::HappyAbsSyn::*;
 
 
-type ActionReturn = Box<FnBox(isize, (CToken), HappyState<(CToken), Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
-                           Vec<HappyState<(CToken), Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
-                           HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>;
-type Action<A, B> = Box<Fn(isize, isize, (CToken), HappyState<(CToken), Box<FnBox(B) -> P<A>>>,
-                           Vec<HappyState<(CToken), Box<FnBox(B) -> P<A>>>>, B) -> P<A>>;
-
+type Monad<T> = P<T>;
+type Token = (CToken);
 fn action_0(i: isize) -> ActionReturn {
     match i {
         7 => partial_5!(happyGoto, curry_1_5!(action_144)),
@@ -15705,7 +15628,8 @@ fn happyReduce_4() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 7, box happyReduction_4)
 }
 
-refute! { fn happyReduction_4<T>(HappyStk(HappyAbsSyn8(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_4<T>(HappyStk(HappyAbsSyn8(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
                       let decls = reverse(happy_var_1);
                       if decls.len() == 0 {
@@ -15718,7 +15642,8 @@ refute! { fn happyReduction_4<T>(HappyStk(HappyAbsSyn8(happy_var_1), Some(box ha
                       } else {
                           let d = decls[0].clone();
                           withNodeInfo(d, box |_0| CTranslationUnit(decls, _0))
-                      } }, (box move |r| { happyReturn(HappyAbsSyn7(r)) }))
+                      } },
+              box move |r| happyReturn(HappyAbsSyn7(r)))
 }
 }
 
@@ -15728,9 +15653,7 @@ fn happyReduce_5() -> ActionReturn {
 }
 
 fn happyReduction_5() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn8(empty()),
-    }
+    HappyAbsSyn8(empty())
 }
 
 
@@ -15798,8 +15721,10 @@ fn happyReduce_11() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 9, box happyReduction_11)
 }
 
-refute! { fn happyReduction_11<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CAsmExt, happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn9(r)) }))
+refute! {
+fn happyReduction_11<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CAsmExt, happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn9(r)))
 }
 }
 
@@ -15808,9 +15733,11 @@ fn happyReduce_12() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 10, box happyReduction_12)
 }
 
-refute! { fn happyReduction_12<T>(HappyStk(HappyAbsSyn12(happy_var_2), Some(box HappyStk(HappyAbsSyn11(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_12<T>(HappyStk(HappyAbsSyn12(happy_var_2), Some(box HappyStk(HappyAbsSyn11(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, vec![], happy_var_1, vec![], happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, vec![], happy_var_1, vec![], happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15819,9 +15746,11 @@ fn happyReduce_13() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 10, box happyReduction_13)
 }
 
-refute! { fn happyReduction_13<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_13<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, liftCAttrs(happy_var_1), happy_var_2, vec![], happy_var_3))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, liftCAttrs(happy_var_1), happy_var_2, vec![], happy_var_3))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15830,9 +15759,11 @@ fn happyReduce_14() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 10, box happyReduction_14)
 }
 
-refute! { fn happyReduction_14<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_14<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15841,9 +15772,11 @@ fn happyReduce_15() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 10, box happyReduction_15)
 }
 
-refute! { fn happyReduction_15<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_15<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15852,9 +15785,11 @@ fn happyReduce_16() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 10, box happyReduction_16)
 }
 
-refute! { fn happyReduction_16<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_16<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, reverse(happy_var_1), happy_var_2, vec![], happy_var_3))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, reverse(happy_var_1), happy_var_2, vec![], happy_var_3))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15863,9 +15798,11 @@ fn happyReduce_17() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 10, box happyReduction_17)
 }
 
-refute! { fn happyReduction_17<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_17<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, liftTypeQuals(happy_var_1), happy_var_2, vec![], happy_var_3))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, liftTypeQuals(happy_var_1), happy_var_2, vec![], happy_var_3))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15874,9 +15811,11 @@ fn happyReduce_18() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 10, box happyReduction_18)
 }
 
-refute! { fn happyReduction_18<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn11(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_18<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn11(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, vec![], happy_var_4))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, vec![], happy_var_4))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15885,8 +15824,10 @@ fn happyReduce_19() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 10, box happyReduction_19)
 }
 
-refute! { fn happyReduction_19<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn33(happy_var_2), Some(box HappyStk(HappyAbsSyn11(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, vec![], happy_var_1, reverse(happy_var_2), happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+refute! {
+fn happyReduction_19<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn33(happy_var_2), Some(box HappyStk(HappyAbsSyn11(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, vec![], happy_var_1, reverse(happy_var_2), happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15895,8 +15836,10 @@ fn happyReduce_20() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 10, box happyReduction_20)
 }
 
-refute! { fn happyReduction_20<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn33(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_2.clone(), partial_1!(CFunctionDef, liftCAttrs(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4)) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+refute! {
+fn happyReduction_20<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn33(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_2.clone(), partial_1!(CFunctionDef, liftCAttrs(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4)) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15905,8 +15848,10 @@ fn happyReduce_21() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 10, box happyReduction_21)
 }
 
-refute! { fn happyReduction_21<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn33(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, happy_var_1, happy_var_2, reverse(happy_var_3), happy_var_4)) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+refute! {
+fn happyReduction_21<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn33(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, happy_var_1, happy_var_2, reverse(happy_var_3), happy_var_4)) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15915,8 +15860,10 @@ fn happyReduce_22() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 10, box happyReduction_22)
 }
 
-refute! { fn happyReduction_22<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn33(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, happy_var_1, happy_var_2, reverse(happy_var_3), happy_var_4)) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+refute! {
+fn happyReduction_22<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn33(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, happy_var_1, happy_var_2, reverse(happy_var_3), happy_var_4)) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15925,8 +15872,10 @@ fn happyReduce_23() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 10, box happyReduction_23)
 }
 
-refute! { fn happyReduction_23<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn33(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, reverse(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4)) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+refute! {
+fn happyReduction_23<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn33(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, reverse(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4)) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15935,8 +15884,10 @@ fn happyReduce_24() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 10, box happyReduction_24)
 }
 
-refute! { fn happyReduction_24<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn33(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, liftTypeQuals(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4)) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+refute! {
+fn happyReduction_24<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn33(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, liftTypeQuals(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4)) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15945,9 +15896,11 @@ fn happyReduce_25() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 10, box happyReduction_25)
 }
 
-refute! { fn happyReduction_25<T>(HappyStk(HappyAbsSyn12(happy_var_5), Some(box HappyStk(HappyAbsSyn33(happy_var_4), Some(box HappyStk(HappyAbsSyn11(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_25<T>(HappyStk(HappyAbsSyn12(happy_var_5), Some(box HappyStk(HappyAbsSyn33(happy_var_4), Some(box HappyStk(HappyAbsSyn11(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, reverse(happy_var_4), happy_var_5)) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, reverse(happy_var_4), happy_var_5)) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -15956,10 +15909,12 @@ fn happyReduce_26() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 11, box happyReduction_26)
 }
 
-refute! { fn happyReduction_26<T>(HappyStk(HappyAbsSyn66(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_26<T>(HappyStk(HappyAbsSyn66(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             let declr = reverseDeclr(happy_var_1);
-            rshift_monad(enterScope(), rshift_monad(doFuncParamDeclIdent(declr.clone()), __return(declr))) }, (box move |r| { happyReturn(HappyAbsSyn11(r)) }))
+            rshift_monad(enterScope(), rshift_monad(doFuncParamDeclIdent(declr.clone()), __return(declr))) },
+              box move |r| happyReturn(HappyAbsSyn11(r)))
 }
 }
 
@@ -16040,8 +15995,10 @@ fn happyReduce_33() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 12, box happyReduction_33)
 }
 
-refute! { fn happyReduction_33<T>(HappyStk(HappyAbsSyn26(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CAsm, happy_var_1)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_33<T>(HappyStk(HappyAbsSyn26(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CAsm, happy_var_1)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16050,8 +16007,10 @@ fn happyReduce_34() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 13, box happyReduction_34)
 }
 
-refute! { fn happyReduction_34<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CLabel, happy_var_1, box happy_var_4, happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_34<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CLabel, happy_var_1, box happy_var_4, happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16060,8 +16019,10 @@ fn happyReduce_35() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 13, box happyReduction_35)
 }
 
-refute! { fn happyReduction_35<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCase, happy_var_2, box happy_var_4)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_35<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCase, happy_var_2, box happy_var_4)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16070,8 +16031,10 @@ fn happyReduce_36() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 13, box happyReduction_36)
 }
 
-refute! { fn happyReduction_36<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CDefault, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_36<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CDefault, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16080,8 +16043,10 @@ fn happyReduce_37() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 13, box happyReduction_37)
 }
 
-refute! { fn happyReduction_37<T>(HappyStk(HappyAbsSyn12(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCases, happy_var_2, happy_var_4, box happy_var_6)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_37<T>(HappyStk(HappyAbsSyn12(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCases, happy_var_2, happy_var_4, box happy_var_6)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16090,8 +16055,10 @@ fn happyReduce_38() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 14, box happyReduction_38)
 }
 
-refute! { fn happyReduction_38<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn17(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCompound, vec![], reverse(happy_var_3))) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_38<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn17(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCompound, vec![], reverse(happy_var_3))) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16100,8 +16067,10 @@ fn happyReduce_39() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 14, box happyReduction_39)
 }
 
-refute! { fn happyReduction_39<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn17(happy_var_4), Some(box HappyStk(HappyAbsSyn21(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCompound, reverse(happy_var_3), reverse(happy_var_4))) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_39<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn17(happy_var_4), Some(box HappyStk(HappyAbsSyn21(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCompound, reverse(happy_var_3), reverse(happy_var_4))) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16110,8 +16079,10 @@ fn happyReduce_40() -> ActionReturn {
     partial_5!(happyMonadReduce, 0, 15, box happyReduction_40)
 }
 
-refute! { fn happyReduction_40<T>(happyRest: HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ enterScope() }, (box move |r| { happyReturn(HappyAbsSyn15(r)) }))
+refute! {
+fn happyReduction_40<T>(happyRest: HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ enterScope() },
+              box move |r| happyReturn(HappyAbsSyn15(r)))
 }
 }
 
@@ -16120,8 +16091,10 @@ fn happyReduce_41() -> ActionReturn {
     partial_5!(happyMonadReduce, 0, 16, box happyReduction_41)
 }
 
-refute! { fn happyReduction_41<T>(happyRest: HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ leaveScope() }, (box move |r| { happyReturn(HappyAbsSyn15(r)) }))
+refute! {
+fn happyReduction_41<T>(happyRest: HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ leaveScope() },
+              box move |r| happyReturn(HappyAbsSyn15(r)))
 }
 }
 
@@ -16131,9 +16104,7 @@ fn happyReduce_42() -> ActionReturn {
 }
 
 fn happyReduction_42() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn17(empty()),
-    }
+    HappyAbsSyn17(empty())
 }
 
 
@@ -16213,9 +16184,11 @@ fn happyReduce_49() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 20, box happyReduction_49)
 }
 
-refute! { fn happyReduction_49<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_49<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -16224,9 +16197,11 @@ fn happyReduce_50() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 20, box happyReduction_50)
 }
 
-refute! { fn happyReduction_50<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_50<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -16235,9 +16210,11 @@ fn happyReduce_51() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 20, box happyReduction_51)
 }
 
-refute! { fn happyReduction_51<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_51<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, reverse(happy_var_1), happy_var_2, vec![], happy_var_3))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, reverse(happy_var_1), happy_var_2, vec![], happy_var_3))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -16246,9 +16223,11 @@ fn happyReduce_52() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 20, box happyReduction_52)
 }
 
-refute! { fn happyReduction_52<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_52<T>(HappyStk(HappyAbsSyn12(happy_var_3), Some(box HappyStk(HappyAbsSyn11(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, liftTypeQuals(happy_var_1), happy_var_2, vec![], happy_var_3))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, liftTypeQuals(happy_var_1), happy_var_2, vec![], happy_var_3))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -16257,9 +16236,11 @@ fn happyReduce_53() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 20, box happyReduction_53)
 }
 
-refute! { fn happyReduction_53<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn11(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_53<T>(HappyStk(HappyAbsSyn12(happy_var_4), Some(box HappyStk(HappyAbsSyn11(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ rshift_monad(leaveScope(), withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, vec![], happy_var_4))) }, (box move |r| { happyReturn(HappyAbsSyn10(r)) }))
+            CFunctionDef, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, vec![], happy_var_4))) },
+              box move |r| happyReturn(HappyAbsSyn10(r)))
 }
 }
 
@@ -16280,7 +16261,8 @@ fn happyReduce_55() -> ActionReturn {
     partial_5!(happyReduce, 4, 21, box happyReduction_55)
 }
 
-refute! { fn happyReduction_55(HappyStk(_, Some(box HappyStk(HappyAbsSyn21(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn21(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_55(HappyStk(_, Some(box HappyStk(HappyAbsSyn21(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn21(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn21(rappendr(happy_var_1, happy_var_3)), Some(box happyRest))
 }
 }
@@ -16290,8 +16272,10 @@ fn happyReduce_56() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 22, box happyReduction_56)
 }
 
-refute! { fn happyReduction_56<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CExpr, None)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_56<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CExpr, None)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16300,8 +16284,10 @@ fn happyReduce_57() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 22, box happyReduction_57)
 }
 
-refute! { fn happyReduction_57<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CExpr, Some(happy_var_1))) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_57<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CExpr, Some(happy_var_1))) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16310,8 +16296,10 @@ fn happyReduce_58() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 23, box happyReduction_58)
 }
 
-refute! { fn happyReduction_58<T>(HappyStk(HappyAbsSyn12(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CIf, happy_var_3, box happy_var_5, None)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_58<T>(HappyStk(HappyAbsSyn12(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CIf, happy_var_3, box happy_var_5, None)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16320,8 +16308,10 @@ fn happyReduce_59() -> ActionReturn {
     partial_5!(happyMonadReduce, 7, 23, box happyReduction_59)
 }
 
-refute! { fn happyReduction_59<T>(HappyStk(HappyAbsSyn12(happy_var_7), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn12(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CIf, happy_var_3, box happy_var_5, Some(box happy_var_7))) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_59<T>(HappyStk(HappyAbsSyn12(happy_var_7), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn12(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CIf, happy_var_3, box happy_var_5, Some(box happy_var_7))) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16330,8 +16320,10 @@ fn happyReduce_60() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 23, box happyReduction_60)
 }
 
-refute! { fn happyReduction_60<T>(HappyStk(HappyAbsSyn12(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CSwitch, happy_var_3, box happy_var_5)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_60<T>(HappyStk(HappyAbsSyn12(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CSwitch, happy_var_3, box happy_var_5)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16340,8 +16332,10 @@ fn happyReduce_61() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 24, box happyReduction_61)
 }
 
-refute! { fn happyReduction_61<T>(HappyStk(HappyAbsSyn12(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CWhile, happy_var_3, box happy_var_5, false)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_61<T>(HappyStk(HappyAbsSyn12(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CWhile, happy_var_3, box happy_var_5, false)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16350,8 +16344,10 @@ fn happyReduce_62() -> ActionReturn {
     partial_5!(happyMonadReduce, 7, 24, box happyReduction_62)
 }
 
-refute! { fn happyReduction_62<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn12(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CWhile, happy_var_5, box happy_var_2, true)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_62<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn12(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CWhile, happy_var_5, box happy_var_2, true)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16360,8 +16356,10 @@ fn happyReduce_63() -> ActionReturn {
     partial_5!(happyMonadReduce, 9, 24, box happyReduction_63)
 }
 
-refute! { fn happyReduction_63<T>(HappyStk(HappyAbsSyn12(happy_var_9), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_7), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CFor, Left(happy_var_3), happy_var_5, happy_var_7, box happy_var_9)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_63<T>(HappyStk(HappyAbsSyn12(happy_var_9), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_7), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CFor, Left(happy_var_3), happy_var_5, happy_var_7, box happy_var_9)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16370,8 +16368,10 @@ fn happyReduce_64() -> ActionReturn {
     partial_5!(happyMonadReduce, 10, 24, box happyReduction_64)
 }
 
-refute! { fn happyReduction_64<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn12(happy_var_9), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_7), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_5), Some(box HappyStk(HappyAbsSyn32(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CFor, Right(happy_var_4), happy_var_5, happy_var_7, box happy_var_9)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_64<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn12(happy_var_9), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_7), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_5), Some(box HappyStk(HappyAbsSyn32(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CFor, Right(happy_var_4), happy_var_5, happy_var_7, box happy_var_9)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16380,8 +16380,10 @@ fn happyReduce_65() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 25, box happyReduction_65)
 }
 
-refute! { fn happyReduction_65<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CGoto, happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_65<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CGoto, happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16390,8 +16392,10 @@ fn happyReduce_66() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 25, box happyReduction_66)
 }
 
-refute! { fn happyReduction_66<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CGotoPtr, happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_66<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CGotoPtr, happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16400,8 +16404,10 @@ fn happyReduce_67() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 25, box happyReduction_67)
 }
 
-refute! { fn happyReduction_67<T>(HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCont)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_67<T>(HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCont)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16410,8 +16416,10 @@ fn happyReduce_68() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 25, box happyReduction_68)
 }
 
-refute! { fn happyReduction_68<T>(HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CBreak)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_68<T>(HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CBreak)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16420,8 +16428,10 @@ fn happyReduce_69() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 25, box happyReduction_69)
 }
 
-refute! { fn happyReduction_69<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CReturn, happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn12(r)) }))
+refute! {
+fn happyReduction_69<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CReturn, happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn12(r)))
 }
 }
 
@@ -16430,8 +16440,10 @@ fn happyReduce_70() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 26, box happyReduction_70)
 }
 
-refute! { fn happyReduction_70<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn27(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, vec![], vec![], vec![])) }, (box move |r| { happyReturn(HappyAbsSyn26(r)) }))
+refute! {
+fn happyReduction_70<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn27(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, vec![], vec![], vec![])) },
+              box move |r| happyReturn(HappyAbsSyn26(r)))
 }
 }
 
@@ -16440,8 +16452,10 @@ fn happyReduce_71() -> ActionReturn {
     partial_5!(happyMonadReduce, 8, 26, box happyReduction_71)
 }
 
-refute! { fn happyReduction_71<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn28(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn27(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, happy_var_6, vec![], vec![])) }, (box move |r| { happyReturn(HappyAbsSyn26(r)) }))
+refute! {
+fn happyReduction_71<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn28(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn27(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, happy_var_6, vec![], vec![])) },
+              box move |r| happyReturn(HappyAbsSyn26(r)))
 }
 }
 
@@ -16450,8 +16464,10 @@ fn happyReduce_72() -> ActionReturn {
     partial_5!(happyMonadReduce, 10, 26, box happyReduction_72)
 }
 
-refute! { fn happyReduction_72<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn28(happy_var_8), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn28(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn27(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, happy_var_6, happy_var_8, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn26(r)) }))
+refute! {
+fn happyReduction_72<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn28(happy_var_8), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn28(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn27(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, happy_var_6, happy_var_8, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn26(r)))
 }
 }
 
@@ -16460,8 +16476,10 @@ fn happyReduce_73() -> ActionReturn {
     partial_5!(happyMonadReduce, 12, 26, box happyReduction_73)
 }
 
-refute! { fn happyReduction_73<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn31(happy_var_10), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn28(happy_var_8), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn28(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn27(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, happy_var_6, happy_var_8, reverse(happy_var_10))) }, (box move |r| { happyReturn(HappyAbsSyn26(r)) }))
+refute! {
+fn happyReduction_73<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn31(happy_var_10), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn28(happy_var_8), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn28(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn27(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, happy_var_6, happy_var_8, reverse(happy_var_10))) },
+              box move |r| happyReturn(HappyAbsSyn26(r)))
 }
 }
 
@@ -16471,9 +16489,7 @@ fn happyReduce_74() -> ActionReturn {
 }
 
 fn happyReduction_74() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn27(None),
-    }
+    HappyAbsSyn27(None)
 }
 
 
@@ -16494,9 +16510,7 @@ fn happyReduce_76() -> ActionReturn {
 }
 
 fn happyReduction_76() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn28(vec![]),
-    }
+    HappyAbsSyn28(vec![])
 }
 
 
@@ -16540,8 +16554,10 @@ fn happyReduce_80() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 30, box happyReduction_80)
 }
 
-refute! { fn happyReduction_80<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CAssemblyOperand, None, happy_var_1, happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn30(r)) }))
+refute! {
+fn happyReduction_80<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CAssemblyOperand, None, happy_var_1, happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn30(r)))
 }
 }
 
@@ -16550,8 +16566,10 @@ fn happyReduce_81() -> ActionReturn {
     partial_5!(happyMonadReduce, 7, 30, box happyReduction_81)
 }
 
-refute! { fn happyReduction_81<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(CTokIdent(_, happy_var_2)), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyOperand, Some(happy_var_2), happy_var_4, happy_var_6)) }, (box move |r| { happyReturn(HappyAbsSyn30(r)) }))
+refute! {
+fn happyReduction_81<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(CTokIdent(_, happy_var_2)), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyOperand, Some(happy_var_2), happy_var_4, happy_var_6)) },
+              box move |r| happyReturn(HappyAbsSyn30(r)))
 }
 }
 
@@ -16560,8 +16578,10 @@ fn happyReduce_82() -> ActionReturn {
     partial_5!(happyMonadReduce, 7, 30, box happyReduction_82)
 }
 
-refute! { fn happyReduction_82<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_2)), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyOperand, Some(happy_var_2), happy_var_4, happy_var_6)) }, (box move |r| { happyReturn(HappyAbsSyn30(r)) }))
+refute! {
+fn happyReduction_82<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_6), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_2)), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAssemblyOperand, Some(happy_var_2), happy_var_4, happy_var_6)) },
+              box move |r| happyReturn(HappyAbsSyn30(r)))
 }
 }
 
@@ -16594,8 +16614,10 @@ fn happyReduce_85() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 32, box happyReduction_85)
 }
 
-refute! { fn happyReduction_85<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_85<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16604,8 +16626,10 @@ fn happyReduce_86() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 32, box happyReduction_86)
 }
 
-refute! { fn happyReduction_86<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_86<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16614,13 +16638,15 @@ fn happyReduce_87() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 32, box happyReduction_87)
 }
 
-refute! { fn happyReduction_87<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_87<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             if let CDecl(declspecs, dies, at) = happy_var_1 {
                 withLength(at, partial_1!(CDecl, declspecs, List::reverse(dies)))
             } else {
                 panic!("irrefutable pattern")
-            } }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            } },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16629,13 +16655,15 @@ fn happyReduce_88() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 32, box happyReduction_88)
 }
 
-refute! { fn happyReduction_88<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_88<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             if let CDecl(declspecs, dies, at) = happy_var_1 {
                 withLength(at, partial_1!(CDecl, declspecs, List::reverse(dies)))
             } else {
                 panic!("irrefutable pattern")
-            } }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            } },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16644,8 +16672,10 @@ fn happyReduce_89() -> ActionReturn {
     partial_5!(happyMonadReduce, 7, 32, box happyReduction_89)
 }
 
-refute! { fn happyReduction_89<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CStaticAssert, happy_var_3, happy_var_5)) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_89<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CStaticAssert, happy_var_3, happy_var_5)) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16655,9 +16685,7 @@ fn happyReduce_90() -> ActionReturn {
 }
 
 fn happyReduction_90() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn33(empty()),
-    }
+    HappyAbsSyn33(empty())
 }
 
 
@@ -16677,7 +16705,8 @@ fn happyReduce_92() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 34, box happyReduction_92)
 }
 
-refute! { fn happyReduction_92<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_92<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             let declspecs = reverse(happy_var_1.clone());
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
@@ -16686,7 +16715,8 @@ refute! { fn happyReduction_92<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box 
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
-            }) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16695,7 +16725,8 @@ fn happyReduce_93() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 34, box happyReduction_93)
 }
 
-refute! { fn happyReduction_93<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_93<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             let declspecs = liftTypeQuals(happy_var_1.clone());
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
@@ -16703,7 +16734,8 @@ refute! { fn happyReduction_93<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box 
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
-            }) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16712,7 +16744,8 @@ fn happyReduce_94() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 34, box happyReduction_94)
 }
 
-refute! { fn happyReduction_94<T>(HappyStk(HappyAbsSyn94(happy_var_5), Some(box HappyStk(HappyAbsSyn35(happy_var_4), Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_94<T>(HappyStk(HappyAbsSyn94(happy_var_5), Some(box HappyStk(HappyAbsSyn35(happy_var_4), Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             let declspecs = liftTypeQuals(happy_var_1.clone());
             thenP(withAsmNameAttrs(happy_var_4, happy_var_3), box move |declr: CDeclrR| {
@@ -16720,7 +16753,8 @@ refute! { fn happyReduction_94<T>(HappyStk(HappyAbsSyn94(happy_var_5), Some(box 
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, __op_addadd(declspecs, liftCAttrs(happy_var_2)),
                                                 vec![(Some(reverseDeclr(declr)), happy_var_5, None)])))
-            }) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16729,7 +16763,8 @@ fn happyReduce_95() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 34, box happyReduction_95)
 }
 
-refute! { fn happyReduction_95<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_95<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             let declspecs = liftCAttrs(happy_var_1.clone());
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
@@ -16737,7 +16772,8 @@ refute! { fn happyReduction_95<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box 
                     doDeclIdent(declspecs.clone(), declr.clone()),
                     withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
                                                 vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
-            }) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16746,7 +16782,8 @@ fn happyReduce_96() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 34, box happyReduction_96)
 }
 
-refute! { fn happyReduction_96<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box HappyStk(HappyAbsSyn35(happy_var_5), Some(box HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_96<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box HappyStk(HappyAbsSyn35(happy_var_5), Some(box HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             if let CDecl(declspecs, dies, at) = happy_var_1 {
                 let (f, s) = happy_var_5;
@@ -16758,7 +16795,8 @@ refute! { fn happyReduction_96<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box 
                 })
             } else {
                 panic!("irrefutable pattern")
-            } }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            } },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16779,13 +16817,15 @@ fn happyReduce_98() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 36, box happyReduction_98)
 }
 
-refute! { fn happyReduction_98<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_98<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 rshift_monad(
                     doDeclIdent(happy_var_1.clone(), declr.clone()),
                     withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
-            }) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16794,13 +16834,15 @@ fn happyReduce_99() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 36, box happyReduction_99)
 }
 
-refute! { fn happyReduction_99<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_99<T>(HappyStk(HappyAbsSyn94(happy_var_4), Some(box HappyStk(HappyAbsSyn35(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             thenP(withAsmNameAttrs(happy_var_3, happy_var_2), box move |declr: CDeclrR| {
                 rshift_monad(
                     doDeclIdent(happy_var_1.clone(), declr.clone()),
                     withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(declr)), happy_var_4, None)])))
-            }) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -16809,7 +16851,8 @@ fn happyReduce_100() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 36, box happyReduction_100)
 }
 
-refute! { fn happyReduction_100<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box HappyStk(HappyAbsSyn35(happy_var_5), Some(box HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_100<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box HappyStk(HappyAbsSyn35(happy_var_5), Some(box HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             if let CDecl(declspecs, dies, at) = happy_var_1 {
                 let (f, s) = happy_var_5;
@@ -16821,7 +16864,8 @@ refute! { fn happyReduction_100<T>(HappyStk(HappyAbsSyn94(happy_var_6), Some(box
                 })
             } else {
                 panic!("irrefutable pattern")
-            } }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            } },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -17022,8 +17066,10 @@ fn happyReduce_117() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 41, box happyReduction_117)
 }
 
-refute! { fn happyReduction_117<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CTypedef)) }, (box move |r| { happyReturn(HappyAbsSyn41(r)) }))
+refute! {
+fn happyReduction_117<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CTypedef)) },
+              box move |r| happyReturn(HappyAbsSyn41(r)))
 }
 }
 
@@ -17032,8 +17078,10 @@ fn happyReduce_118() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 41, box happyReduction_118)
 }
 
-refute! { fn happyReduction_118<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CExtern)) }, (box move |r| { happyReturn(HappyAbsSyn41(r)) }))
+refute! {
+fn happyReduction_118<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CExtern)) },
+              box move |r| happyReturn(HappyAbsSyn41(r)))
 }
 }
 
@@ -17042,8 +17090,10 @@ fn happyReduce_119() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 41, box happyReduction_119)
 }
 
-refute! { fn happyReduction_119<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CStatic)) }, (box move |r| { happyReturn(HappyAbsSyn41(r)) }))
+refute! {
+fn happyReduction_119<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CStatic)) },
+              box move |r| happyReturn(HappyAbsSyn41(r)))
 }
 }
 
@@ -17052,8 +17102,10 @@ fn happyReduce_120() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 41, box happyReduction_120)
 }
 
-refute! { fn happyReduction_120<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAuto)) }, (box move |r| { happyReturn(HappyAbsSyn41(r)) }))
+refute! {
+fn happyReduction_120<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAuto)) },
+              box move |r| happyReturn(HappyAbsSyn41(r)))
 }
 }
 
@@ -17062,8 +17114,10 @@ fn happyReduce_121() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 41, box happyReduction_121)
 }
 
-refute! { fn happyReduction_121<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CRegister)) }, (box move |r| { happyReturn(HappyAbsSyn41(r)) }))
+refute! {
+fn happyReduction_121<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CRegister)) },
+              box move |r| happyReturn(HappyAbsSyn41(r)))
 }
 }
 
@@ -17072,8 +17126,10 @@ fn happyReduce_122() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 41, box happyReduction_122)
 }
 
-refute! { fn happyReduction_122<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CThread)) }, (box move |r| { happyReturn(HappyAbsSyn41(r)) }))
+refute! {
+fn happyReduction_122<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CThread)) },
+              box move |r| happyReturn(HappyAbsSyn41(r)))
 }
 }
 
@@ -17082,8 +17138,10 @@ fn happyReduce_123() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 42, box happyReduction_123)
 }
 
-refute! { fn happyReduction_123<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CInlineQual)) }, (box move |r| { happyReturn(HappyAbsSyn42(r)) }))
+refute! {
+fn happyReduction_123<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CInlineQual)) },
+              box move |r| happyReturn(HappyAbsSyn42(r)))
 }
 }
 
@@ -17092,8 +17150,10 @@ fn happyReduce_124() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 42, box happyReduction_124)
 }
 
-refute! { fn happyReduction_124<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CNoreturnQual)) }, (box move |r| { happyReturn(HappyAbsSyn42(r)) }))
+refute! {
+fn happyReduction_124<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CNoreturnQual)) },
+              box move |r| happyReturn(HappyAbsSyn42(r)))
 }
 }
 
@@ -17102,8 +17162,10 @@ fn happyReduce_125() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 43, box happyReduction_125)
 }
 
-refute! { fn happyReduction_125<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAlignAsType, happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn43(r)) }))
+refute! {
+fn happyReduction_125<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAlignAsType, happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn43(r)))
 }
 }
 
@@ -17112,8 +17174,10 @@ fn happyReduce_126() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 43, box happyReduction_126)
 }
 
-refute! { fn happyReduction_126<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAlignAsExpr, happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn43(r)) }))
+refute! {
+fn happyReduction_126<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAlignAsExpr, happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn43(r)))
 }
 }
 
@@ -17158,8 +17222,10 @@ fn happyReduce_130() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_130)
 }
 
-refute! { fn happyReduction_130<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CVoidType)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_130<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CVoidType)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17168,8 +17234,10 @@ fn happyReduce_131() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_131)
 }
 
-refute! { fn happyReduction_131<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCharType)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_131<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCharType)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17178,8 +17246,10 @@ fn happyReduce_132() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_132)
 }
 
-refute! { fn happyReduction_132<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CShortType)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_132<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CShortType)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17188,8 +17258,10 @@ fn happyReduce_133() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_133)
 }
 
-refute! { fn happyReduction_133<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CIntType)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_133<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CIntType)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17198,8 +17270,10 @@ fn happyReduce_134() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_134)
 }
 
-refute! { fn happyReduction_134<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CLongType)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_134<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CLongType)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17208,8 +17282,10 @@ fn happyReduce_135() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_135)
 }
 
-refute! { fn happyReduction_135<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CFloatType)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_135<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CFloatType)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17218,8 +17294,10 @@ fn happyReduce_136() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_136)
 }
 
-refute! { fn happyReduction_136<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CDoubleType)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_136<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CDoubleType)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17228,8 +17306,10 @@ fn happyReduce_137() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_137)
 }
 
-refute! { fn happyReduction_137<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CSignedType)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_137<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CSignedType)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17238,8 +17318,10 @@ fn happyReduce_138() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_138)
 }
 
-refute! { fn happyReduction_138<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CUnsigType)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_138<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CUnsigType)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17248,8 +17330,10 @@ fn happyReduce_139() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_139)
 }
 
-refute! { fn happyReduction_139<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CBoolType)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_139<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CBoolType)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17258,8 +17342,10 @@ fn happyReduce_140() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_140)
 }
 
-refute! { fn happyReduction_140<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CComplexType)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_140<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CComplexType)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17268,8 +17354,10 @@ fn happyReduce_141() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 45, box happyReduction_141)
 }
 
-refute! { fn happyReduction_141<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CInt128Type)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_141<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CInt128Type)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17554,8 +17642,10 @@ fn happyReduce_165() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 50, box happyReduction_165)
 }
 
-refute! { fn happyReduction_165<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_2)), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_2.clone(), box |at| snoc(happy_var_1, CTypeSpec(CTypeDef(happy_var_2, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_165<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_2)), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_2.clone(), box |at| snoc(happy_var_1, CTypeSpec(CTypeDef(happy_var_2, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17564,8 +17654,10 @@ fn happyReduce_166() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 50, box happyReduction_166)
 }
 
-refute! { fn happyReduction_166<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_2, box |at| snoc(happy_var_1, CTypeSpec(CTypeOfExpr(happy_var_4, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_166<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_2, box |at| snoc(happy_var_1, CTypeSpec(CTypeOfExpr(happy_var_4, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17574,8 +17666,10 @@ fn happyReduce_167() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 50, box happyReduction_167)
 }
 
-refute! { fn happyReduction_167<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_2, box |at| snoc(happy_var_1, CTypeSpec(CTypeOfType(happy_var_4, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_167<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_2, box |at| snoc(happy_var_1, CTypeSpec(CTypeOfType(happy_var_4, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17608,8 +17702,10 @@ fn happyReduce_170() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 51, box happyReduction_170)
 }
 
-refute! { fn happyReduction_170<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), box |at| singleton(CTypeSpec(CTypeDef(happy_var_1, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_170<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), box |at| singleton(CTypeSpec(CTypeDef(happy_var_1, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17618,8 +17714,10 @@ fn happyReduce_171() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 51, box happyReduction_171)
 }
 
-refute! { fn happyReduction_171<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, box |at| singleton(CTypeSpec(CTypeOfExpr(happy_var_3, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_171<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, box |at| singleton(CTypeSpec(CTypeOfExpr(happy_var_3, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17628,8 +17726,10 @@ fn happyReduce_172() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 51, box happyReduction_172)
 }
 
-refute! { fn happyReduction_172<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, box |at| singleton(CTypeSpec(CTypeOfType(happy_var_3, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_172<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, box |at| singleton(CTypeSpec(CTypeOfType(happy_var_3, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17638,8 +17738,10 @@ fn happyReduce_173() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 51, box happyReduction_173)
 }
 
-refute! { fn happyReduction_173<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_2)), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_2.clone(), box |at| snoc(rmap(CTypeQual, happy_var_1), CTypeSpec(CTypeDef(happy_var_2, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_173<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_2)), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_2.clone(), box |at| snoc(rmap(CTypeQual, happy_var_1), CTypeSpec(CTypeDef(happy_var_2, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17648,8 +17750,10 @@ fn happyReduce_174() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 51, box happyReduction_174)
 }
 
-refute! { fn happyReduction_174<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_2, box |at| snoc(rmap(CTypeQual, happy_var_1), CTypeSpec(CTypeOfExpr(happy_var_4, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_174<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_2, box |at| snoc(rmap(CTypeQual, happy_var_1), CTypeSpec(CTypeOfExpr(happy_var_4, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17658,8 +17762,10 @@ fn happyReduce_175() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 51, box happyReduction_175)
 }
 
-refute! { fn happyReduction_175<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_2, box |at| snoc(rmap(CTypeQual, happy_var_1), CTypeSpec(CTypeOfType(happy_var_4, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_175<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_2, box |at| snoc(rmap(CTypeQual, happy_var_1), CTypeSpec(CTypeOfType(happy_var_4, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17668,8 +17774,10 @@ fn happyReduce_176() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 51, box happyReduction_176)
 }
 
-refute! { fn happyReduction_176<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_2)), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_2.clone(), box |at| snoc(reverseList(liftCAttrs(happy_var_1)), CTypeSpec(CTypeDef(happy_var_2, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_176<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_2)), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_2.clone(), box |at| snoc(reverseList(liftCAttrs(happy_var_1)), CTypeSpec(CTypeDef(happy_var_2, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17678,8 +17786,10 @@ fn happyReduce_177() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 51, box happyReduction_177)
 }
 
-refute! { fn happyReduction_177<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), box |at| snoc(reverseList(liftCAttrs(happy_var_1)), CTypeSpec(CTypeOfExpr(happy_var_4, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_177<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), box |at| snoc(reverseList(liftCAttrs(happy_var_1)), CTypeSpec(CTypeOfExpr(happy_var_4, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17688,8 +17798,10 @@ fn happyReduce_178() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 51, box happyReduction_178)
 }
 
-refute! { fn happyReduction_178<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_2, box |at| snoc(reverseList(liftCAttrs(happy_var_1)), CTypeSpec(CTypeOfType(happy_var_4, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+refute! {
+fn happyReduction_178<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_2, box |at| snoc(reverseList(liftCAttrs(happy_var_1)), CTypeSpec(CTypeOfType(happy_var_4, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17698,9 +17810,11 @@ fn happyReduce_179() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 51, box happyReduction_179)
 }
 
-refute! { fn happyReduction_179<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_3)), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_179<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_3)), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_3.clone(), box |at| snoc(rappend(rmap(CTypeQual, happy_var_1), liftCAttrs(happy_var_2)),
-                                                  CTypeSpec(CTypeDef(happy_var_3, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+                                                  CTypeSpec(CTypeDef(happy_var_3, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17709,9 +17823,11 @@ fn happyReduce_180() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 51, box happyReduction_180)
 }
 
-refute! { fn happyReduction_180<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_180<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_3, box |at| snoc(rappend(rmap(CTypeQual, happy_var_1), liftCAttrs(happy_var_2)),
-                                          CTypeSpec(CTypeOfExpr(happy_var_5, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+                                          CTypeSpec(CTypeOfExpr(happy_var_5, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17720,9 +17836,11 @@ fn happyReduce_181() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 51, box happyReduction_181)
 }
 
-refute! { fn happyReduction_181<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_181<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_3, box |at| snoc(rappend(rmap(CTypeQual, happy_var_1), liftCAttrs(happy_var_2)),
-                                          CTypeSpec(CTypeOfType(happy_var_5, at)))) }, (box move |r| { happyReturn(HappyAbsSyn38(r)) }))
+                                          CTypeSpec(CTypeOfType(happy_var_5, at)))) },
+              box move |r| happyReturn(HappyAbsSyn38(r)))
 }
 }
 
@@ -17755,8 +17873,10 @@ fn happyReduce_184() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 52, box happyReduction_184)
 }
 
-refute! { fn happyReduction_184<T>(HappyStk(HappyAbsSyn53(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CSUType, happy_var_1)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_184<T>(HappyStk(HappyAbsSyn53(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CSUType, happy_var_1)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17765,8 +17885,10 @@ fn happyReduce_185() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 52, box happyReduction_185)
 }
 
-refute! { fn happyReduction_185<T>(HappyStk(HappyAbsSyn61(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CEnumType, happy_var_1)) }, (box move |r| { happyReturn(HappyAbsSyn45(r)) }))
+refute! {
+fn happyReduction_185<T>(HappyStk(HappyAbsSyn61(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CEnumType, happy_var_1)) },
+              box move |r| happyReturn(HappyAbsSyn45(r)))
 }
 }
 
@@ -17775,8 +17897,10 @@ fn happyReduce_186() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 53, box happyReduction_186)
 }
 
-refute! { fn happyReduction_186<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn33(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn54(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CStructureUnion, unL(happy_var_1), Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn53(r)) }))
+refute! {
+fn happyReduction_186<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn33(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn54(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CStructureUnion, unL(happy_var_1), Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn53(r)))
 }
 }
 
@@ -17785,8 +17909,10 @@ fn happyReduce_187() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 53, box happyReduction_187)
 }
 
-refute! { fn happyReduction_187<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn33(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn54(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CStructureUnion, unL(happy_var_1), None,     Some(reverse(happy_var_4)), happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn53(r)) }))
+refute! {
+fn happyReduction_187<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn33(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn54(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CStructureUnion, unL(happy_var_1), None,     Some(reverse(happy_var_4)), happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn53(r)))
 }
 }
 
@@ -17795,8 +17921,10 @@ fn happyReduce_188() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 53, box happyReduction_188)
 }
 
-refute! { fn happyReduction_188<T>(HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn54(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CStructureUnion, unL(happy_var_1), Some(happy_var_3), None,              happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn53(r)) }))
+refute! {
+fn happyReduction_188<T>(HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn54(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CStructureUnion, unL(happy_var_1), Some(happy_var_3), None,              happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn53(r)))
 }
 }
 
@@ -17830,9 +17958,7 @@ fn happyReduce_191() -> ActionReturn {
 }
 
 fn happyReduction_191() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn33(empty()),
-    }
+    HappyAbsSyn33(empty())
 }
 
 
@@ -17908,12 +18034,14 @@ fn happyReduce_197() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 57, box happyReduction_197)
 }
 
-refute! { fn happyReduction_197<T>(HappyStk(HappyAbsSyn59(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_197<T>(HappyStk(HappyAbsSyn59(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             withNodeInfo(happy_var_1.clone(), match happy_var_3 {
                 (d, s) => partial_1!(CDecl, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)),
                                      vec![(d, None, s)])
-            }) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -17922,11 +18050,13 @@ fn happyReduce_198() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 57, box happyReduction_198)
 }
 
-refute! { fn happyReduction_198<T>(HappyStk(HappyAbsSyn59(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_198<T>(HappyStk(HappyAbsSyn59(happy_var_2), Some(box HappyStk(HappyAbsSyn132(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             withNodeInfo(happy_var_1.clone(), match happy_var_2 {
                 (d, s) => partial_1!(CDecl, liftCAttrs(happy_var_1), vec![(d, None, s)]),
-            }) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -17935,7 +18065,8 @@ fn happyReduce_199() -> ActionReturn {
     partial_5!(happyReduce, 4, 57, box happyReduction_199)
 }
 
-refute! { fn happyReduction_199(HappyStk(HappyAbsSyn59(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_199(HappyStk(HappyAbsSyn59(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn32(if let CDecl(declspecs, dies, at) = happy_var_1 {
                 match happy_var_4 {
                     (Some(d), s) => {
@@ -17956,7 +18087,8 @@ fn happyReduce_200() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 58, box happyReduction_200)
 }
 
-refute! { fn happyReduction_200<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn59(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_200<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn59(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             withNodeInfo(happy_var_1.clone(), match happy_var_2 {
                 (Some(d), s) => {
@@ -17965,7 +18097,8 @@ refute! { fn happyReduction_200<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(bo
                 (None, s) => {
                     partial_1!(CDecl, happy_var_1, vec![(None, None, s)])
                 },
-            }) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -17974,7 +18107,8 @@ fn happyReduce_201() -> ActionReturn {
     partial_5!(happyReduce, 5, 58, box happyReduction_201)
 }
 
-refute! { fn happyReduction_201(HappyStk(HappyAbsSyn132(happy_var_5), Some(box HappyStk(HappyAbsSyn59(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_201(HappyStk(HappyAbsSyn132(happy_var_5), Some(box HappyStk(HappyAbsSyn59(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn32(if let CDecl(declspecs, dies, at) = happy_var_1 {
                 match happy_var_4 {
                     (Some(d), s) => {
@@ -17996,8 +18130,10 @@ fn happyReduce_202() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 58, box happyReduction_202)
 }
 
-refute! { fn happyReduction_202<T>(HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_202<T>(HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -18094,8 +18230,10 @@ fn happyReduce_210() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 61, box happyReduction_210)
 }
 
-refute! { fn happyReduction_210<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn62(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CEnumeration, None, Some(reverse(happy_var_4)), happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn61(r)) }))
+refute! {
+fn happyReduction_210<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn62(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CEnumeration, None, Some(reverse(happy_var_4)), happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn61(r)))
 }
 }
 
@@ -18104,8 +18242,10 @@ fn happyReduce_211() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 61, box happyReduction_211)
 }
 
-refute! { fn happyReduction_211<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn62(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CEnumeration, None, Some(reverse(happy_var_4)), happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn61(r)) }))
+refute! {
+fn happyReduction_211<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn62(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CEnumeration, None, Some(reverse(happy_var_4)), happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn61(r)))
 }
 }
 
@@ -18114,8 +18254,10 @@ fn happyReduce_212() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 61, box happyReduction_212)
 }
 
-refute! { fn happyReduction_212<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn62(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CEnumeration, Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn61(r)) }))
+refute! {
+fn happyReduction_212<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn62(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CEnumeration, Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn61(r)))
 }
 }
 
@@ -18124,8 +18266,10 @@ fn happyReduce_213() -> ActionReturn {
     partial_5!(happyMonadReduce, 7, 61, box happyReduction_213)
 }
 
-refute! { fn happyReduction_213<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn62(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CEnumeration, Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn61(r)) }))
+refute! {
+fn happyReduction_213<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn62(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CEnumeration, Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn61(r)))
 }
 }
 
@@ -18134,8 +18278,10 @@ fn happyReduce_214() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 61, box happyReduction_214)
 }
 
-refute! { fn happyReduction_214<T>(HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CEnumeration, Some(happy_var_3), None, happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn61(r)) }))
+refute! {
+fn happyReduction_214<T>(HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CEnumeration, Some(happy_var_3), None, happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn61(r)))
 }
 }
 
@@ -18192,7 +18338,8 @@ fn happyReduce_219() -> ActionReturn {
     partial_5!(happyReduce, 4, 63, box happyReduction_219)
 }
 
-refute! { fn happyReduction_219(HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_219(HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn63((happy_var_1, Some(happy_var_4))), Some(box happyRest))
 }
 }
@@ -18214,8 +18361,10 @@ fn happyReduce_221() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 64, box happyReduction_221)
 }
 
-refute! { fn happyReduction_221<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CConstQual)) }, (box move |r| { happyReturn(HappyAbsSyn64(r)) }))
+refute! {
+fn happyReduction_221<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CConstQual)) },
+              box move |r| happyReturn(HappyAbsSyn64(r)))
 }
 }
 
@@ -18224,8 +18373,10 @@ fn happyReduce_222() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 64, box happyReduction_222)
 }
 
-refute! { fn happyReduction_222<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CVolatQual)) }, (box move |r| { happyReturn(HappyAbsSyn64(r)) }))
+refute! {
+fn happyReduction_222<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CVolatQual)) },
+              box move |r| happyReturn(HappyAbsSyn64(r)))
 }
 }
 
@@ -18234,8 +18385,10 @@ fn happyReduce_223() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 64, box happyReduction_223)
 }
 
-refute! { fn happyReduction_223<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CRestrQual)) }, (box move |r| { happyReturn(HappyAbsSyn64(r)) }))
+refute! {
+fn happyReduction_223<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CRestrQual)) },
+              box move |r| happyReturn(HappyAbsSyn64(r)))
 }
 }
 
@@ -18244,8 +18397,10 @@ fn happyReduce_224() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 64, box happyReduction_224)
 }
 
-refute! { fn happyReduction_224<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CNullableQual)) }, (box move |r| { happyReturn(HappyAbsSyn64(r)) }))
+refute! {
+fn happyReduction_224<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CNullableQual)) },
+              box move |r| happyReturn(HappyAbsSyn64(r)))
 }
 }
 
@@ -18254,8 +18409,10 @@ fn happyReduce_225() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 64, box happyReduction_225)
 }
 
-refute! { fn happyReduction_225<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CNonnullQual)) }, (box move |r| { happyReturn(HappyAbsSyn64(r)) }))
+refute! {
+fn happyReduction_225<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CNonnullQual)) },
+              box move |r| happyReturn(HappyAbsSyn64(r)))
 }
 }
 
@@ -18264,8 +18421,10 @@ fn happyReduce_226() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 64, box happyReduction_226)
 }
 
-refute! { fn happyReduction_226<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAtomicQual)) }, (box move |r| { happyReturn(HappyAbsSyn64(r)) }))
+refute! {
+fn happyReduction_226<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAtomicQual)) },
+              box move |r| happyReturn(HappyAbsSyn64(r)))
 }
 }
 
@@ -18335,9 +18494,7 @@ fn happyReduce_232() -> ActionReturn {
 }
 
 fn happyReduction_232() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn67(None),
-    }
+    HappyAbsSyn67(None)
 }
 
 
@@ -18345,7 +18502,8 @@ fn happyReduce_233() -> ActionReturn {
     partial_5!(happyReduce, 4, 67, box happyReduction_233)
 }
 
-refute! { fn happyReduction_233(HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_233(HappyStk(_, Some(box HappyStk(HappyAbsSyn128(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn67(Some(happy_var_3)), Some(box happyRest))
 }
 }
@@ -18379,8 +18537,10 @@ fn happyReduce_236() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 69, box happyReduction_236)
 }
 
-refute! { fn happyReduction_236<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(mkVarDeclr, happy_var_1)) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_236<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(mkVarDeclr, happy_var_1)) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18389,8 +18549,10 @@ fn happyReduce_237() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 69, box happyReduction_237)
 }
 
-refute! { fn happyReduction_237<T>(HappyStk(HappyAbsSyn88(happy_var_2), Some(box HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_1)), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), box move |at| { happy_var_2(mkVarDeclr(happy_var_1, at)) }) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_237<T>(HappyStk(HappyAbsSyn88(happy_var_2), Some(box HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_1)), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), box move |at| { happy_var_2(mkVarDeclr(happy_var_1, at)) }) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18423,8 +18585,10 @@ fn happyReduce_240() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 70, box happyReduction_240)
 }
 
-refute! { fn happyReduction_240<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_240<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18433,8 +18597,10 @@ fn happyReduce_241() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 70, box happyReduction_241)
 }
 
-refute! { fn happyReduction_241<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, happy_var_3, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_241<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, happy_var_3, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18443,8 +18609,10 @@ fn happyReduce_242() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 70, box happyReduction_242)
 }
 
-refute! { fn happyReduction_242<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_242<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18453,8 +18621,10 @@ fn happyReduce_243() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 70, box happyReduction_243)
 }
 
-refute! { fn happyReduction_243<T>(HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_243<T>(HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18475,7 +18645,8 @@ fn happyReduce_245() -> ActionReturn {
     partial_5!(happyReduce, 4, 71, box happyReduction_245)
 }
 
-refute! { fn happyReduction_245(HappyStk(HappyAbsSyn88(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_245(HappyStk(HappyAbsSyn88(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(happy_var_4(happy_var_2)), Some(box happyRest))
 }
 }
@@ -18485,7 +18656,8 @@ fn happyReduce_246() -> ActionReturn {
     partial_5!(happyReduce, 4, 71, box happyReduction_246)
 }
 
-refute! { fn happyReduction_246(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_246(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(appendDeclrAttrs(happy_var_2, happy_var_3)), Some(box happyRest))
 }
 }
@@ -18495,7 +18667,8 @@ fn happyReduce_247() -> ActionReturn {
     partial_5!(happyReduce, 5, 71, box happyReduction_247)
 }
 
-refute! { fn happyReduction_247(HappyStk(HappyAbsSyn88(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_247(HappyStk(HappyAbsSyn88(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(appendDeclrAttrs(happy_var_2, happy_var_5(happy_var_3))), Some(box happyRest))
 }
 }
@@ -18517,8 +18690,10 @@ fn happyReduce_249() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 72, box happyReduction_249)
 }
 
-refute! { fn happyReduction_249<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_249<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18527,8 +18702,10 @@ fn happyReduce_250() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 72, box happyReduction_250)
 }
 
-refute! { fn happyReduction_250<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_250<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18537,8 +18714,10 @@ fn happyReduce_251() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 72, box happyReduction_251)
 }
 
-refute! { fn happyReduction_251<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_5, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_251<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_5, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18547,8 +18726,10 @@ fn happyReduce_252() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 72, box happyReduction_252)
 }
 
-refute! { fn happyReduction_252<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_252<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18557,8 +18738,10 @@ fn happyReduce_253() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 72, box happyReduction_253)
 }
 
-refute! { fn happyReduction_253<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_253<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18567,8 +18750,10 @@ fn happyReduce_254() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 72, box happyReduction_254)
 }
 
-refute! { fn happyReduction_254<T>(HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_254<T>(HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18589,7 +18774,8 @@ fn happyReduce_256() -> ActionReturn {
     partial_5!(happyReduce, 4, 73, box happyReduction_256)
 }
 
-refute! { fn happyReduction_256(HappyStk(_, Some(box HappyStk(HappyAbsSyn88(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_256(HappyStk(_, Some(box HappyStk(HappyAbsSyn88(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(happy_var_3(happy_var_2)), Some(box happyRest))
 }
 }
@@ -18599,7 +18785,8 @@ fn happyReduce_257() -> ActionReturn {
     partial_5!(happyReduce, 4, 73, box happyReduction_257)
 }
 
-refute! { fn happyReduction_257(HappyStk(HappyAbsSyn88(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_257(HappyStk(HappyAbsSyn88(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(happy_var_4(happy_var_2)), Some(box happyRest))
 }
 }
@@ -18609,8 +18796,10 @@ fn happyReduce_258() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 74, box happyReduction_258)
 }
 
-refute! { fn happyReduction_258<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(mkVarDeclr, happy_var_1)) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_258<T>(HappyStk(HappyTerminal(CTokTyIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(mkVarDeclr, happy_var_1)) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18667,8 +18856,10 @@ fn happyReduce_263() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 76, box happyReduction_263)
 }
 
-refute! { fn happyReduction_263<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_263<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18677,8 +18868,10 @@ fn happyReduce_264() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 76, box happyReduction_264)
 }
 
-refute! { fn happyReduction_264<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, happy_var_3, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_264<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, happy_var_3, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18687,8 +18880,10 @@ fn happyReduce_265() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 76, box happyReduction_265)
 }
 
-refute! { fn happyReduction_265<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_265<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18697,8 +18892,10 @@ fn happyReduce_266() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 76, box happyReduction_266)
 }
 
-refute! { fn happyReduction_266<T>(HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_266<T>(HappyStk(HappyAbsSyn66(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18731,7 +18928,8 @@ fn happyReduce_269() -> ActionReturn {
     partial_5!(happyReduce, 4, 77, box happyReduction_269)
 }
 
-refute! { fn happyReduction_269(HappyStk(HappyAbsSyn88(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_269(HappyStk(HappyAbsSyn88(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(happy_var_4(happy_var_2)), Some(box happyRest))
 }
 }
@@ -18741,7 +18939,8 @@ fn happyReduce_270() -> ActionReturn {
     partial_5!(happyReduce, 4, 77, box happyReduction_270)
 }
 
-refute! { fn happyReduction_270(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_270(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(appendDeclrAttrs(happy_var_2, happy_var_3)), Some(box happyRest))
 }
 }
@@ -18751,7 +18950,8 @@ fn happyReduce_271() -> ActionReturn {
     partial_5!(happyReduce, 5, 77, box happyReduction_271)
 }
 
-refute! { fn happyReduction_271(HappyStk(HappyAbsSyn88(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_271(HappyStk(HappyAbsSyn88(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(appendDeclrAttrs(happy_var_2, happy_var_5(happy_var_3))), Some(box happyRest))
 }
 }
@@ -18761,8 +18961,10 @@ fn happyReduce_272() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 78, box happyReduction_272)
 }
 
-refute! { fn happyReduction_272<T>(HappyStk(HappyTerminal(CTokIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(mkVarDeclr, happy_var_1)) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_272<T>(HappyStk(HappyTerminal(CTokIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(mkVarDeclr, happy_var_1)) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18783,7 +18985,8 @@ fn happyReduce_274() -> ActionReturn {
     partial_5!(happyReduce, 4, 78, box happyReduction_274)
 }
 
-refute! { fn happyReduction_274(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_274(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(appendDeclrAttrs(happy_var_2, happy_var_3)), Some(box happyRest))
 }
 }
@@ -18817,8 +19020,10 @@ fn happyReduce_277() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 80, box happyReduction_277)
 }
 
-refute! { fn happyReduction_277<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_277<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18827,8 +19032,10 @@ fn happyReduce_278() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 80, box happyReduction_278)
 }
 
-refute! { fn happyReduction_278<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_278<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18837,8 +19044,10 @@ fn happyReduce_279() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 81, box happyReduction_279)
 }
 
-refute! { fn happyReduction_279<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn21(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(funDeclr, happy_var_1, Left(reverse(happy_var_3)), vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_279<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn21(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(funDeclr, happy_var_1, Left(reverse(happy_var_3)), vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -18859,7 +19068,8 @@ fn happyReduce_281() -> ActionReturn {
     partial_5!(happyReduce, 4, 81, box happyReduction_281)
 }
 
-refute! { fn happyReduction_281(HappyStk(HappyAbsSyn88(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_281(HappyStk(HappyAbsSyn88(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(happy_var_4(happy_var_2)), Some(box happyRest))
 }
 }
@@ -18870,9 +19080,7 @@ fn happyReduce_282() -> ActionReturn {
 }
 
 fn happyReduction_282() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn82((vec![], false)),
-    }
+    HappyAbsSyn82((vec![], false))
 }
 
 
@@ -18928,8 +19136,10 @@ fn happyReduce_287() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 84, box happyReduction_287)
 }
 
-refute! { fn happyReduction_287<T>(HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_287<T>(HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -18938,8 +19148,10 @@ fn happyReduce_288() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 84, box happyReduction_288)
 }
 
-refute! { fn happyReduction_288<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(happy_var_2)), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_288<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(happy_var_2)), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -18948,9 +19160,11 @@ fn happyReduce_289() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 84, box happyReduction_289)
 }
 
-refute! { fn happyReduction_289<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_289<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1,
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -18959,9 +19173,11 @@ fn happyReduce_290() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 84, box happyReduction_290)
 }
 
-refute! { fn happyReduction_290<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_290<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1,
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -18970,8 +19186,10 @@ fn happyReduce_291() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 84, box happyReduction_291)
 }
 
-refute! { fn happyReduction_291<T>(HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_291<T>(HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -18980,8 +19198,10 @@ fn happyReduce_292() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 84, box happyReduction_292)
 }
 
-refute! { fn happyReduction_292<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![(Some(reverseDeclr(happy_var_2)), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_292<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![(Some(reverseDeclr(happy_var_2)), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -18990,9 +19210,11 @@ fn happyReduce_293() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 84, box happyReduction_293)
 }
 
-refute! { fn happyReduction_293<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_293<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn38(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1),
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19001,8 +19223,10 @@ fn happyReduce_294() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 84, box happyReduction_294)
 }
 
-refute! { fn happyReduction_294<T>(HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_294<T>(HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19011,8 +19235,10 @@ fn happyReduce_295() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 84, box happyReduction_295)
 }
 
-refute! { fn happyReduction_295<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(happy_var_2)), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_295<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(happy_var_2)), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19021,9 +19247,11 @@ fn happyReduce_296() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 84, box happyReduction_296)
 }
 
-refute! { fn happyReduction_296<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_296<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1,
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19032,9 +19260,11 @@ fn happyReduce_297() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 84, box happyReduction_297)
 }
 
-refute! { fn happyReduction_297<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_297<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1,
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19043,8 +19273,10 @@ fn happyReduce_298() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 84, box happyReduction_298)
 }
 
-refute! { fn happyReduction_298<T>(HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, liftTypeQuals(happy_var_1), vec![])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_298<T>(HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, liftTypeQuals(happy_var_1), vec![])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19053,8 +19285,10 @@ fn happyReduce_299() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 84, box happyReduction_299)
 }
 
-refute! { fn happyReduction_299<T>(HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), vec![])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_299<T>(HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), vec![])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19063,9 +19297,11 @@ fn happyReduce_300() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 84, box happyReduction_300)
 }
 
-refute! { fn happyReduction_300<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_300<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, liftTypeQuals(happy_var_1),
-                                               vec![(Some(reverseDeclr(happy_var_2)), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+                                               vec![(Some(reverseDeclr(happy_var_2)), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19074,9 +19310,11 @@ fn happyReduce_301() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 84, box happyReduction_301)
 }
 
-refute! { fn happyReduction_301<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_301<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, liftTypeQuals(happy_var_1),
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+                                               vec![(Some(reverseDeclr(appendDeclrAttrs(happy_var_3, happy_var_2))), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19109,8 +19347,10 @@ fn happyReduce_304() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 86, box happyReduction_304)
 }
 
-refute! { fn happyReduction_304<T>(HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_304<T>(HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19119,8 +19359,10 @@ fn happyReduce_305() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 86, box happyReduction_305)
 }
 
-refute! { fn happyReduction_305<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(happy_var_2)), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_305<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn37(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(reverseDeclr(happy_var_2)), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19129,8 +19371,10 @@ fn happyReduce_306() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 86, box happyReduction_306)
 }
 
-refute! { fn happyReduction_306<T>(HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), vec![])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+refute! {
+fn happyReduction_306<T>(HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, __op_addadd(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), vec![])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19139,9 +19383,11 @@ fn happyReduce_307() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 86, box happyReduction_307)
 }
 
-refute! { fn happyReduction_307<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_307<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyAbsSyn65(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, liftTypeQuals(happy_var_1),
-                                               vec![(Some(reverseDeclr(happy_var_2)), None, None)])) }, (box move |r| { happyReturn(HappyAbsSyn32(r)) }))
+                                               vec![(Some(reverseDeclr(happy_var_2)), None, None)])) },
+              box move |r| happyReturn(HappyAbsSyn32(r)))
 }
 }
 
@@ -19198,7 +19444,8 @@ fn happyReduce_312() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 88, box happyReduction_312)
 }
 
-refute! { fn happyReduction_312<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn82(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_312<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn82(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             withNodeInfo(happy_var_1, box move |at: NodeInfo| {
                 let a: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |declr| {
@@ -19206,7 +19453,8 @@ refute! { fn happyReduction_312<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn82(h
                     funDeclr(declr, (Right((params, variadic))), vec![], at.clone())
                 });
                 a
-            }) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19239,14 +19487,16 @@ fn happyReduce_315() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 90, box happyReduction_315)
 }
 
-refute! { fn happyReduction_315<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_315<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             withNodeInfo(happy_var_1.clone(), box move |at: NodeInfo| {
                 let a: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |declr| {
                     arrDeclr(declr, vec![], false, false, happy_var_2.clone(), at.clone())
                 });
                 a
-            }) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19255,9 +19505,11 @@ fn happyReduce_316() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 90, box happyReduction_316)
 }
 
-refute! { fn happyReduction_316<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_316<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withAttributePF(happy_var_1, happy_var_2, box move |at, declr|
-                           arrDeclr(declr, vec![], false, false, happy_var_3.clone(), at)) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+                           arrDeclr(declr, vec![], false, false, happy_var_3.clone(), at)) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19266,14 +19518,16 @@ fn happyReduce_317() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 90, box happyReduction_317)
 }
 
-refute! { fn happyReduction_317<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_317<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             withNodeInfo(happy_var_1.clone(), box move |at: NodeInfo| {
                 let a: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(
                     box move |declr| { arrDeclr(declr, reverse(happy_var_2.clone()),
                                                 false, false, happy_var_3.clone(), at.clone()) });
                 a
-            }) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19282,9 +19536,11 @@ fn happyReduce_318() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 90, box happyReduction_318)
 }
 
-refute! { fn happyReduction_318<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_318<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn124(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withAttributePF(happy_var_1, happy_var_3, box move |at, declr|
-                           arrDeclr(declr, reverse(happy_var_2.clone()), false, false, happy_var_4.clone(), at)) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+                           arrDeclr(declr, reverse(happy_var_2.clone()), false, false, happy_var_4.clone(), at)) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19293,9 +19549,11 @@ fn happyReduce_319() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 90, box happyReduction_319)
 }
 
-refute! { fn happyReduction_319<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_319<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withAttributePF(happy_var_1, happy_var_3, box move |at, declr|
-                           arrDeclr(declr, vec![], false, true, Some(happy_var_4.clone()), at)) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+                           arrDeclr(declr, vec![], false, true, Some(happy_var_4.clone()), at)) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19304,9 +19562,11 @@ fn happyReduce_320() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 90, box happyReduction_320)
 }
 
-refute! { fn happyReduction_320<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_5), Some(box HappyStk(HappyAbsSyn132(happy_var_4), Some(box HappyStk(HappyAbsSyn65(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_320<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_5), Some(box HappyStk(HappyAbsSyn132(happy_var_4), Some(box HappyStk(HappyAbsSyn65(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withAttributePF(happy_var_1, happy_var_4, box move |at, declr|
-                           arrDeclr(declr, reverse(happy_var_3.clone()), false, true, Some(happy_var_5.clone()), at)) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+                           arrDeclr(declr, reverse(happy_var_3.clone()), false, true, Some(happy_var_5.clone()), at)) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19315,9 +19575,11 @@ fn happyReduce_321() -> ActionReturn {
     partial_5!(happyMonadReduce, 7, 90, box happyReduction_321)
 }
 
-refute! { fn happyReduction_321<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_6), Some(box HappyStk(HappyAbsSyn132(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_321<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_6), Some(box HappyStk(HappyAbsSyn132(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withAttributePF(happy_var_1, __op_addadd(happy_var_3, happy_var_5), box move |at, declr|
-                           arrDeclr(declr, reverse(happy_var_2.clone()), false, true, Some(happy_var_6.clone()), at)) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+                           arrDeclr(declr, reverse(happy_var_2.clone()), false, true, Some(happy_var_6.clone()), at)) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19326,9 +19588,11 @@ fn happyReduce_322() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 90, box happyReduction_322)
 }
 
-refute! { fn happyReduction_322<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_322<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withAttributePF(happy_var_1, happy_var_3, box move |at, declr|
-                           arrDeclr(declr, vec![], true, false, None, at)) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+                           arrDeclr(declr, vec![], true, false, None, at)) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19337,9 +19601,11 @@ fn happyReduce_323() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 90, box happyReduction_323)
 }
 
-refute! { fn happyReduction_323<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_323<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withAttributePF(happy_var_1, __op_addadd(happy_var_2, happy_var_4), box move |at, declr|
-                           arrDeclr(declr, vec![], true, false, None, at)) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+                           arrDeclr(declr, vec![], true, false, None, at)) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19348,9 +19614,11 @@ fn happyReduce_324() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 90, box happyReduction_324)
 }
 
-refute! { fn happyReduction_324<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_324<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withAttributePF(happy_var_1, happy_var_4, box move |at, declr|
-                           arrDeclr(declr, reverse(happy_var_2.clone()), true, false, None, at)) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+                           arrDeclr(declr, reverse(happy_var_2.clone()), true, false, None, at)) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19359,9 +19627,11 @@ fn happyReduce_325() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 90, box happyReduction_325)
 }
 
-refute! { fn happyReduction_325<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_325<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({ withAttributePF(happy_var_1, __op_addadd(happy_var_3, happy_var_5), box move |at, declr|
-                           arrDeclr(declr, reverse(happy_var_2.clone()), true, false, None, at)) }, (box move |r| { happyReturn(HappyAbsSyn88(r)) }))
+                           arrDeclr(declr, reverse(happy_var_2.clone()), true, false, None, at)) },
+              box move |r| happyReturn(HappyAbsSyn88(r)))
 }
 }
 
@@ -19370,8 +19640,10 @@ fn happyReduce_326() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 91, box happyReduction_326)
 }
 
-refute! { fn happyReduction_326<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, emptyDeclr(), vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_326<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, emptyDeclr(), vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -19380,8 +19652,10 @@ fn happyReduce_327() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 91, box happyReduction_327)
 }
 
-refute! { fn happyReduction_327<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, emptyDeclr(), reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_327<T>(HappyStk(HappyAbsSyn132(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, emptyDeclr(), reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -19390,8 +19664,10 @@ fn happyReduce_328() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 91, box happyReduction_328)
 }
 
-refute! { fn happyReduction_328<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_328<T>(HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -19400,8 +19676,10 @@ fn happyReduce_329() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 91, box happyReduction_329)
 }
 
-refute! { fn happyReduction_329<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_329<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn65(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -19410,8 +19688,10 @@ fn happyReduce_330() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 91, box happyReduction_330)
 }
 
-refute! { fn happyReduction_330<T>(HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, emptyDeclr(), vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_330<T>(HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, emptyDeclr(), vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -19420,8 +19700,10 @@ fn happyReduce_331() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 91, box happyReduction_331)
 }
 
-refute! { fn happyReduction_331<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, happy_var_3, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn66(r)) }))
+refute! {
+fn happyReduction_331<T>(HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, happy_var_3, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn66(r)))
 }
 }
 
@@ -19466,7 +19748,8 @@ fn happyReduce_335() -> ActionReturn {
     partial_5!(happyReduce, 4, 92, box happyReduction_335)
 }
 
-refute! { fn happyReduction_335(HappyStk(HappyAbsSyn88(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_335(HappyStk(HappyAbsSyn88(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(happy_var_4(happy_var_2)), Some(box happyRest))
 }
 }
@@ -19476,7 +19759,8 @@ fn happyReduce_336() -> ActionReturn {
     partial_5!(happyReduce, 4, 92, box happyReduction_336)
 }
 
-refute! { fn happyReduction_336(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_336(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(appendDeclrAttrs(happy_var_2, happy_var_3)), Some(box happyRest))
 }
 }
@@ -19486,7 +19770,8 @@ fn happyReduce_337() -> ActionReturn {
     partial_5!(happyReduce, 4, 92, box happyReduction_337)
 }
 
-refute! { fn happyReduction_337(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_337(HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(appendDeclrAttrs(happy_var_2, happy_var_3)), Some(box happyRest))
 }
 }
@@ -19496,7 +19781,8 @@ fn happyReduce_338() -> ActionReturn {
     partial_5!(happyReduce, 4, 92, box happyReduction_338)
 }
 
-refute! { fn happyReduction_338(HappyStk(_, Some(box HappyStk(HappyAbsSyn88(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_338(HappyStk(_, Some(box HappyStk(HappyAbsSyn88(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(appendDeclrAttrs(happy_var_2, happy_var_3(emptyDeclr()))), Some(box happyRest))
 }
 }
@@ -19506,7 +19792,8 @@ fn happyReduce_339() -> ActionReturn {
     partial_5!(happyReduce, 5, 92, box happyReduction_339)
 }
 
-refute! { fn happyReduction_339(HappyStk(HappyAbsSyn88(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_339(HappyStk(HappyAbsSyn88(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn66(happy_var_3), Some(box HappyStk(HappyAbsSyn132(happy_var_2), Some(box HappyStk(_, Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn66(appendDeclrAttrs(happy_var_2, happy_var_5(happy_var_3))), Some(box happyRest))
 }
 }
@@ -19528,8 +19815,10 @@ fn happyReduce_341() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 93, box happyReduction_341)
 }
 
-refute! { fn happyReduction_341<T>(HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CInitExpr, happy_var_1)) }, (box move |r| { happyReturn(HappyAbsSyn93(r)) }))
+refute! {
+fn happyReduction_341<T>(HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CInitExpr, happy_var_1)) },
+              box move |r| happyReturn(HappyAbsSyn93(r)))
 }
 }
 
@@ -19538,8 +19827,10 @@ fn happyReduce_342() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 93, box happyReduction_342)
 }
 
-refute! { fn happyReduction_342<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn95(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CInitList, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn93(r)) }))
+refute! {
+fn happyReduction_342<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn95(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CInitList, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn93(r)))
 }
 }
 
@@ -19548,8 +19839,10 @@ fn happyReduce_343() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 93, box happyReduction_343)
 }
 
-refute! { fn happyReduction_343<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn95(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CInitList, reverse(happy_var_2))) }, (box move |r| { happyReturn(HappyAbsSyn93(r)) }))
+refute! {
+fn happyReduction_343<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn95(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CInitList, reverse(happy_var_2))) },
+              box move |r| happyReturn(HappyAbsSyn93(r)))
 }
 }
 
@@ -19559,9 +19852,7 @@ fn happyReduce_344() -> ActionReturn {
 }
 
 fn happyReduction_344() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn94(None),
-    }
+    HappyAbsSyn94(None)
 }
 
 
@@ -19582,9 +19873,7 @@ fn happyReduce_346() -> ActionReturn {
 }
 
 fn happyReduction_346() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn95(empty()),
-    }
+    HappyAbsSyn95(empty())
 }
 
 
@@ -19628,7 +19917,8 @@ fn happyReduce_350() -> ActionReturn {
     partial_5!(happyReduce, 4, 95, box happyReduction_350)
 }
 
-refute! { fn happyReduction_350(HappyStk(HappyAbsSyn93(happy_var_4), Some(box HappyStk(HappyAbsSyn96(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn95(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_350(HappyStk(HappyAbsSyn93(happy_var_4), Some(box HappyStk(HappyAbsSyn96(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn95(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn95(snoc(happy_var_1, (happy_var_3, happy_var_4))), Some(box happyRest))
 }
 }
@@ -19650,8 +19940,10 @@ fn happyReduce_352() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 96, box happyReduction_352)
 }
 
-refute! { fn happyReduction_352<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), box |_0| vec![CMemberDesig(happy_var_1, _0)]) }, (box move |r| { happyReturn(HappyAbsSyn96(r)) }))
+refute! {
+fn happyReduction_352<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn131(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), box |_0| vec![CMemberDesig(happy_var_1, _0)]) },
+              box move |r| happyReturn(HappyAbsSyn96(r)))
 }
 }
 
@@ -19696,8 +19988,10 @@ fn happyReduce_356() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 98, box happyReduction_356)
 }
 
-refute! { fn happyReduction_356<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CArrDesig, happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn98(r)) }))
+refute! {
+fn happyReduction_356<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CArrDesig, happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn98(r)))
 }
 }
 
@@ -19706,8 +20000,10 @@ fn happyReduce_357() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 98, box happyReduction_357)
 }
 
-refute! { fn happyReduction_357<T>(HappyStk(HappyAbsSyn131(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CMemberDesig, happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn98(r)) }))
+refute! {
+fn happyReduction_357<T>(HappyStk(HappyAbsSyn131(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CMemberDesig, happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn98(r)))
 }
 }
 
@@ -19728,8 +20024,10 @@ fn happyReduce_359() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 99, box happyReduction_359)
 }
 
-refute! { fn happyReduction_359<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CRangeDesig, happy_var_2, happy_var_4)) }, (box move |r| { happyReturn(HappyAbsSyn98(r)) }))
+refute! {
+fn happyReduction_359<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CRangeDesig, happy_var_2, happy_var_4)) },
+              box move |r| happyReturn(HappyAbsSyn98(r)))
 }
 }
 
@@ -19738,8 +20036,10 @@ fn happyReduce_360() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 100, box happyReduction_360)
 }
 
-refute! { fn happyReduction_360<T>(HappyStk(HappyTerminal(CTokIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CVar, happy_var_1)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_360<T>(HappyStk(HappyTerminal(CTokIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CVar, happy_var_1)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19784,8 +20084,10 @@ fn happyReduce_364() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 100, box happyReduction_364)
 }
 
-refute! { fn happyReduction_364<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn101(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CGenericSelection, box happy_var_3, reverse(happy_var_5))) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_364<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn101(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CGenericSelection, box happy_var_3, reverse(happy_var_5))) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19794,8 +20096,10 @@ fn happyReduce_365() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 100, box happyReduction_365)
 }
 
-refute! { fn happyReduction_365<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn12(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CStatExpr, box happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_365<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn12(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CStatExpr, box happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19804,8 +20108,10 @@ fn happyReduce_366() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 100, box happyReduction_366)
 }
 
-refute! { fn happyReduction_366<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, box move |_0| CBuiltinExpr(box CBuiltinVaArg(happy_var_3, happy_var_5, _0))) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_366<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, box move |_0| CBuiltinExpr(box CBuiltinVaArg(happy_var_3, happy_var_5, _0))) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19814,8 +20120,10 @@ fn happyReduce_367() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 100, box happyReduction_367)
 }
 
-refute! { fn happyReduction_367<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn97(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, box move |_0| CBuiltinExpr(box CBuiltinOffsetOf(happy_var_3, reverse(happy_var_5), _0))) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_367<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn97(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, box move |_0| CBuiltinExpr(box CBuiltinOffsetOf(happy_var_3, reverse(happy_var_5), _0))) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19824,8 +20132,10 @@ fn happyReduce_368() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 100, box happyReduction_368)
 }
 
-refute! { fn happyReduction_368<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, box move |_0| CBuiltinExpr(box CBuiltinTypesCompatible(happy_var_3, happy_var_5, _0))) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_368<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, box move |_0| CBuiltinExpr(box CBuiltinTypesCompatible(happy_var_3, happy_var_5, _0))) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19882,8 +20192,10 @@ fn happyReduce_373() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 103, box happyReduction_373)
 }
 
-refute! { fn happyReduction_373<T>(HappyStk(HappyAbsSyn131(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), box move |_0| singleton(CMemberDesig(happy_var_1, _0))) }, (box move |r| { happyReturn(HappyAbsSyn97(r)) }))
+refute! {
+fn happyReduction_373<T>(HappyStk(HappyAbsSyn131(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), box move |_0| singleton(CMemberDesig(happy_var_1, _0))) },
+              box move |r| happyReturn(HappyAbsSyn97(r)))
 }
 }
 
@@ -19892,8 +20204,10 @@ fn happyReduce_374() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 103, box happyReduction_374)
 }
 
-refute! { fn happyReduction_374<T>(HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn97(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_3.clone(), box move |_0| snoc(happy_var_1, CMemberDesig(happy_var_3, _0))) }, (box move |r| { happyReturn(HappyAbsSyn97(r)) }))
+refute! {
+fn happyReduction_374<T>(HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn97(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_3.clone(), box move |_0| snoc(happy_var_1, CMemberDesig(happy_var_3, _0))) },
+              box move |r| happyReturn(HappyAbsSyn97(r)))
 }
 }
 
@@ -19902,8 +20216,10 @@ fn happyReduce_375() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 103, box happyReduction_375)
 }
 
-refute! { fn happyReduction_375<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn97(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_3.clone(), box move |_0| snoc(happy_var_1, CArrDesig(happy_var_3, _0))) }, (box move |r| { happyReturn(HappyAbsSyn97(r)) }))
+refute! {
+fn happyReduction_375<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn97(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_3.clone(), box move |_0| snoc(happy_var_1, CArrDesig(happy_var_3, _0))) },
+              box move |r| happyReturn(HappyAbsSyn97(r)))
 }
 }
 
@@ -19924,8 +20240,10 @@ fn happyReduce_377() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 104, box happyReduction_377)
 }
 
-refute! { fn happyReduction_377<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CIndex, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_377<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CIndex, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19934,8 +20252,10 @@ fn happyReduce_378() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 104, box happyReduction_378)
 }
 
-refute! { fn happyReduction_378<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CCall, box happy_var_1, vec![])) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_378<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CCall, box happy_var_1, vec![])) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19944,8 +20264,10 @@ fn happyReduce_379() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 104, box happyReduction_379)
 }
 
-refute! { fn happyReduction_379<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn105(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CCall, box happy_var_1, reverse(happy_var_3))) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_379<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn105(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CCall, box happy_var_1, reverse(happy_var_3))) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19954,8 +20276,10 @@ fn happyReduce_380() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 104, box happyReduction_380)
 }
 
-refute! { fn happyReduction_380<T>(HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CMember, box happy_var_1, happy_var_3, false)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_380<T>(HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CMember, box happy_var_1, happy_var_3, false)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19964,8 +20288,10 @@ fn happyReduce_381() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 104, box happyReduction_381)
 }
 
-refute! { fn happyReduction_381<T>(HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CMember, box happy_var_1, happy_var_3, true)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_381<T>(HappyStk(HappyAbsSyn131(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CMember, box happy_var_1, happy_var_3, true)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19974,8 +20300,10 @@ fn happyReduce_382() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 104, box happyReduction_382)
 }
 
-refute! { fn happyReduction_382<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CUnary, CPostIncOp, box happy_var_1)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_382<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CUnary, CPostIncOp, box happy_var_1)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19984,8 +20312,10 @@ fn happyReduce_383() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 104, box happyReduction_383)
 }
 
-refute! { fn happyReduction_383<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CUnary, CPostDecOp, box happy_var_1)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_383<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CUnary, CPostDecOp, box happy_var_1)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -19994,8 +20324,10 @@ fn happyReduce_384() -> ActionReturn {
     partial_5!(happyMonadReduce, 6, 104, box happyReduction_384)
 }
 
-refute! { fn happyReduction_384<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn95(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCompoundLit, box happy_var_2, reverse(happy_var_5))) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_384<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn95(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCompoundLit, box happy_var_2, reverse(happy_var_5))) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20004,8 +20336,10 @@ fn happyReduce_385() -> ActionReturn {
     partial_5!(happyMonadReduce, 7, 104, box happyReduction_385)
 }
 
-refute! { fn happyReduction_385<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn95(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCompoundLit, box happy_var_2, reverse(happy_var_5))) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_385<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn95(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCompoundLit, box happy_var_2, reverse(happy_var_5))) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20050,8 +20384,10 @@ fn happyReduce_389() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 106, box happyReduction_389)
 }
 
-refute! { fn happyReduction_389<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CUnary, CPreIncOp, box happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_389<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CUnary, CPreIncOp, box happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20060,8 +20396,10 @@ fn happyReduce_390() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 106, box happyReduction_390)
 }
 
-refute! { fn happyReduction_390<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CUnary, CPreDecOp, box happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_390<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CUnary, CPreDecOp, box happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20082,8 +20420,10 @@ fn happyReduce_392() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 106, box happyReduction_392)
 }
 
-refute! { fn happyReduction_392<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyAbsSyn107(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CUnary, unL(happy_var_1), box happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_392<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyAbsSyn107(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CUnary, unL(happy_var_1), box happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20092,8 +20432,10 @@ fn happyReduce_393() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 106, box happyReduction_393)
 }
 
-refute! { fn happyReduction_393<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CSizeofExpr, box happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_393<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CSizeofExpr, box happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20102,8 +20444,10 @@ fn happyReduce_394() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 106, box happyReduction_394)
 }
 
-refute! { fn happyReduction_394<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CSizeofType, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_394<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CSizeofType, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20112,8 +20456,10 @@ fn happyReduce_395() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 106, box happyReduction_395)
 }
 
-refute! { fn happyReduction_395<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAlignofExpr, box happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_395<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAlignofExpr, box happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20122,8 +20468,10 @@ fn happyReduce_396() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 106, box happyReduction_396)
 }
 
-refute! { fn happyReduction_396<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAlignofType, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_396<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CAlignofType, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20132,8 +20480,10 @@ fn happyReduce_397() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 106, box happyReduction_397)
 }
 
-refute! { fn happyReduction_397<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CComplexReal, box happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_397<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CComplexReal, box happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20142,8 +20492,10 @@ fn happyReduce_398() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 106, box happyReduction_398)
 }
 
-refute! { fn happyReduction_398<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CComplexImag, box happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_398<T>(HappyStk(HappyAbsSyn100(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CComplexImag, box happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20152,8 +20504,10 @@ fn happyReduce_399() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 106, box happyReduction_399)
 }
 
-refute! { fn happyReduction_399<T>(HappyStk(HappyAbsSyn131(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CLabAddrExpr, happy_var_2)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_399<T>(HappyStk(HappyAbsSyn131(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CLabAddrExpr, happy_var_2)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20246,8 +20600,10 @@ fn happyReduce_407() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 108, box happyReduction_407)
 }
 
-refute! { fn happyReduction_407<T>(HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCast, box happy_var_2, box happy_var_4)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_407<T>(HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn32(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, partial_1!(CCast, box happy_var_2, box happy_var_4)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20268,8 +20624,10 @@ fn happyReduce_409() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 109, box happyReduction_409)
 }
 
-refute! { fn happyReduction_409<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CMulOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_409<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CMulOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20278,8 +20636,10 @@ fn happyReduce_410() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 109, box happyReduction_410)
 }
 
-refute! { fn happyReduction_410<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CDivOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_410<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CDivOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20288,8 +20648,10 @@ fn happyReduce_411() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 109, box happyReduction_411)
 }
 
-refute! { fn happyReduction_411<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CRmdOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_411<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CRmdOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20310,8 +20672,10 @@ fn happyReduce_413() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 110, box happyReduction_413)
 }
 
-refute! { fn happyReduction_413<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CAddOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_413<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CAddOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20320,8 +20684,10 @@ fn happyReduce_414() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 110, box happyReduction_414)
 }
 
-refute! { fn happyReduction_414<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CSubOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_414<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CSubOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20342,8 +20708,10 @@ fn happyReduce_416() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 111, box happyReduction_416)
 }
 
-refute! { fn happyReduction_416<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CShlOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_416<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CShlOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20352,8 +20720,10 @@ fn happyReduce_417() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 111, box happyReduction_417)
 }
 
-refute! { fn happyReduction_417<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CShrOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_417<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CShrOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20374,8 +20744,10 @@ fn happyReduce_419() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 112, box happyReduction_419)
 }
 
-refute! { fn happyReduction_419<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLeOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_419<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLeOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20384,8 +20756,10 @@ fn happyReduce_420() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 112, box happyReduction_420)
 }
 
-refute! { fn happyReduction_420<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CGrOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_420<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CGrOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20394,8 +20768,10 @@ fn happyReduce_421() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 112, box happyReduction_421)
 }
 
-refute! { fn happyReduction_421<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLeqOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_421<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLeqOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20404,8 +20780,10 @@ fn happyReduce_422() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 112, box happyReduction_422)
 }
 
-refute! { fn happyReduction_422<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CGeqOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_422<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CGeqOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20426,8 +20804,10 @@ fn happyReduce_424() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 113, box happyReduction_424)
 }
 
-refute! { fn happyReduction_424<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CEqOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_424<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CEqOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20436,8 +20816,10 @@ fn happyReduce_425() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 113, box happyReduction_425)
 }
 
-refute! { fn happyReduction_425<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CNeqOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_425<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CNeqOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20458,8 +20840,10 @@ fn happyReduce_427() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 114, box happyReduction_427)
 }
 
-refute! { fn happyReduction_427<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CAndOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_427<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CAndOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20480,8 +20864,10 @@ fn happyReduce_429() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 115, box happyReduction_429)
 }
 
-refute! { fn happyReduction_429<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CXorOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_429<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CXorOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20502,8 +20888,10 @@ fn happyReduce_431() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 116, box happyReduction_431)
 }
 
-refute! { fn happyReduction_431<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, COrOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_431<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, COrOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20524,8 +20912,10 @@ fn happyReduce_433() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 117, box happyReduction_433)
 }
 
-refute! { fn happyReduction_433<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLndOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_433<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLndOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20546,8 +20936,10 @@ fn happyReduce_435() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 118, box happyReduction_435)
 }
 
-refute! { fn happyReduction_435<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLorOp, box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_435<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLorOp, box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20568,8 +20960,10 @@ fn happyReduce_437() -> ActionReturn {
     partial_5!(happyMonadReduce, 5, 119, box happyReduction_437)
 }
 
-refute! { fn happyReduction_437<T>(HappyStk(HappyAbsSyn100(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CCond, box happy_var_1, Some(box happy_var_3), box happy_var_5)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_437<T>(HappyStk(HappyAbsSyn100(happy_var_5), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CCond, box happy_var_1, Some(box happy_var_3), box happy_var_5)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20578,8 +20972,10 @@ fn happyReduce_438() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 119, box happyReduction_438)
 }
 
-refute! { fn happyReduction_438<T>(HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CCond, box happy_var_1, None, box happy_var_4)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_438<T>(HappyStk(HappyAbsSyn100(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CCond, box happy_var_1, None, box happy_var_4)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20600,8 +20996,10 @@ fn happyReduce_440() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 120, box happyReduction_440)
 }
 
-refute! { fn happyReduction_440<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(HappyAbsSyn121(happy_var_2), Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CAssign, unL(happy_var_2), box happy_var_1, box happy_var_3)) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+refute! {
+fn happyReduction_440<T>(HappyStk(HappyAbsSyn100(happy_var_3), Some(box HappyStk(HappyAbsSyn121(happy_var_2), Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), partial_1!(CAssign, unL(happy_var_2), box happy_var_1, box happy_var_3)) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20754,10 +21152,12 @@ fn happyReduce_453() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 122, box happyReduction_453)
 }
 
-refute! { fn happyReduction_453<T>(HappyStk(HappyAbsSyn105(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_453<T>(HappyStk(HappyAbsSyn105(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn100(happy_var_1), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             let es = reverse(happy_var_3);
-            withNodeInfo(es.clone(), partial_1!(CComma, __op_concat(happy_var_1, es))) }, (box move |r| { happyReturn(HappyAbsSyn100(r)) }))
+            withNodeInfo(es.clone(), partial_1!(CComma, __op_concat(happy_var_1, es))) },
+              box move |r| happyReturn(HappyAbsSyn100(r)))
 }
 }
 
@@ -20791,9 +21191,7 @@ fn happyReduce_456() -> ActionReturn {
 }
 
 fn happyReduction_456() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn124(None),
-    }
+    HappyAbsSyn124(None)
 }
 
 
@@ -20814,9 +21212,7 @@ fn happyReduce_458() -> ActionReturn {
 }
 
 fn happyReduction_458() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn124(None),
-    }
+    HappyAbsSyn124(None)
 }
 
 
@@ -20848,7 +21244,8 @@ fn happyReduce_461() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 127, box happyReduction_461)
 }
 
-refute! { fn happyReduction_461<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_461<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
                     withNodeInfo(happy_var_1.clone(), box move |_0| {
                         // TODO: I don't get why this is a Fn closure...
@@ -20857,7 +21254,8 @@ refute! { fn happyReduction_461<T>(HappyStk(HappyTerminal(happy_var_1), Some(box
                         } else {
                             panic!("irrefutable pattern")
                         }
-                    }) }, (box move |r| { happyReturn(HappyAbsSyn127(r)) }))
+                    }) },
+              box move |r| happyReturn(HappyAbsSyn127(r)))
 }
 }
 
@@ -20866,7 +21264,8 @@ fn happyReduce_462() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 127, box happyReduction_462)
 }
 
-refute! { fn happyReduction_462<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_462<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
                     withNodeInfo(happy_var_1.clone(), box move |_0| {
                         if let CTokCLit(_, ref c) = happy_var_1 {
@@ -20874,7 +21273,8 @@ refute! { fn happyReduction_462<T>(HappyStk(HappyTerminal(happy_var_1), Some(box
                         } else {
                             panic!("irrefutable pattern")
                         }
-                    }) }, (box move |r| { happyReturn(HappyAbsSyn127(r)) }))
+                    }) },
+              box move |r| happyReturn(HappyAbsSyn127(r)))
 }
 }
 
@@ -20883,7 +21283,8 @@ fn happyReduce_463() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 127, box happyReduction_463)
 }
 
-refute! { fn happyReduction_463<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_463<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
                     withNodeInfo(happy_var_1.clone(), box move |_0| {
                         if let CTokFLit(_, ref f) = happy_var_1 {
@@ -20891,7 +21292,8 @@ refute! { fn happyReduction_463<T>(HappyStk(HappyTerminal(happy_var_1), Some(box
                         } else {
                             panic!("irrefutable pattern")
                         }
-                    }) }, (box move |r| { happyReturn(HappyAbsSyn127(r)) }))
+                    }) },
+              box move |r| happyReturn(HappyAbsSyn127(r)))
 }
 }
 
@@ -20900,7 +21302,8 @@ fn happyReduce_464() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 128, box happyReduction_464)
 }
 
-refute! { fn happyReduction_464<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_464<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             withNodeInfo(happy_var_1.clone(), box move |_0| {
                 if let CTokSLit(_, ref s) = happy_var_1 {
@@ -20908,7 +21311,8 @@ refute! { fn happyReduction_464<T>(HappyStk(HappyTerminal(happy_var_1), Some(box
                 } else {
                     panic!("irrefutable pattern")
                 }
-            }) }, (box move |r| { happyReturn(HappyAbsSyn128(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn128(r)))
 }
 }
 
@@ -20917,7 +21321,8 @@ fn happyReduce_465() -> ActionReturn {
     partial_5!(happyMonadReduce, 2, 128, box happyReduction_465)
 }
 
-refute! { fn happyReduction_465<T>(HappyStk(HappyAbsSyn129(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+refute! {
+fn happyReduction_465<T>(HappyStk(HappyAbsSyn129(happy_var_2), Some(box HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
     happyThen({
             withNodeInfo(happy_var_1.clone(), box move |_0| {
                 if let CTokSLit(_, s) = happy_var_1 {
@@ -20925,7 +21330,8 @@ refute! { fn happyReduction_465<T>(HappyStk(HappyAbsSyn129(happy_var_2), Some(bo
                 } else {
                     panic!("irrefutable pattern")
                 }
-            }) }, (box move |r| { happyReturn(HappyAbsSyn128(r)) }))
+            }) },
+              box move |r| happyReturn(HappyAbsSyn128(r)))
 }
 }
 
@@ -21003,9 +21409,7 @@ fn happyReduce_471() -> ActionReturn {
 }
 
 fn happyReduction_471() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn132(vec![]),
-    }
+    HappyAbsSyn132(vec![])
 }
 
 
@@ -21049,7 +21453,8 @@ fn happyReduce_475() -> ActionReturn {
     partial_5!(happyReduce, 6, 134, box happyReduction_475)
 }
 
-refute! { fn happyReduction_475(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn135(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(_, Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_475(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn135(happy_var_4), Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(_, Some(box happyRest)))))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn132(reverse(happy_var_4)), Some(box happyRest))
 }
 }
@@ -21090,9 +21495,7 @@ fn happyReduce_478() -> ActionReturn {
 }
 
 fn happyReduction_478() -> HappyAbsSyn {
-    match () {
-        () => HappyAbsSyn136(None),
-    }
+    HappyAbsSyn136(None)
 }
 
 
@@ -21100,8 +21503,10 @@ fn happyReduce_479() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 136, box happyReduction_479)
 }
 
-refute! { fn happyReduction_479<T>(HappyStk(HappyTerminal(CTokIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), box move |_0| Some(CAttribute(happy_var_1, vec![], _0))) }, (box move |r| { happyReturn(HappyAbsSyn136(r)) }))
+refute! {
+fn happyReduction_479<T>(HappyStk(HappyTerminal(CTokIdent(_, happy_var_1)), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), box move |_0| Some(CAttribute(happy_var_1, vec![], _0))) },
+              box move |r| happyReturn(HappyAbsSyn136(r)))
 }
 }
 
@@ -21110,8 +21515,10 @@ fn happyReduce_480() -> ActionReturn {
     partial_5!(happyMonadReduce, 1, 136, box happyReduction_480)
 }
 
-refute! { fn happyReduction_480<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1, box move |_0| Some(CAttribute(internalIdent("const".to_string()), vec![], _0))) }, (box move |r| { happyReturn(HappyAbsSyn136(r)) }))
+refute! {
+fn happyReduction_480<T>(HappyStk(HappyTerminal(happy_var_1), Some(box happyRest)): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1, box move |_0| Some(CAttribute(internalIdent("const".to_string()), vec![], _0))) },
+              box move |r| happyReturn(HappyAbsSyn136(r)))
 }
 }
 
@@ -21120,8 +21527,10 @@ fn happyReduce_481() -> ActionReturn {
     partial_5!(happyMonadReduce, 4, 136, box happyReduction_481)
 }
 
-refute! { fn happyReduction_481<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn105(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(CTokIdent(_, happy_var_1)), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), box move |_0| Some(CAttribute(happy_var_1, reverse(happy_var_3), _0))) }, (box move |r| { happyReturn(HappyAbsSyn136(r)) }))
+refute! {
+fn happyReduction_481<T>(HappyStk(_, Some(box HappyStk(HappyAbsSyn105(happy_var_3), Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(CTokIdent(_, happy_var_1)), Some(box happyRest)))))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), box move |_0| Some(CAttribute(happy_var_1, reverse(happy_var_3), _0))) },
+              box move |r| happyReturn(HappyAbsSyn136(r)))
 }
 }
 
@@ -21130,8 +21539,10 @@ fn happyReduce_482() -> ActionReturn {
     partial_5!(happyMonadReduce, 3, 136, box happyReduction_482)
 }
 
-refute! { fn happyReduction_482<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(CTokIdent(_, happy_var_1)), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
-    happyThen({ withNodeInfo(happy_var_1.clone(), box move |_0| Some(CAttribute(happy_var_1, vec![], _0))) }, (box move |r| { happyReturn(HappyAbsSyn136(r)) }))
+refute! {
+fn happyReduction_482<T>(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyTerminal(CTokIdent(_, happy_var_1)), Some(box happyRest)))))): HappyStk<HappyAbsSyn>, tk: T) -> P<HappyAbsSyn> {
+    happyThen({ withNodeInfo(happy_var_1.clone(), box move |_0| Some(CAttribute(happy_var_1, vec![], _0))) },
+              box move |r| happyReturn(HappyAbsSyn136(r)))
 }
 }
 
@@ -21188,7 +21599,8 @@ fn happyReduce_487() -> ActionReturn {
     partial_5!(happyReduce, 5, 137, box happyReduction_487)
 }
 
-refute! { fn happyReduction_487(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn105(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_487(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn105(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn105(happy_var_1), Some(box happyRest))
 }
 }
@@ -21198,7 +21610,8 @@ fn happyReduce_488() -> ActionReturn {
     partial_5!(happyReduce, 5, 137, box happyReduction_488)
 }
 
-refute! { fn happyReduction_488(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn105(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
+refute! {
+fn happyReduction_488(HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(_, Some(box HappyStk(HappyAbsSyn105(happy_var_1), Some(box happyRest)))))))))): HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn> {
     HappyStk(HappyAbsSyn105(happy_var_1), Some(box happyRest))
 }
 }
@@ -21735,7 +22148,7 @@ pub fn expressionP() -> P<CExpr> {
 
 
 // Original location: "<command-line>", line 8
-// Original location: "/tmp/ghc25861_0/ghc_2.h", line 1
+// Original location: "/tmp/ghc16004_0/ghc_2.h", line 1
 
 
 
@@ -21960,67 +22373,58 @@ pub fn expressionP() -> P<CExpr> {
 
 // Original location: "<command-line>", line 8
 // Original location: "templates/GenericTemplate.hs", line 1
-
-
-
-
-// Original location: "templates/GenericTemplate.hs", line 16
-
-
-
-
-
-
-
-// Original location: "templates/GenericTemplate.hs", line 36
-
-// Original location: "templates/GenericTemplate.hs", line 46
-
-// Original location: "templates/GenericTemplate.hs", line 55
-
+// -----------------------------------------------------------------------------
+// HappyStk data type
 #[derive(Clone)]
-pub struct HappyStk<a>(a, Option<Box<HappyStk<a>>>);
+struct HappyStk<a>(a, Option<Box<HappyStk<a>>>);
 
 // -----------------------------------------------------------------------------
-/// starting the parse
-fn happyParse(start_state: Action<HappyAbsSyn, HappyStk<HappyAbsSyn>>) -> P<HappyAbsSyn> {
-    // TODO this is lazy failure
-    happyNewToken(start_state, vec![], HappyStk(HappyAbsSyn::HappyErrorToken(0), None))
-}
+// HappyState data type
+struct HappyState<T, F>(Rc<Box<Fn(isize, isize, T, HappyState<T, F>, Vec<HappyState<T, F>>) -> F>>);
 
-// -----------------------------------------------------------------------------
-/// Accepting the parse
-///
-/// If the current token is (1), it means we've just accepted a partial
-/// parse (a %partial parser).  We must ignore the saved token on the top of
-/// the stack in this case.
-fn happyAccept(_0: isize, _1: CToken, _2: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>, _3: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>, _4: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
-    match (_0, _1, _2, _3, _4) {
-        (1, tk, st, sts, HappyStk(_, Some(box HappyStk(ans, _)))) => {
-            happyReturn1(ans)
-        },
-        (j, tk, st, sts, HappyStk(ans, _)) => {
-            (happyReturn1(ans))
-        },
-    }
-}
-
-// -----------------------------------------------------------------------------
-/// HappyState data type (not arrays)
-pub struct HappyState<b, c>(Rc<Box<Fn(isize, isize, b, HappyState<b, c>, Vec<HappyState<b, c>>) -> c>>);
-
-impl<b, c> Clone for HappyState<b, c> {
+impl<T, F> Clone for HappyState<T, F> {
     fn clone(&self) -> Self {
         HappyState(self.0.clone())
     }
 }
 
+// some convenient typedefs
+
+type Stack = HappyStk<HappyAbsSyn>;
+type State<T> = HappyState<Token, Box<FnBox(Stack) -> Monad<T>>>;
+
+type ActionReturn = Box<FnBox(isize, Token, State<HappyAbsSyn>, Vec<State<HappyAbsSyn>>, Stack)
+                        -> Monad<HappyAbsSyn>>;
+
+type Action<A, B> = Box<Fn(isize, isize, Token, HappyState<Token, Box<FnBox(B) -> Monad<A>>>,
+                           Vec<HappyState<Token, Box<FnBox(B) -> Monad<A>>>>, B) -> Monad<A>>;
+
+
 // -----------------------------------------------------------------------------
-/// Shifting a token
-fn happyShift(new_state: Action<HappyAbsSyn, HappyStk<HappyAbsSyn>>, _1: isize, tk: CToken,
-              st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
-              sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
-              stk: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+// starting the parse
+fn happyParse(start_state: Action<HappyAbsSyn, Stack>) -> Monad<HappyAbsSyn> {
+    // TODO this is lazy failure
+    happyNewToken(start_state, vec![], HappyStk(HappyAbsSyn::HappyErrorToken(0), None))
+}
+
+// -----------------------------------------------------------------------------
+// Accepting the parse
+//
+// If the current token is ERROR_TOK, it means we've just accepted a partial
+// parse (a %partial parser).  We must ignore the saved token on the top of
+// the stack in this case.
+fn happyAccept(j: isize, tk: Token, st: State<HappyAbsSyn>, sts: Vec<State<HappyAbsSyn>>,
+               stk: Stack) -> Monad<HappyAbsSyn> {
+    match (j, stk) {
+        (1, HappyStk(_, Some(box HappyStk(ans, _)))) => happyReturn1(ans),
+        (j, HappyStk(ans, _)) => happyReturn1(ans),
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Shifting a token
+fn happyShift(new_state: Action<HappyAbsSyn, Stack>, _1: isize, tk: Token,
+              st: State<HappyAbsSyn>, sts: Vec<State<HappyAbsSyn>>, stk: Stack) -> Monad<HappyAbsSyn> {
     match _1 {
         1 => {
             let HappyStk(x, _) = stk.clone();
@@ -22043,10 +22447,8 @@ fn happyShift(new_state: Action<HappyAbsSyn, HappyStk<HappyAbsSyn>>, _1: isize, 
 
 // happyReduce is specialised for the common cases.
 
-fn happySpecReduce_0(nt: isize, __fn: HappyAbsSyn, _2: isize, tk: CToken,
-                     st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
-                     sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
-                     stk: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+fn happySpecReduce_0(nt: isize, __fn: HappyAbsSyn, _2: isize, tk: Token,
+                     st: State<HappyAbsSyn>, sts: Vec<State<HappyAbsSyn>>, stk: Stack) -> Monad<HappyAbsSyn> {
     match _2 {
         1 => happyFail(1, tk, st, sts, stk),
         j => {
@@ -22056,10 +22458,8 @@ fn happySpecReduce_0(nt: isize, __fn: HappyAbsSyn, _2: isize, tk: CToken,
     }
 }
 
-fn happySpecReduce_1(nt: isize, __fn: Box<FnBox(HappyAbsSyn) -> HappyAbsSyn>, _2: isize, tk: CToken,
-                     st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
-                     sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
-                     stk: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+fn happySpecReduce_1(nt: isize, __fn: Box<FnBox(HappyAbsSyn) -> HappyAbsSyn>, _2: isize, tk: Token,
+                     st: State<HappyAbsSyn>, sts: Vec<State<HappyAbsSyn>>, stk: Stack) -> Monad<HappyAbsSyn> {
     match (_2, stk) {
         (1, stk) => happyFail(1, tk, st, sts, stk),
         (j, HappyStk(v1, stk_q)) => {
@@ -22074,10 +22474,8 @@ fn happySpecReduce_1(nt: isize, __fn: Box<FnBox(HappyAbsSyn) -> HappyAbsSyn>, _2
 }
 
 fn happySpecReduce_2(nt: isize, __fn: Box<FnBox(HappyAbsSyn, HappyAbsSyn) -> HappyAbsSyn>,
-                     _2: isize, tk: CToken,
-                     st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
-                     mut sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
-                     stk: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+                     _2: isize, tk: Token, st: State<HappyAbsSyn>, mut sts: Vec<State<HappyAbsSyn>>,
+                     stk: Stack) -> Monad<HappyAbsSyn> {
     match (_2, stk) {
         (1, stk) => happyFail(1, tk, st, sts, stk),
         (j, HappyStk(v1, Some(box HappyStk(v2, Some(box stk_q))))) => {
@@ -22094,10 +22492,8 @@ fn happySpecReduce_2(nt: isize, __fn: Box<FnBox(HappyAbsSyn, HappyAbsSyn) -> Hap
 }
 
 fn happySpecReduce_3(nt: isize, __fn: Box<FnBox(HappyAbsSyn, HappyAbsSyn, HappyAbsSyn) -> HappyAbsSyn>,
-                     _2: isize, tk: CToken,
-                     st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
-                     mut stses: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
-                     stk: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+                     _2: isize, tk: Token, st: State<HappyAbsSyn>, mut stses: Vec<State<HappyAbsSyn>>,
+                     stk: Stack) -> Monad<HappyAbsSyn> {
     match (_2, stk) {
         (1, stk) => happyFail(1, tk, st, stses, stk),
         (j, HappyStk(v1, Some(box HappyStk(v2, Some(box HappyStk(v3, stk_q)))))) => {
@@ -22117,11 +22513,9 @@ fn happySpecReduce_3(nt: isize, __fn: Box<FnBox(HappyAbsSyn, HappyAbsSyn, HappyA
 }
 
 fn happyReduce<T: 'static>(k: isize, nt: isize,
-                           __fn: Box<FnBox(HappyStk<HappyAbsSyn>) -> HappyStk<HappyAbsSyn>>,
-                           _3: isize, tk: CToken,
-                           st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>,
-                           sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>>,
-                           stk: HappyStk<HappyAbsSyn>) -> P<T> {
+                           __fn: Box<FnBox(Stack) -> Stack>,
+                           _3: isize, tk: Token,
+                           st: State<T>, sts: Vec<State<T>>, stk: Stack) -> Monad<T> {
     match _3 {
         1 => happyFail(1, tk, st, sts, stk),
         j => {
@@ -22135,11 +22529,9 @@ fn happyReduce<T: 'static>(k: isize, nt: isize,
 }
 
 fn happyMonadReduce<T: 'static>(k: isize, nt: isize,
-                                __fn: Box<FnBox(HappyStk<HappyAbsSyn>, CToken) -> P<HappyAbsSyn>>,
-                                _3: isize, tk: CToken,
-                                st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>,
-                                sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>>,
-                                stk: HappyStk<HappyAbsSyn>) -> P<T> {
+                                __fn: Box<FnBox(Stack, Token) -> Monad<HappyAbsSyn>>,
+                                _3: isize, tk: Token,
+                                st: State<T>, sts: Vec<State<T>>, stk: Stack) -> Monad<T> {
     match _3 {
         1 => happyFail(1, tk, st, sts, stk),
         j => {
@@ -22150,7 +22542,6 @@ fn happyMonadReduce<T: 'static>(k: isize, nt: isize,
             let drop_stk = happyDropStk(k, stk.clone());
 
             happyThen1(__fn(stk.clone(), tk.clone()), box move |r| {
-                clones!(sts1, drop_stk, st1, tk);
                 action(nt, j, tk, st1, sts1)(HappyStk(r, Some(box drop_stk)))
             })
         }
@@ -22158,11 +22549,9 @@ fn happyMonadReduce<T: 'static>(k: isize, nt: isize,
 }
 
 fn happyMonad2Reduce<T: 'static, U>(k: isize, nt: U,
-                                    __fn: Box<FnBox(HappyStk<HappyAbsSyn>, CToken) -> P<HappyAbsSyn>>,
-                                    _3: isize, tk: CToken,
-                                    st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>,
-                                    sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>>,
-                                    stk: HappyStk<HappyAbsSyn>) -> P<T> {
+                                    __fn: Box<FnBox(Stack, Token) -> Monad<HappyAbsSyn>>,
+                                    _3: isize, tk: Token,
+                                    st: State<T>, sts: Vec<State<T>>, stk: Stack) -> Monad<T> {
     match _3 {
         1 => happyFail(1, tk, st, sts, stk),
         j => {
@@ -22175,7 +22564,6 @@ fn happyMonad2Reduce<T: 'static, U>(k: isize, nt: U,
             let new_state = action;
 
             happyThen1(__fn(stk, tk), box move |r| {
-                clones!(drop_stk, sts1, new_state);
                 happyNewToken(curry_5_1!(new_state), sts1, HappyStk(r, Some(box drop_stk)))
             })
         }
@@ -22198,22 +22586,17 @@ fn happyDropStk<T>(n: isize, stk: HappyStk<T>) -> HappyStk<T> {
 }
 
 // -----------------------------------------------------------------------------
-/// Moving to a new state after a reduction
-fn happyGoto(action: Action<HappyAbsSyn, HappyStk<HappyAbsSyn>>, j: isize, tk: CToken,
-             st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>,
-             _curry_4: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn>>>>,
-             _curry_5: HappyStk<HappyAbsSyn>) -> P<HappyAbsSyn> {
+// Moving to a new state after a reduction
+fn happyGoto(action: Action<HappyAbsSyn, Stack>, j: isize, tk: Token,
+             st: State<HappyAbsSyn>, sts: Vec<State<HappyAbsSyn>>, stk: Stack) -> Monad<HappyAbsSyn> {
     let action = Rc::new(action);
     let action_ = action.clone();
-    action(j, j, tk, (HappyState(Rc::new(apply_5_1_clone!(action_)))), _curry_4, _curry_5)
+    action(j, j, tk, (HappyState(Rc::new(apply_5_1_clone!(action_)))), sts, stk)
 }
 
 // -----------------------------------------------------------------------------
-/// Error recovery ((1) is the error token)
-fn happyFail<T: 'static>(i: isize, tk: CToken,
-                         old_st: HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>,
-                         sts: Vec<HappyState<CToken, Box<FnBox(HappyStk<HappyAbsSyn>) -> P<T>>>>,
-                         stk: HappyStk<HappyAbsSyn>) -> P<T> {
+// Error recovery (ERROR_TOK is the error token)
+fn happyFail<T: 'static>(i: isize, tk: Token, old_st: State<T>, sts: Vec<State<T>>, stk: Stack) -> Monad<T> {
     match (i, old_st, stk) {
         (1, old_st, HappyStk(x, Some(_))) => {
             let i = match x {
@@ -22230,18 +22613,6 @@ fn happyFail<T: 'static>(i: isize, tk: CToken,
 
 fn notHappyAtAll<a: 'static>() -> a {
     panic!("Internal Happy error")
-}
-
-fn happySeq<a, b>(a: a, b: b) -> b {
-    seq(a, b)
-}
-
-fn happyDoSeq<a, b>(a: a, b: b) -> b {
-    seq(a, b)
-}
-
-fn happyDontSeq<a, b>(a: a, b: b) -> b {
-    b
 }
 
 // end of Happy Template.

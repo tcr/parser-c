@@ -32,7 +32,6 @@
 {
 
 #[macro_use] use corollary_support::*;
-#[macro_use] use matches;
 use std::boxed::FnBox;
 use std::rc::Rc;
 
@@ -83,80 +82,76 @@ macro_rules! apply_5_1_clone {
         }
     )
 }
-macro_rules! clones {
-    ($($value: ident),*) => {
-        $( let $value = $value.clone(); )*
-    }
-}
-
-// Relevant C99 sections:
-//
-// 6.5 Expressions .1 - .17 and 6.6 (almost literally)
-//  Supported GNU extensions:
-//     - Allow a compound statement as an expression
-//     - Various __builtin_* forms that take type parameters
-//     - `alignof' expression or type
-//     - `__extension__' to suppress warnings about extensions
-//     - Allow taking address of a label with: && label
-//     - Omitting the `then' part of conditional expressions
-//     - complex numbers
-//
-// 6.7 C Declarations .1 -.8
-//  Supported GNU extensions:
-//     - '__thread' thread local storage (6.7.1)
-//
-// 6.8 Statements .1 - .8
-//  Supported GNU extensions:
-//    - case ranges (C99 6.8.1)
-//    - '__label__ ident;' declarations (C99 6.8.2)
-//    - computed gotos (C99 6.8.6)
-//
-// 6.9 Translation unit
-//  Supported GNU extensions:
-//     - allow empty translation_unit
-//     - allow redundant ';'
-//     - allow extension keyword before external declaration
-//     - asm definitions
-//
-//  Since some of the grammar productions are quite difficult to read,
-//  (especially those involved with the decleration syntax) we document them
-//  with an extended syntax that allows a more consise representation:
-//
-//  Ordinary rules
-//
-//   foo      named terminal or non-terminal
-//
-//   'c'      terminal, literal character token
-//
-//   A B      concatenation
-//
-//   A | B    alternation
-//
-//   (A)      grouping
-//
-//  Extended rules
-//
-//   A?       optional, short hand for (A|) or [A]{ 0==A || 1==A }
-//
-//   ...      stands for some part of the grammar omitted for clarity
-//
-//   {A}      represents sequences, 0 or more.
-//
-//   <permute> modifier which states that any permutation of the immediate subterms is valid
-//
-//
-//- TODO ----------------------------------------------------------------------
-//
-//  !* We ignore C11 _Atomic type annotations
-//  !* We ignore the C99 static keyword (see C99 6.7.5.3)
-//  !* We do not distinguish in the AST between incomplete array types and
-//      complete variable length arrays ([ '*' ] means the latter). (see C99 6.7.5.2)
-//  !* The AST doesn't allow recording __attribute__ of unnamed struct field
-//     (see , struct_default_declaring_list, struct_identifier_declarator)
-//  !* see `We're being far to liberal here' (... struct definition within structs)
-//  * Documentation isn't complete and consistent yet.
 
 }
+
+-- Relevant C99 sections:
+--
+-- 6.5 Expressions .1 - .17 and 6.6 (almost literally)
+--  Supported GNU extensions:
+--     - Allow a compound statement as an expression
+--     - Various __builtin_* forms that take type parameters
+--     - `alignof' expression or type
+--     - `__extension__' to suppress warnings about extensions
+--     - Allow taking address of a label with: && label
+--     - Omitting the `then' part of conditional expressions
+--     - complex numbers
+--
+-- 6.7 C Declarations .1 -.8
+--  Supported GNU extensions:
+--     - '__thread' thread local storage (6.7.1)
+--
+-- 6.8 Statements .1 - .8
+--  Supported GNU extensions:
+--    - case ranges (C99 6.8.1)
+--    - '__label__ ident;' declarations (C99 6.8.2)
+--    - computed gotos (C99 6.8.6)
+--
+-- 6.9 Translation unit
+--  Supported GNU extensions:
+--     - allow empty translation_unit
+--     - allow redundant ';'
+--     - allow extension keyword before external declaration
+--     - asm definitions
+--
+--  Since some of the grammar productions are quite difficult to read,
+--  (especially those involved with the decleration syntax) we document them
+--  with an extended syntax that allows a more consise representation:
+--
+--  Ordinary rules
+--
+--   foo      named terminal or non-terminal
+--
+--   'c'      terminal, literal character token
+--
+--   A B      concatenation
+--
+--   A | B    alternation
+--
+--   (A)      grouping
+--
+--  Extended rules
+--
+--   A?       optional, short hand for (A|) or [A]{ 0==A || 1==A }
+--
+--   ...      stands for some part of the grammar omitted for clarity
+--
+--   {A}      represents sequences, 0 or more.
+--
+--   <permute> modifier which states that any permutation of the immediate subterms is valid
+--
+--
+--- TODO ----------------------------------------------------------------------
+--
+--  !* We ignore C11 _Atomic type annotations
+--  !* We ignore the C99 static keyword (see C99 6.7.5.3)
+--  !* We do not distinguish in the AST between incomplete array types and
+--      complete variable length arrays ([ '*' ] means the latter). (see C99 6.7.5.2)
+--  !* The AST doesn't allow recording __attribute__ of unnamed struct field
+--     (see , struct_default_declaring_list, struct_identifier_declarator)
+--  !* see `We're being far to liberal here' (... struct definition within structs)
+--  * Documentation isn't complete and consistent yet.
+
 -- in order to document the parsers, we have to alias them
 %name translation_unit translation_unit
 %name external_declaration external_declaration
