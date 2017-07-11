@@ -46,7 +46,7 @@ use data::name::Name;
 use parser::tokens::*;
 use parser::builtin::builtinTypeNames;
 use parser::lexer::{lexC, parseError};
-use parser::parser_utils::{ParseError, PState, CDeclrR, appendDeclrAttrs};
+use parser::parser_utils::{ParseError, PState, CDeclrR, ptrDeclr};
 use syntax::ops::*;
 use syntax::ast::*;
 use syntax::constants::*;
@@ -377,7 +377,7 @@ function_declarator :: { CDeclr }
 function_declarator
   : identifier_declarator
         {%
-            let declr = reverseDeclr($1);
+            let declr = $1.reverse();
             p.enterScope();
             doFuncParamDeclIdent(declr.clone())?;
             Ok(declr)
@@ -739,49 +739,49 @@ default_declaring_list
   : declaration_qualifier_list identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
             let declspecs = reverse($1.clone());
-            let declr = withAsmNameAttrs($3, $2)?;
+            let declr = $2.withAsmNameAttrs($3)?;
             // TODO: borrow these instead
             p.doDeclIdent(&declspecs, declr.clone());
             p.withNodeInfo($1, partial_1!(CDecl, declspecs,
-                                           vec![(Some(reverseDeclr(declr)), $4, None)]))
+                                           vec![(Some(declr.reverse()), $4, None)]))
         }
 
   | type_qualifier_list identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
             let declspecs = liftTypeQuals($1.clone());
-            let declr = withAsmNameAttrs($3, $2)?;
+            let declr = $2.withAsmNameAttrs($3)?;
             p.doDeclIdent(&declspecs, declr.clone());
             p.withNodeInfo($1, partial_1!(CDecl, declspecs,
-                                           vec![(Some(reverseDeclr(declr)), $4, None)]))
+                                           vec![(Some(declr.reverse()), $4, None)]))
         }
 
   | type_qualifier_list attrs identifier_declarator asm_attrs_opt {-{}-} initializer_opt -- FIX 1600
         {%
             let declspecs = liftTypeQuals($1.clone());
-            let declr = withAsmNameAttrs($4, $3)?;
+            let declr = $3.withAsmNameAttrs($4)?;
             p.doDeclIdent(&declspecs, declr.clone());
             p.withNodeInfo($1, partial_1!(CDecl, __op_addadd(declspecs, liftCAttrs($2)),
-                                           vec![(Some(reverseDeclr(declr)), $5, None)]))
+                                           vec![(Some(declr.reverse()), $5, None)]))
         }
 
   -- GNU extension: __attribute__ as the only qualifier
   | attrs identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
             let declspecs = liftCAttrs($1.clone());
-            let declr = withAsmNameAttrs($3, $2)?;
+            let declr = $2.withAsmNameAttrs($3)?;
             p.doDeclIdent(&declspecs, declr.clone());
             p.withNodeInfo($1, partial_1!(CDecl, declspecs,
-                                           vec![(Some(reverseDeclr(declr)), $4, None)]))
+                                           vec![(Some(declr.reverse()), $4, None)]))
         }
 
   | default_declaring_list ',' attrs_opt identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
             if let CDecl(declspecs, dies, at) = $1 {
                 let (f, s) = $5;
-                let declr = withAsmNameAttrs((f, __op_addadd(s, $3)), $4)?;
+                let declr = $4.withAsmNameAttrs((f, __op_addadd(s, $3)))?;
                 p.doDeclIdent(&declspecs, declr.clone());
                 p.withLength(at, partial_1!(CDecl, declspecs,
-                                             __op_concat((Some(reverseDeclr(declr)), $6, None), dies)))
+                                             __op_concat((Some(declr.reverse()), $6, None), dies)))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -804,25 +804,25 @@ declaring_list :: { CDecl }
 declaring_list
   : declaration_specifier declarator asm_attrs_opt initializer_opt
         {%
-            let declr = withAsmNameAttrs($3, $2)?;
+            let declr = $2.withAsmNameAttrs($3)?;
             p.doDeclIdent(&$1, declr.clone());
-            p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr(declr)), $4, None)]))
+            p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(declr.reverse()), $4, None)]))
         }
 
   | type_specifier declarator asm_attrs_opt initializer_opt
         {%
-            let declr = withAsmNameAttrs($3, $2)?;
+            let declr = $2.withAsmNameAttrs($3)?;
             p.doDeclIdent(&$1, declr.clone());
-            p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr(declr)), $4, None)]))
+            p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(declr.reverse()), $4, None)]))
         }
 
   | declaring_list ',' attrs_opt declarator asm_attrs_opt initializer_opt
         {%
             if let CDecl(declspecs, dies, at) = $1 {
                 let (f, s) = $5;
-                let declr = withAsmNameAttrs((f, __op_addadd(s, $3)), $4)?;
+                let declr = $4.withAsmNameAttrs((f, __op_addadd(s, $3)))?;
                 p.doDeclIdent(&declspecs, declr.clone());
-                Ok(CDecl(declspecs, __op_concat((Some(reverseDeclr(declr)), $6, None), dies), at))
+                Ok(CDecl(declspecs, __op_concat((Some(declr.reverse()), $6, None), dies), at))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -1294,16 +1294,16 @@ struct_declaring_list
 --
 struct_declarator :: { (Option<CDeclr>, Option<CExpr>) }
 struct_declarator
-  : declarator                                  { (Some(reverseDeclr($1)), None) }
+  : declarator                                  { (Some($1.reverse()), None) }
   | ':' constant_expression                     { (None, Some($2)) }
-  | declarator ':' constant_expression          { (Some(reverseDeclr($1)), Some($3)) }
+  | declarator ':' constant_expression          { (Some($1.reverse()), Some($3)) }
 
 -- FIXME: anonymous bitfield doesn't allow recording of attributes
 struct_identifier_declarator :: { (Option<CDeclr>, Option<CExpr>) }
 struct_identifier_declarator
-  : identifier_declarator                               { (Some(reverseDeclr($1)), None) }
+  : identifier_declarator                               { (Some($1.reverse()), None) }
   | ':' constant_expression                             { (None, Some($2)) }
-  | identifier_declarator ':' constant_expression       { (Some(reverseDeclr($1)), Some($3)) }
+  | identifier_declarator ':' constant_expression       { (Some($1.reverse()), Some($3)) }
   | struct_identifier_declarator attr
         {
             match $1 {
@@ -1405,10 +1405,10 @@ typedef_declarator
 parameter_typedef_declarator :: { CDeclrR }
 parameter_typedef_declarator
   : tyident
-        {% p.withNodeInfo($1.clone(), partial_1!(mkVarDeclr, $1)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDeclrR::from_var, $1)) }
 
   | tyident postfixing_abstract_declarator
-        {% p.withNodeInfo($1.clone(), box move |at| { $2(mkVarDeclr($1, at)) }) }
+        {% p.withNodeInfo($1.clone(), box move |at| { $2(CDeclrR::from_var($1, at)) }) }
 
   | clean_typedef_declarator
         { $1 }
@@ -1443,8 +1443,8 @@ clean_postfix_typedef_declarator :: { CDeclrR }
 clean_postfix_typedef_declarator
   : '(' clean_typedef_declarator ')'                                        { $2 }
   | '(' clean_typedef_declarator ')' postfixing_abstract_declarator         { $4($2) }
-  | '(' attrs clean_typedef_declarator ')'                                  { appendDeclrAttrs($2, $3) }
-  | '(' attrs clean_typedef_declarator ')' postfixing_abstract_declarator   { appendDeclrAttrs($2, $5($3)) }
+  | '(' attrs clean_typedef_declarator ')'                                  { $3.appendAttrs($2) }
+  | '(' attrs clean_typedef_declarator ')' postfixing_abstract_declarator   { $5($3).appendAttrs($2) }
 
 
 -- The following have a redundant '(' placed
@@ -1491,7 +1491,7 @@ paren_postfix_typedef_declarator
 simple_paren_typedef_declarator :: { CDeclrR }
 simple_paren_typedef_declarator
   : tyident
-        {% p.withNodeInfo($1.clone(), partial_1!(mkVarDeclr, $1)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDeclrR::from_var, $1)) }
 
   | '(' simple_paren_typedef_declarator ')'
         { $2 }
@@ -1537,28 +1537,28 @@ postfix_identifier_declarator
         { $4($2) }
 
    | '(' attrs unary_identifier_declarator ')'
-        { appendDeclrAttrs($2, $3) }
+        { $3.appendAttrs($2) }
 
    | '(' attrs unary_identifier_declarator ')' postfixing_abstract_declarator
-        { appendDeclrAttrs($2, $5($3)) }
+        { $5($3).appendAttrs($2) }
 
 
 -- just an identifier in any number of nested parenthesis
 paren_identifier_declarator :: { CDeclrR }
 paren_identifier_declarator
   : ident
-        {% p.withNodeInfo($1.clone(), partial_1!(mkVarDeclr, $1)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDeclrR::from_var, $1)) }
 
   | '(' paren_identifier_declarator ')'
         { $2 }
 
   | '(' attrs paren_identifier_declarator ')'
-        { appendDeclrAttrs($2, $3) }
+        { $3.appendAttrs($2) }
 
 function_declarator_old :: { CDeclr }
 function_declarator_old
   : old_function_declarator
-        { reverseDeclr($1) }
+        { $1.reverse() }
 
 old_function_declarator :: { CDeclrR }
 old_function_declarator
@@ -1574,7 +1574,7 @@ old_function_declarator
 postfix_old_function_declarator :: { CDeclrR }
 postfix_old_function_declarator
   : paren_identifier_declarator '(' identifier_list ')'
-        {% p.withNodeInfo($1.clone(), partial_1!(funDeclr, $1, Left(reverse($3)), vec![])) }
+        {% p.withNodeInfo($1.clone(), box move |_0| $1.funDeclr(Left(reverse($3)), vec![], _0)) }
 
   | '(' old_function_declarator ')'
         { $2 }
@@ -1602,39 +1602,39 @@ parameter_declaration
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![])) }
 
   | declaration_specifier abstract_declarator
-        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr($2)), None, None)])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some($2.reverse()), None, None)])) }
 
   | declaration_specifier identifier_declarator attrs_opt
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1,
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
+                                                 vec![(Some($2.appendAttrs($3).reverse()), None, None)])) }
 
   | declaration_specifier parameter_typedef_declarator attrs_opt
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1,
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
+                                                 vec![(Some($2.appendAttrs($3).reverse()), None, None)])) }
 
   | declaration_qualifier_list
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, reverse($1), vec![])) }
 
   | declaration_qualifier_list abstract_declarator
-        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, reverse($1), vec![(Some(reverseDeclr($2)), None, None)])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, reverse($1), vec![(Some($2.reverse()), None, None)])) }
 
   | declaration_qualifier_list identifier_declarator attrs_opt
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, reverse($1),
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
+                                                 vec![(Some($2.appendAttrs($3).reverse()), None, None)])) }
 
   | type_specifier
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![])) }
 
   | type_specifier abstract_declarator
-        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr($2)), None, None)])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some($2.reverse()), None, None)])) }
 
   | type_specifier identifier_declarator attrs_opt
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1,
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
+                                                 vec![(Some($2.appendAttrs($3).reverse()), None, None)])) }
 
   | type_specifier parameter_typedef_declarator attrs_opt
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1,
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
+                                                 vec![(Some($2.appendAttrs($3).reverse()), None, None)])) }
 
   | type_qualifier_list
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, liftTypeQuals($1), vec![])) }
@@ -1643,11 +1643,11 @@ parameter_declaration
 
   | type_qualifier_list abstract_declarator
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, liftTypeQuals($1),
-                                               vec![(Some(reverseDeclr($2)), None, None)])) }
+                                                 vec![(Some($2.reverse()), None, None)])) }
 
   | type_qualifier_list identifier_declarator attrs_opt
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, liftTypeQuals($1),
-                                               vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
+                                                 vec![(Some($2.appendAttrs($3).reverse()), None, None)])) }
 
 
 identifier_list :: { Reversed<Vec<Ident>> }
@@ -1664,14 +1664,14 @@ type_name
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![])) }
 
   |  type_specifier abstract_declarator
-        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr($2)), None, None)])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some($2.reverse()), None, None)])) }
 
   |  type_qualifier_list attr
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), vec![])) }
 
   |  type_qualifier_list abstract_declarator
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, liftTypeQuals($1),
-                                               vec![(Some(reverseDeclr($2)), None, None)])) }
+                                                 vec![(Some($2.reverse()), None, None)])) }
 
 -- parse C abstract declarator (C99 6.7.6)
 --
@@ -1682,11 +1682,11 @@ abstract_declarator :: { CDeclrR }
 abstract_declarator
   : unary_abstract_declarator       { $1 }
   | postfix_abstract_declarator     { $1 }
-  | postfixing_abstract_declarator  { $1(emptyDeclr()) }
+  | postfixing_abstract_declarator  { $1(CDeclrR::empty()) }
 
 --
 -- FIXME
---  | postfixing_abstract_declarator attrs_opt  { $1(emptyDeclr()) }
+--  | postfixing_abstract_declarator attrs_opt  { $1(CDeclrR::empty()) }
 
 
 postfixing_abstract_declarator :: { Rc<Box<Fn(CDeclrR) -> CDeclrR>> }
@@ -1699,7 +1699,7 @@ postfixing_abstract_declarator
             p.withNodeInfo($1, box move |at: NodeInfo| {
                 let a: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |declr| {
                     let (params, variadic) = $2.clone();
-                    funDeclr(declr, (Right((params, variadic))), vec![], at.clone())
+                    declr.funDeclr(Right((params, variadic)), vec![], at.clone())
                 });
                 a
             })
@@ -1727,7 +1727,7 @@ postfix_array_abstract_declarator
         {%
             p.withNodeInfo($1.clone(), box move |at: NodeInfo| {
                 let a: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |declr| {
-                    arrDeclr(declr, vec![], false, false, $2.clone(), at.clone())
+                    declr.arrDeclr(vec![], false, false, $2.clone(), at.clone())
                 });
                 a
             })
@@ -1735,55 +1735,55 @@ postfix_array_abstract_declarator
 
   | '[' attrs assignment_expression_opt ']'
         {% p.withAttributePF($1, $2, box move |at, declr|
-                           arrDeclr(declr, vec![], false, false, $3.clone(), at)) }
+                             declr.arrDeclr(vec![], false, false, $3.clone(), at)) }
 
   | '[' type_qualifier_list assignment_expression_opt ']'
         {%
             p.withNodeInfo($1.clone(), box move |at: NodeInfo| {
                 let a: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(
-                    box move |declr| { arrDeclr(declr, reverse($2.clone()),
-                                                false, false, $3.clone(), at.clone()) });
+                    box move |declr| { declr.arrDeclr(reverse($2.clone()),
+                                                      false, false, $3.clone(), at.clone()) });
                 a
             })
         }
 
   | '[' type_qualifier_list attrs assignment_expression_opt ']'
         {% p.withAttributePF($1, $3, box move |at, declr|
-                           arrDeclr(declr, reverse($2.clone()), false, false, $4.clone(), at)) }
+                           declr.arrDeclr(reverse($2.clone()), false, false, $4.clone(), at)) }
 
   | '[' static attrs_opt assignment_expression ']'
         {% p.withAttributePF($1, $3, box move |at, declr|
-                           arrDeclr(declr, vec![], false, true, Some($4.clone()), at)) }
+                           declr.arrDeclr(vec![], false, true, Some($4.clone()), at)) }
 
   | '[' static type_qualifier_list attrs_opt assignment_expression ']'
         {% p.withAttributePF($1, $4, box move |at, declr|
-                           arrDeclr(declr, reverse($3.clone()), false, true, Some($5.clone()), at)) }
+                           declr.arrDeclr(reverse($3.clone()), false, true, Some($5.clone()), at)) }
 
   | '[' type_qualifier_list attrs_opt static attrs_opt assignment_expression ']'
         {% p.withAttributePF($1, __op_addadd($3, $5), box move |at, declr|
-                           arrDeclr(declr, reverse($2.clone()), false, true, Some($6.clone()), at)) }
+                           declr.arrDeclr(reverse($2.clone()), false, true, Some($6.clone()), at)) }
 
   | '[' '*' attrs_opt ']'
         {% p.withAttributePF($1, $3, box move |at, declr|
-                           arrDeclr(declr, vec![], true, false, None, at)) }
+                           declr.arrDeclr(vec![], true, false, None, at)) }
   | '[' attrs '*' attrs_opt ']'
         {% p.withAttributePF($1, __op_addadd($2, $4), box move |at, declr|
-                           arrDeclr(declr, vec![], true, false, None, at)) }
+                           declr.arrDeclr(vec![], true, false, None, at)) }
 
   | '[' type_qualifier_list '*' attrs_opt ']'
         {% p.withAttributePF($1, $4, box move |at, declr|
-                           arrDeclr(declr, reverse($2.clone()), true, false, None, at)) }
+                           declr.arrDeclr(reverse($2.clone()), true, false, None, at)) }
   | '[' type_qualifier_list attrs '*' attrs_opt ']'
         {% p.withAttributePF($1, __op_addadd($3, $5), box move |at, declr|
-                           arrDeclr(declr, reverse($2.clone()), true, false, None, at)) }
+                           declr.arrDeclr(reverse($2.clone()), true, false, None, at)) }
 
 unary_abstract_declarator :: { CDeclrR }
 unary_abstract_declarator
   : '*'
-        {% p.withNodeInfo($1, partial_1!(ptrDeclr, emptyDeclr(), vec![])) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, CDeclrR::empty(), vec![])) }
 
   | '*' type_qualifier_list attrs_opt
-        {% p.withAttribute($1, $3, partial_1!(ptrDeclr, emptyDeclr(), reverse($2))) }
+        {% p.withAttribute($1, $3, partial_1!(ptrDeclr, CDeclrR::empty(), reverse($2))) }
 
   | '*' abstract_declarator
         {% p.withNodeInfo($1, partial_1!(ptrDeclr, $2, vec![])) }
@@ -1792,7 +1792,7 @@ unary_abstract_declarator
         {% p.withNodeInfo($1, partial_1!(ptrDeclr, $3, reverse($2))) }
 
   | '*' attrs
-        {% p.withAttribute($1, $2, partial_1!(ptrDeclr, emptyDeclr(), vec![])) }
+        {% p.withAttribute($1, $2, partial_1!(ptrDeclr, CDeclrR::empty(), vec![])) }
   | '*' attrs abstract_declarator
         {% p.withAttribute($1, $2, partial_1!(ptrDeclr, $3, vec![])) }
 
@@ -1801,15 +1801,15 @@ postfix_abstract_declarator :: { CDeclrR }
 postfix_abstract_declarator
   : '(' unary_abstract_declarator ')'                                   { $2 }
   | '(' postfix_abstract_declarator ')'                                 { $2 }
-  | '(' postfixing_abstract_declarator ')'                              { $2(emptyDeclr()) }
+  | '(' postfixing_abstract_declarator ')'                              { $2(CDeclrR::empty()) }
   | '(' unary_abstract_declarator ')' postfixing_abstract_declarator    { $4($2) }
 
 -- FIX 0700
-  | '(' attrs unary_abstract_declarator ')'                                 { appendDeclrAttrs($2, $3) }
-  | '(' attrs postfix_abstract_declarator ')'                               { appendDeclrAttrs($2, $3) }
-  | '(' attrs postfixing_abstract_declarator ')'                            { appendDeclrAttrs($2, $3(emptyDeclr())) }
-  | '(' attrs unary_abstract_declarator ')' postfixing_abstract_declarator  { appendDeclrAttrs($2, $5($3)) }
-  | postfix_abstract_declarator attr                                        { appendDeclrAttrs($2, $1) }
+  | '(' attrs unary_abstract_declarator ')'                                 { $3.appendAttrs($2) }
+  | '(' attrs postfix_abstract_declarator ')'                               { $3.appendAttrs($2) }
+  | '(' attrs postfixing_abstract_declarator ')'                            { $3(CDeclrR::empty()).appendAttrs($2) }
+  | '(' attrs unary_abstract_declarator ')' postfixing_abstract_declarator  { $5($3).appendAttrs($2) }
+  | postfix_abstract_declarator attr                                        { $1.appendAttrs($2) }
 
 
 -- parse C initializer (C99 6.7.8)
@@ -2371,70 +2371,10 @@ fn reverseList<a>(l: Vec<a>) -> Reversed<Vec<a>> {
     Reversed(List::reverse(l))
 }
 
-fn reverseDeclr(CDeclrR(ide, reversedDDs, asmname, cattrs, at): CDeclrR) -> CDeclarator<NodeInfo> {
-    CDeclarator::<NodeInfo>(ide, reverse(reversedDDs), asmname, cattrs, at)
-}
-
 fn appendObjAttrs(newAttrs: Vec<CAttribute<NodeInfo>>,
                   CDeclarator(ident, indirections, asmname, cAttrs, at): CDeclarator<NodeInfo>)
                   -> CDeclarator<NodeInfo> {
     CDeclarator(ident, indirections, asmname, __op_addadd(cAttrs, newAttrs), at)
-}
-
-fn appendObjAttrsR(newAttrs: Vec<CAttribute<NodeInfo>>,
-                   CDeclrR(ident, indirections, asmname, cAttrs, at): CDeclrR) -> CDeclrR {
-    CDeclrR(ident, indirections, asmname, __op_addadd(cAttrs, newAttrs), at)
-}
-
-fn setAsmName(mAsmName: Option<CStringLiteral<NodeInfo>>,
-              CDeclrR(ident, indirections, oldName, cattrs, at): CDeclrR) -> Res<CDeclrR> {
-
-    let combinedName = match (mAsmName, oldName) {
-        (None, None) => Right(None),
-        (None, Some(oldname)) => Right(Some(oldname)),
-        (Some(newname), None) => Right(Some(newname)),
-        (Some(n1), Some(n2)) => Left((n1, n2)),
-    };
-
-    let showName = |CStringLiteral(cstr, _)| show(cstr);
-
-    match combinedName {
-        Left((n1, n2)) => {
-            Err(ParseError::new(
-                n2.pos().clone(),
-                vec!["Duplicate assembler name: ".to_string(), showName(n1), showName(n2)]))
-        },
-        Right(newName) => {
-            Ok(CDeclrR(ident, indirections, newName, cattrs, at))
-        },
-    }
-}
-
-fn withAsmNameAttrs((mAsmName, newAttrs): (Option<CStringLiteral<NodeInfo>>, Vec<CAttribute<NodeInfo>>),
-                    declr: CDeclrR) -> Res<CDeclrR> {
-    setAsmName(mAsmName, appendObjAttrsR(newAttrs, declr))
-}
-
-fn ptrDeclr(CDeclrR(ident, derivedDeclrs, asmname, cattrs, dat): CDeclrR,
-            tyquals: Vec<CTypeQual>, at: NodeInfo) -> CDeclrR {
-    CDeclrR(ident, snoc(derivedDeclrs, CPtrDeclr(tyquals, at)), asmname, cattrs, dat)
-}
-
-fn funDeclr(CDeclrR(ident, derivedDeclrs, asmname, dcattrs, dat): CDeclrR,
-            params: Either<Vec<Ident>, (Vec<CDecl>, bool)>, cattrs: Vec<CAttribute<NodeInfo>>,
-            at: NodeInfo) -> CDeclrR {
-    CDeclrR(ident, snoc(derivedDeclrs, CFunDeclr(params, cattrs, at)), asmname, dcattrs, dat)
-}
-
-fn arrDeclr(CDeclrR(ident, derivedDeclrs, asmname, cattrs, dat): CDeclrR,
-            tyquals: Vec<CTypeQual>, var_sized: bool, static_size: bool,
-            size_expr_opt: Option<CExpr>, at: NodeInfo) -> CDeclrR {
-    let arr_sz = match size_expr_opt {
-        Some(e) => CArrSize(static_size, e),
-        None => CNoArrSize(var_sized)
-    };
-
-    CDeclrR(ident, snoc(derivedDeclrs, CArrDeclr(tyquals, arr_sz, at)), asmname, cattrs, dat)
 }
 
 fn liftTypeQuals(_curry_0: Reversed<Vec<CTypeQual>>) -> Vec<CDeclSpec> {
@@ -2460,14 +2400,6 @@ fn addTrailingAttrs(declspecs: Reversed<Vec<CDeclSpec>>,
             rappend(declspecs, liftCAttrs(new_attrs))
         },
     }
-}
-
-fn emptyDeclr() -> CDeclrR {
-    CDeclrR(None, empty(), None, vec![], NodeInfo::undef())
-}
-
-fn mkVarDeclr(ident: Ident, ni: NodeInfo) -> CDeclrR {
-    CDeclrR(Some(ident), empty(), None, vec![], ni)
 }
 
 fn doFuncParamDeclIdent(_0: CDeclarator<NodeInfo>) -> Res<()> {
