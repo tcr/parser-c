@@ -13,10 +13,10 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 num = "0.1"
 num-derive = "0.1"
-parser-c-macro = { path = "parser-c-macro" }
 bitflags = "0.9.1"
 either = "1.1.0"
 lazy_static = "0.2"
+parser-c-macro = { path = "parser-c-macro", version = "0.2" }
 
 [dev-dependencies]
 walkdir = "1"

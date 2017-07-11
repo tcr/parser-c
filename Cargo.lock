@@ -7,7 +7,7 @@ dependencies = [
  "lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.1.37 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-derive 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
- "parser-c-macro 0.1.0",
+ "parser-c-macro 0.2.0",
  "walkdir 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -133,7 +133,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "parser-c-macro"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
