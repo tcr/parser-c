@@ -78,92 +78,58 @@ pub enum CIntRepr {
 }
 pub use self::CIntRepr::*;
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum CIntFlag {
-    FlagUnsigned,
-    FlagLong,
-    FlagLongLong,
-    FlagImag,
-}
-pub use self::CIntFlag::*;
-
-impl ToPrimitive for CIntFlag {
-    fn to_i64(&self) -> Option<i64> {
-        Some(match *self {
-            FlagUnsigned => 0,
-            FlagLong => 1,
-            FlagLongLong => 2,
-            FlagImag => 3,
-        })
-    }
-    fn to_u64(&self) -> Option<u64> {
-        self.to_i64().map(|x| x as u64)
+bitflags! {
+    pub struct CIntFlags: u32 {
+        const FLAG_UNSIGNED = 0b00000001;
+        const FLAG_LONG     = 0b00000010;
+        const FLAG_LONGLONG = 0b00000100;
+        const FLAG_IMAG     = 0b00001000;
     }
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct CInteger(pub isize, pub CIntRepr, pub Flags<CIntFlag>);
+pub struct CInteger(pub isize, pub CIntRepr, pub CIntFlags);
 
 
-pub fn readCInteger(repr: CIntRepr, __str: String) -> Result<CInteger, String> {
-
-    let readNum: Box<Fn(String) -> Box<ReadS<isize>>> = match repr {
-        DecRepr => box |x| box readDec(x),
-        HexRepr => box |x| box readHex(x),
-        OctalRepr => box |x| box readOct(x),
-    };
-
-    fn readSuffix(input: String) -> Result<Flags<CIntFlag>, String> {
-        parseFlags(noFlags(), input)
-    }
-
-    let mkCInt = |n: isize, suffix: String| -> Result<CInteger, String> {
-        readSuffix(suffix).map(|s| CInteger(n, repr, s))
-    };
-
-    fn parseFlags(flags: Flags<CIntFlag>, _1: String) -> Result<Flags<CIntFlag>, String> {
-        // []
-        if _1.len() == 0 {
+fn parseFlags(mut s: &str) -> Result<CIntFlags, String> {
+    let mut flags = CIntFlags::empty();
+    loop {
+        if s.is_empty() {
             return Ok(flags);
         }
-        // ['l', 'l', fs...]
-        if _1.starts_with("ll") {
-            let fs: String = _1.chars().skip(2).collect();
-            return parseFlags((setFlag(FlagLongLong, flags)), fs);
+        if s.starts_with("ll") || s.starts_with("LL") {
+            s = &s[2..];
+            flags |= FLAG_LONGLONG;
+            continue;
         }
-        // ['L', 'L', fs...]
-        if _1.starts_with("LL") {
-            let fs: String = _1.chars().skip(2).collect();
-            return parseFlags((setFlag(FlagLongLong, flags)), fs);
+        match &s[0..1] {
+            "l" => flags |= FLAG_LONG,
+            "L" => flags |= FLAG_LONG,
+            "u" => flags |= FLAG_UNSIGNED,
+            "U" => flags |= FLAG_UNSIGNED,
+            "i" => flags |= FLAG_IMAG,
+            "I" => flags |= FLAG_IMAG,
+            "j" => flags |= FLAG_IMAG,
+            "J" => flags |= FLAG_IMAG,
+            _ => return Err(format!("Unexpected flags {}", s)),
         }
-        // [f, fs..]
-        let f = _1.chars().next().unwrap();
-        let fs: String = _1.chars().skip(2).collect();
-
-        let go1 = |flag: CIntFlag| {
-            parseFlags((setFlag(flag, flags)), fs)
-        };
-
-        match f {
-            'l' => go1(FlagLong),
-            'L' => go1(FlagLong),
-            'u' => go1(FlagUnsigned),
-            'U' => go1(FlagUnsigned),
-            'i' => go1(FlagImag),
-            'I' => go1(FlagImag),
-            'j' => go1(FlagImag),
-            'J' => go1(FlagImag),
-            _ => Err(format!("Unexpected flag {}", f)),
-        }
+        s = &s[1..];
     }
+}
 
-    let s = readNum(__str).read_s();
-    if s.len() == 1 {
-        let (n, suffix) = s[0].clone();
-        mkCInt(n, suffix)
-    } else {
-        Err(format!("Bad Integer literal: {:?}", s))
-    }
+pub fn readCInteger(repr: CIntRepr, s: &str) -> Result<CInteger, String> {
+    let base = match repr {
+        DecRepr => 10,
+        HexRepr => 16,
+        OctalRepr => 8,
+    };
+    let end = s.chars().position(|x| !x.is_digit(base)).unwrap_or(s.len());
+    let number = match isize::from_str_radix(&s[..end], base) {
+        Ok(n) => n,
+        Err(e) => return Err(format!("Bad Integer literal: {:?}", s)),
+    };
+    let flags = parseFlags(&s[end..])?;
+    Ok(CInteger(number, repr, flags))
 }
 
 pub fn getCInteger(CInteger(i, _, _): CInteger) -> isize {
@@ -171,7 +137,7 @@ pub fn getCInteger(CInteger(i, _, _): CInteger) -> isize {
 }
 
 pub fn cInteger(i: isize) -> CInteger {
-    CInteger(i, DecRepr, noFlags())
+    CInteger(i, DecRepr, CIntFlags::empty())
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -383,36 +349,4 @@ pub fn head_q_str(msg: &str, _1: String) -> char {
     } else {
         panic!("{}", msg);
     }
-}
-
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Flags<F: ToPrimitive>{
-    flags: isize,
-    _phantom: PhantomData<F>,
-}
-
-impl<F: ToPrimitive> Flags<F> {
-    fn new(flags: isize) -> Self {
-        Flags {
-            flags,
-            _phantom: PhantomData,
-        }
-    }
-}
-
-
-pub fn noFlags<f: ToPrimitive>() -> Flags<f> {
-    Flags::new(0)
-}
-
-pub fn setFlag<f: ToPrimitive>(flag: f, Flags { flags: k, .. }: Flags<f>) -> Flags<f> {
-    Flags::new(setBit(k, flag.to_isize().unwrap()))
-}
-
-pub fn clearFlag<f: ToPrimitive>(flag: f, Flags { flags: k, .. }: Flags<f>) -> Flags<f> {
-    Flags::new(clearBit(k, flag.to_isize().unwrap()))
-}
-
-pub fn testFlag<f: ToPrimitive>(flag: f, Flags { flags: k, .. }: Flags<f>) -> bool {
-    testBit(k, flag.to_isize().unwrap())
 }

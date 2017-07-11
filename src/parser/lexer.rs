@@ -33222,12 +33222,12 @@ const ALEX_ACTIONS: [fn(&mut Parser, Position, isize, InputStream) -> Res<Token>
 
 
 /// Fix the 'octal' lexing of '0'
-pub fn readCOctal(s: String) -> Result<CInteger, String> {
+pub fn readCOctal(s: &str) -> Result<CInteger, String> {
     if s.chars().nth(0) == Some('0') {
         if s.len() > 1 && isDigit(s.chars().nth(1).unwrap()) {
-            readCInteger(OctalRepr, s[1..].to_string())
+            readCInteger(OctalRepr, &s[1..])
         } else {
-            readCInteger(DecRepr, s)
+            readCInteger(DecRepr, &s)
         }
     } else {
         panic!("ReadOctal: string does not start with `0'")
@@ -33434,9 +33434,9 @@ pub fn token<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
 
 /// token that may fail
 pub fn token_plus<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
-                     fromStr: Box<Fn(String) -> Result<a, String>>,
-                     pos: Position, len: isize, __str: InputStream) -> Res<CToken> {
-    match fromStr(__str.take_string(len)) {
+                     fromStr: Box<Fn(&str) -> Result<a, String>>,
+                     pos: Position, len: isize, inp: InputStream) -> Res<CToken> {
+    match fromStr(&inp.take_string(len)) {
         Err(err) => {
             Err(ParseError::new(pos, vec!["Lexical error ! ".to_string(), err]))
         },
@@ -33561,7 +33561,7 @@ fn alex_action_6(p: &mut Parser, pos: Position, len: isize, inp: InputStream) ->
 }
 
 fn alex_action_7(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token_plus(box CTokILit, box move |_0| readCInteger(HexRepr, drop_str(2, _0)),
+ token_plus(box CTokILit, box move |_0| readCInteger(HexRepr, &_0[2..]),
                                              pos, len, inp) 
 }
 
