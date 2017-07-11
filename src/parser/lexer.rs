@@ -1,5 +1,5 @@
 // put #![allow(...)] here
-// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 49
+// Original location: ../../src/parser/Lexer.x, line 49
 
 
 
@@ -33214,7 +33214,7 @@ const ALEX_ACTIONS: [fn(Position, isize, InputStream) -> P<CToken>; 124] = [
     alex_action_1,
 ];
 
-// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 280
+// Original location: ../../src/parser/Lexer.x, line 280
 
 
 
@@ -33833,301 +33833,7 @@ fn alex_action_67(pos: Position, len: isize, inp: InputStream) -> P<CToken> {
 }
 
 // Original location: "templates/GenericTemplate.hs", line 1
-// Original location: "templates/GenericTemplate.hs", line 1
-// Original location: "<built-in>", line 1
-// Original location: "<command-line>", line 1
-// Original location: "<command-line>", line 8
-// Original location: "/usr/include/stdc-predef.h", line 1
 
-// Original location: "/usr/include/stdc-predef.h", line 17
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Original location: "<command-line>", line 8
-// Original location: "/usr/lib64/ghc-8.0.2/include/ghcversion.h", line 1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Original location: "<command-line>", line 8
-// Original location: "/tmp/ghc19692_0/ghc_2.h", line 1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Original location: "<command-line>", line 8
-// Original location: "templates/GenericTemplate.hs", line 1
 // -----------------------------------------------------------------------------
 // ALEX TEMPLATE
 //
@@ -34136,12 +33842,6 @@ fn alex_action_67(pos: Position, len: isize, inp: InputStream) -> P<CToken> {
 //
 //-----------------------------------------------------------------------------
 // INTERNALS and main scanner engine
-
-
-
-
-
-// Original location: "templates/GenericTemplate.hs", line 24
 
 pub fn alexIndexInt16OffAddr(arr: &[isize], off: isize) -> isize {
     arr[off as usize]
@@ -34178,13 +33878,9 @@ pub fn alexScanUser(user: bool, input: AlexInput, sc: isize) -> AlexReturn<Box<F
             match alexGetByte(input) {
                 None => {
 
-
-
                     AlexEOF
                 },
                 Some(_) => {
-
-
 
                     AlexError(input_q)
                 },
@@ -34192,19 +33888,14 @@ pub fn alexScanUser(user: bool, input: AlexInput, sc: isize) -> AlexReturn<Box<F
         },
         (AlexLastSkip(input_q_q, len), _) => {
 
-
-
             AlexSkip(input_q_q, len)
         },
         (AlexLastAcc(k, input_q_q_q, len), _) => {
-
-
 
             AlexToken(input_q_q_q, len, box ALEX_ACTIONS[k as usize])
         },
     }
 }
-
 
 /// Push the input through the DFA, remembering the most recent accepting
 /// state it encountered.
@@ -34236,8 +33927,6 @@ pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, 
                 return (new_acc, input)
             },
             Some((c, new_input)) => {
-
-
 
                 match fromIntegral(c as isize) {
                     ord_c => {

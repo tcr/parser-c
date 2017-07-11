@@ -65,6 +65,15 @@ success: Right(
                         ...
 ```
 
+## Development
+
+Clone this crate and install its Haskell dependencies:
+
+```
+git clone https://github.com/tcr/parser-c --init --recursive
+stack install alex happy
+```
+
 ## License
 
 MIT or Apache-2.0, at your option.
