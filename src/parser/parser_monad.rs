@@ -4,44 +4,29 @@
 #[macro_use]
 use corollary_support::*;
 
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Language::C::Data::Error;
-// use internalErr;
-// use Language::C::Data::Position;
-// use Position;
-// use Language::C::Data::InputStream;
-// use Language::C::Data::Name;
-// use Name;
-// use Language::C::Data::Ident;
-// use Ident;
-// use Language::C::Parser::Tokens;
-// use CToken;
-// use Control::Applicative;
-// use Applicative;
-// use Control::Monad;
-// use liftM;
-// use Data::Set;
-// use Set;
-// use Data::Set;
-
-use data::position::Position;
-use data::position::Position::NoPosition;
-use parser::tokens::*;
-use data::input_stream::*;
-use data::ident::Ident;
-use data::name::{Name, NameSupply};
-use data::error::*;
 use std::boxed::FnBox;
 use std::rc::Rc;
 use std::mem;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
+use data::position::Position;
+use data::position::Position::NoPosition;
+use parser::tokens::*;
+use data::input_stream::*;
+use data::ident::Ident;
+use data::name::{Name, NameSupply, new_name_supply};
+use data::error::*;
+use parser::parser::{HappyAbsSyn, State, States, Stack, Cont};
+
 #[derive(Debug)]
 pub struct ParseError(pub (Vec<String>, Position));
 
-// instance Show ParseError where
-//     show (ParseError (msgs,pos)) = showErrorInfo "Syntax Error !" (ErrorInfo LevelError pos msgs)
+impl ParseError {
+    pub fn new(pos: Position, msgs: Vec<String>) -> ParseError {
+        ParseError((msgs, pos))
+    }
+}
 
 pub enum ParseResult<a> {
     POk(PState, a),
@@ -59,21 +44,26 @@ pub struct PState {
     scopes: Vec<HashSet<Ident>>,
 }
 
-#[must_use]
-pub struct P<a>(Box<FnBox(PState) -> ParseResult<a>>);
+// monad compatibility
+pub type P<T> = Result<T, ParseError>;
 
-pub fn unP<a>(p: P<a>) -> Box<FnBox(PState) -> ParseResult<a>> {
-    p.0
+pub struct Parser {
+    pstate: PState,
+    pub token: CToken,
+    pub state: State,
+    pub states: States,
+    pub stack: Stack,
 }
 
-pub fn execParser<a>(P(parser): P<a>,
-                     input: InputStream,
-                     pos: Position,
-                     builtins: Vec<Ident>,
-                     names: NameSupply)
-                     -> Result<(a, NameSupply), ParseError> {
+fn invalid_action(p: &mut Parser, i: isize, j: isize) -> P<Cont> {
+    panic!("parser not initialized correctly")
+}
 
-    let initialState = PState {
+pub fn execParser<F, T>(input: InputStream, pos: Position, builtins: Vec<Ident>, names: NameSupply,
+                        do_parse: F) -> Result<(T, NameSupply), ParseError>
+    where F: FnOnce(&mut Parser) -> P<T>
+{
+    let initial_state = PState {
         curPos: pos,
         curInput: input,
         prevToken: None,
@@ -82,148 +72,80 @@ pub fn execParser<a>(P(parser): P<a>,
         tyidents: HashSet::from_iter(builtins),
         scopes: vec![],
     };
+    let mut parser = Parser { pstate: initial_state,
+                              token: CToken::CTokEof,
+                              state: invalid_action,
+                              states: vec![],
+                              stack: vec![] };
+    do_parse(&mut parser).map(|res| (res, new_name_supply()))// parser.pstate.nameSupply)) // TODO
+}
 
-    match parser(initialState) {
-        PFailed(message, errpos) => Err(ParseError((message, errpos))),
-        POk(st, result) => Ok((result, st.nameSupply)),
+impl Parser {
+    pub fn getNewName(&mut self) -> Name {
+        self.pstate.nameSupply.next().unwrap()
     }
-}
 
-pub fn returnP<T: 'static>(a: T) -> P<T> {
-    P(box move |s| POk(s, a))
-}
+    pub fn setPos(&mut self, pos: Position) {
+        self.pstate.curPos = pos;
+    }
 
-pub fn thenP<T: 'static, U: 'static>(P(m): P<T>, k: Box<FnBox(T) -> P<U>>) -> P<U> {
-    P(box move |s| match m(s) {
-        POk(s_q, a) => unP(k(a))(s_q),
-        PFailed(err, pos) => PFailed(err, pos),
-    })
-}
+    pub fn getPos(&self) -> Position {  // TODO borrow
+        self.pstate.curPos.clone()
+    }
 
-pub fn failP<T>(pos: Position, msg: Vec<String>) -> P<T> {
-    P(box move |_| PFailed(msg, pos))
-}
+    pub fn addTypedef(&mut self, ident: Ident) {
+        self.pstate.tyidents.insert(ident);
+    }
 
-pub fn seqP<a: 'static, b: 'static>(a: P<a>, b: P<b>) -> P<b> {
-    thenP(a, box move |_| b)
-}
+    pub fn shadowTypedef(&mut self, ident: Ident) {
+        self.pstate.tyidents.remove(&ident);
+    }
 
-pub fn getNewName() -> P<Name> {
-    P(box move |mut s: PState| {
-        let n = s.nameSupply.next().unwrap();
-        POk(s, n)
-    })
-}
+    pub fn isTypeIdent(&self, ident: &Ident) -> bool {
+        self.pstate.tyidents.contains(ident)
+    }
 
+    pub fn enterScope(&mut self) {
+        self.pstate.scopes.insert(0, self.pstate.tyidents.clone());
+    }
 
-pub fn setPos(pos: Position) -> P<()> {
-    P(box move |mut s: PState| {
-        s.curPos = pos;
-        POk(s, ())
-    })
-}
-
-pub fn getPos() -> P<Position> {
-    P(box move |s: PState| {
-        let pos = s.curPos.clone();
-        POk(s, pos)
-    })
-}
-
-pub fn addTypedef(ident: Ident) -> P<()> {
-    P(box move |mut s: PState| {
-        s.tyidents.insert(ident);
-        POk(s, ())
-    })
-}
-
-pub fn shadowTypedef(ident: Ident) -> P<()> {
-    P(box move |mut s: PState| {
-        s.tyidents.remove(&ident);
-        POk(s, ())
-    })
-}
-
-pub fn isTypeIdent(ident: Ident) -> P<bool> {
-    P(box move |s: PState| {
-        let is_member = s.tyidents.contains(&ident);
-        POk(s, is_member)
-    })
-}
-
-pub fn enterScope() -> P<()> {
-    P(box move |mut s: PState| {
-        s.scopes.insert(0, s.tyidents.clone());
-        POk(s, ())
-    })
-}
-
-pub fn leaveScope() -> P<()> {
-    P(box |mut s: PState| {
-        if s.scopes.is_empty() {
+    pub fn leaveScope(&mut self) {
+        if self.pstate.scopes.is_empty() {
             panic!("leaveScope: already in global scope");
         } else {
-            s.tyidents = s.scopes.remove(0);
-            POk(s, ())
-        }
-    })
-}
-
-pub fn getInput() -> P<InputStream> {
-    P(box |s: PState| {
-        let input = s.curInput.clone();
-        POk(s, input)
-    })
-}
-
-pub fn setInput(i: InputStream) -> P<()> {
-    P(box move |mut s: PState| {
-        s.curInput = i;
-        POk(s, ())
-    })
-}
-
-pub fn getLastToken() -> P<CToken> {
-    P(box |s: PState| {
-        let tok = s.prevToken.clone().expect("touched undefined token");
-        POk(s, tok)
-    })
-}
-
-pub fn getSavedToken() -> P<CToken> {
-    P(box |s: PState| {
-        let tok = s.savedToken.clone().expect("touched undefined token");
-        POk(s, tok)
-    })
-}
-
-pub fn setLastToken(tk: CToken) -> P<()> {
-    match tk {
-        CTokEof => {
-            P(box |mut s: PState| {
-                s.savedToken = s.prevToken.clone();
-                POk(s, ())
-            })
-        }
-        tok => {
-            P(box move |mut s: PState| {
-                s.savedToken = mem::replace(&mut s.prevToken, Some(tok));
-                POk(s, ())
-            })
+            self.pstate.tyidents = self.pstate.scopes.remove(0);
         }
     }
-}
 
-pub fn handleEofToken() -> P<()> {
-    P(box |mut s: PState| {
-        s.savedToken = s.prevToken.clone();
-        POk(s, ())
-    })
-}
+    pub fn getInput(&self) -> InputStream {   // TODO borrow
+        self.pstate.curInput.clone()
+    }
 
-pub fn getCurrentPosition() -> P<Position> {
-    P(box |s: PState| {
-        let pos = s.curPos.clone();
-        POk(s, pos)
-    })
+    pub fn setInput(&mut self, i: InputStream) {
+        self.pstate.curInput = i;
+    }
+
+    pub fn getLastToken(&self) -> CToken {   // TODO borrow
+        self.pstate.prevToken.clone().expect("touched undefined token")
+    }
+
+    pub fn getSavedToken(&self) -> CToken {   // TODO borrow
+        self.pstate.savedToken.clone().expect("touched undefined token")
+    }
+
+    pub fn setLastToken(&mut self, tk: CToken) {
+        match tk {
+            CTokEof => {
+                self.pstate.savedToken = self.pstate.prevToken.clone();
+            }
+            tok => {
+                self.pstate.savedToken = mem::replace(&mut self.pstate.prevToken,
+                                                      Some(tok));
+            }
+        }
+    }
+
+    pub fn handleEofToken(&mut self) -> () {
+        self.pstate.savedToken = self.pstate.prevToken.clone();
+    }
 }
