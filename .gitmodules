@@ -1,0 +1,6 @@
+[submodule "deps/alex-rust"]
+	path = deps/alex-rust
+	url = https://github.com/birkenfeld/alex-rust
+[submodule "deps/happy-rust"]
+	path = deps/happy-rust
+	url = https://github.com/birkenfeld/happy-rust
