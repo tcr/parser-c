@@ -130,38 +130,10 @@ pub fn isPrint(input: char) -> bool {
     false
 }
 
-pub fn isOctDigit(input: char) -> bool {
-    // TODO
-    false
-}
 
-pub fn isDigit(input: char) -> bool {
-    // TODO
-    false
-}
-
-
-
-pub fn init_str(input: String) -> String {
-    let mut v: Vec<_> = input.chars().collect();
-    v.pop();
-    v.into_iter().collect()
-}
 
 pub fn tail_str(input: String) -> String {
     input.chars().skip(1).collect()
-}
-
-pub fn fst<A, B>(input: (A, B)) -> A {
-    input.0
-}
-
-pub fn flip<A, B, C, F: Fn(A, B) -> C>(input: F, b: B, a: A) -> C {
-    input(a, b)
-}
-
-pub fn take_str(len: isize, input: String) -> String {
-    input.chars().take(len as usize).collect()
 }
 
 pub fn hasExtension(fp: FilePath) -> bool {
@@ -263,47 +235,6 @@ impl<A> fmt::Display for ReadS<A> {
         write!(f, "...")
     }
 }
-
-pub struct readHex(pub String);
-impl ReadS<isize> for readHex {
-    fn read_s(&self) -> Vec<(isize, String)> {
-        // TODO
-        vec![]
-    }
-}
-impl ReadS<char> for readHex {
-    fn read_s(&self) -> Vec<(char, String)> {
-        // TODO
-        vec![]
-    }
-}
-
-pub struct readOct(pub String);
-impl ReadS<isize> for readOct {
-    fn read_s(&self) -> Vec<(isize, String)> {
-        // TODO
-        vec![]
-    }
-}
-impl ReadS<char> for readOct {
-    fn read_s(&self) -> Vec<(char, String)> {
-        // TODO
-        vec![]
-    }
-}
-
-pub struct readDec(pub String);
-impl ReadS<isize> for readDec {
-    fn read_s(&self) -> Vec<(isize, String)> {
-        if let Ok(left) = isize::from_str(&self.0) {
-            let right = self.0.chars().skip_while(|x| x.is_digit(10)).collect();
-            vec![(left, right)]
-        } else {
-            vec![]
-        }
-    }
-}
-
 
 // Map stuff
 

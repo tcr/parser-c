@@ -33221,19 +33221,6 @@ const ALEX_ACTIONS: [fn(&mut Parser, Position, isize, InputStream) -> Res<Token>
 
 
 
-/// Fix the 'octal' lexing of '0'
-pub fn readCOctal(s: &str) -> Result<CInteger, String> {
-    if s.chars().nth(0) == Some('0') {
-        if s.len() > 1 && isDigit(s.chars().nth(1).unwrap()) {
-            readCInteger(OctalRepr, &s[1..])
-        } else {
-            readCInteger(DecRepr, &s)
-        }
-    } else {
-        panic!("ReadOctal: string does not start with `0'")
-    }
-}
-
 // We use the odd looking list of string patterns here rather than normal
 // string literals since GHC converts the latter into a sequence of string
 // comparisons (ie a linear search) but it translates the former using its
@@ -33401,20 +33388,6 @@ pub fn adjustLineDirective(pragma: String, pos: Position) -> Position {
     Position::new(offs_q, new_fname, row, 1)
 }
 
-/// special utility for the lexer
-pub fn unescapeMultiChars(cs: String) -> String {
-    if cs.len() > 2 {
-        // TODO cleanup
-        let cs_0 = cs.chars().nth(0).unwrap();
-        let value = unescapeChar(cs.clone());
-        format!("{}{}", cs_0, unescapeMultiChars(cs.chars().skip(1).collect::<String>()))
-    } else if cs.len() == 1 && cs.chars().nth(0).unwrap() == '\'' {
-        "".to_string()
-    } else {
-        panic!("Unexpected end of multi-char constant")
-    }
-}
-
 /// token that ignores the string
 pub fn token_(len: isize, mkTok: Box<Fn(PosLength) -> CToken>, pos: Position,
               _: isize, _: InputStream) -> Res<CToken> {
@@ -33571,25 +33544,25 @@ fn alex_action_8(p: &mut Parser, pos: Position, len: isize, inp: InputStream) ->
 
 fn alex_action_9(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
  token(box CTokCLit,
-                                box move |_0| cChar(fst(unescapeChar(tail_str(_0)))),
+                                box move |_0| cChar(unescapeChar(&_0[1..]).0),
                                 pos, len, inp) 
 }
 
 fn alex_action_10(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
  token(box CTokCLit,
-                                box move |_0| cChar_w(fst(unescapeChar(tail_str(tail_str(_0))))),
+                                box move |_0| cChar_w(unescapeChar(&_0[2..]).0),
                                 pos, len, inp) 
 }
 
 fn alex_action_11(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
  token(box CTokCLit,
-                                   box move |_0| flip(cChars, false, unescapeMultiChars(tail_str(_0))),
+                                   box move |_0| cChars(false, unescapeMultiChars(&_0[1.._0.len()-1])),
                                    pos, len, inp) 
 }
 
 fn alex_action_12(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
  token(box CTokCLit,
-                                    box move |_0| flip(cChars, true, unescapeMultiChars(tail_str(tail_str(_0)))),
+                                    box move |_0| cChars(true, unescapeMultiChars(&_0[2.._0.len()-1])),
                                     pos, len, inp) 
 }
 
@@ -33613,13 +33586,13 @@ fn alex_action_16(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -
 
 fn alex_action_17(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
  token(box CTokSLit,
-                                    box move |_0| cString(unescapeString(init_str(tail_str(_0)))),
+                                    box move |_0| cString(unescapeString(&_0[1.._0.len()-1])),
                                     pos, len, inp) 
 }
 
 fn alex_action_18(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
  token(box CTokSLit,
-                                    box move |_0| cString_w(unescapeString(init_str(tail_str(tail_str(_0))))),
+                                    box move |_0| cString_w(unescapeString(&_0[2.._0.len()-1])),
                                     pos, len, inp) 
 }
 

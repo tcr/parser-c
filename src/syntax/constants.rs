@@ -66,8 +66,8 @@ pub fn cChar_w(c: char) -> CChar {
     CChar(c, true)
 }
 
-pub fn cChars(a: String, b: bool) -> CChar {
-    CChars(a.chars().collect(), b)
+pub fn cChars(b: bool, a: Vec<char>) -> CChar {
+    CChars(a, b)
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -130,6 +130,19 @@ pub fn readCInteger(repr: CIntRepr, s: &str) -> Result<CInteger, String> {
     };
     let flags = parseFlags(&s[end..])?;
     Ok(CInteger(number, repr, flags))
+}
+
+/// Fix the 'octal' lexing of '0'
+pub fn readCOctal(s: &str) -> Result<CInteger, String> {
+    if s.chars().nth(0) == Some('0') {
+        if s.len() > 1 && s.chars().nth(1).unwrap().is_digit(8) {
+            readCInteger(OctalRepr, &s[1..])
+        } else {
+            readCInteger(DecRepr, &s)
+        }
+    } else {
+        panic!("ReadOctal: string does not start with `0'")
+    }
 }
 
 pub fn getCInteger(CInteger(i, _, _): CInteger) -> isize {
@@ -260,71 +273,66 @@ pub fn escapeChar(_0: char) -> String {
     }
 }
 
-pub fn unescapeChar(_0: String) -> (char, String) {
-    let v = _0.chars().collect::<Vec<_>>();
-    // ['\\', c, cs..]
-    if v.len() > 2 && v[0] == '\\' {
-        let c = v[1];
-        let cs: String = v[2..].into_iter().collect();
-        return match c {
-            'n' => ('\n', cs),
-            't' => ('\t', cs),
-            'v' => ('\u{b}', cs),
-            'b' => ('\u{8}', cs),
-            'r' => ('\r', cs),
-            'f' => ('\u{c}', cs),
-            'a' => ('\u{7}', cs),
-            'e' => ('\u{1b}', cs),
-            'E' => ('\u{1b}', cs),
-            '\\' => ('\\', cs),
-            '?' => ('?', cs),
-            '\'' => ('\'', cs),
-            '\"' => ('\"', cs),
-            'x' => {
-                match head_q("bad escape sequence",
-                             readHex(cs).read_s()) {
-                    (i, cs_q) => (i, cs_q),
+pub fn unescapeChar(s: &str) -> (char, &str) {
+    let mut iter = s.chars();
+    match iter.next() {
+        None => panic!("unescapeChar: empty string"),
+        Some('\\') => match iter.next() {
+            None => ('\\', ""),
+            Some(ch) => match ch {
+                'n'  => ('\n',   &s[2..]),
+                't'  => ('\t',   &s[2..]),
+                'v'  => ('\x0b', &s[2..]),
+                'b'  => ('\x08', &s[2..]),
+                'r'  => ('\r',   &s[2..]),
+                'f'  => ('\x0c', &s[2..]),
+                'a'  => ('\x07', &s[2..]),
+                'e'  => ('\x1b', &s[2..]),
+                'E'  => ('\x1b', &s[2..]),
+                '\\' => ('\\',   &s[2..]),
+                '?'  => ('?',    &s[2..]),
+                '\'' => ('\'',   &s[2..]),
+                '\"' => ('\"',   &s[2..]),
+                'x'  => {
+                    let digits = iter.position(|x| !x.is_digit(16)).unwrap_or(s.len() - 2);
+                    if digits == 0 {
+                        panic!("bad hex escape sequence"); // TODO should be a Result
+                    }
+                    (chr(isize::from_str_radix(&s[2..2+digits], 16).unwrap()),
+                     &s[1+digits..])
+                }
+                dig0 => {
+                    if !dig0.is_digit(8) {
+                        panic!("bad hex escape sequence"); // TODO should be a Result
+                    }
+                    let digits = iter.position(|x| !x.is_digit(8)).unwrap_or(s.len() - 2);
+                    (chr(isize::from_str_radix(&s[1..2+digits], 8).unwrap()),
+                     &s[2+digits..])
                 }
             }
-            _ => {
-                match head_q("bad escape sequence",
-                             readOct_q(format!("{}{}", c, cs)).read_s()) {
-                    (i, cs_q) => (i, cs_q),
-                }
-            }
-        }
+        },
+        Some(ch) => (ch, iter.as_str())
     }
-
-    // [c, cs..]
-    if v.len() > 0 {
-        let c = v[0];
-        let cs: String = v[1..].into_iter().collect();
-        return (c, cs)
-    }
-
-    // []
-    panic!("unescape char: empty string")
 }
 
-pub fn readOct_q(s: String) -> Box<ReadS<char>> {
-
-    let octStr = takeWhile_str(isOctDigit, take_str(3, s));
-
-    // TODO
-    unreachable!()
-    // let rest = drop_str((length(octStr)), s);
-
-    // box readOct(octStr).map(|(i, cs)| { (i, __op_addadd(cs, rest)) })
+pub fn unescapeString(mut cs: &str) -> String {
+    let mut new_str = String::with_capacity(cs.len());
+    while !cs.is_empty() {
+        let (ch, newcs) = unescapeChar(cs);
+        cs = newcs;
+        new_str.push(ch);
+    }
+    new_str
 }
 
-pub fn unescapeString(cs: String) -> String {
-    if cs.len() == 0 {
-        cs
-    } else {
-        match unescapeChar(cs) {
-            (c, cs_q) => format!("{}{}", c, unescapeString(cs_q)),
-        }
+pub fn unescapeMultiChars(mut cs: &str) -> Vec<char> {
+    let mut new_vec = Vec::with_capacity(cs.len());
+    while !cs.is_empty() {
+        let (ch, newcs) = unescapeChar(cs);
+        cs = newcs;
+        new_vec.push(ch);
     }
+    new_vec
 }
 
 pub fn sQuote(s: String) -> Box<ShowS> {
