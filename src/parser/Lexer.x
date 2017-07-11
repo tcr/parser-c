@@ -496,7 +496,7 @@ pub fn alexGetByte((p, is): AlexInput) -> Option<(u8, AlexInput)> {
     } else {
         let (b, s) = is.take_byte();
         // TODO this is safe for latin-1, but ugly
-        let p_q = alexMove(p, chr(fromIntegral(b as isize)));
+        let p_q = alexMove(p, b as char);
         Some((b, (p_q, s)))
     }
 }

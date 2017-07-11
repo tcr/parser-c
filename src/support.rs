@@ -61,10 +61,6 @@ macro_rules! __assign {
 }
 
 
-use std::fmt::Display;
-pub fn show<A: Display>(a: A) -> String {
-    format!("{}", a)
-}
 
 #[derive(Debug)]
 pub enum ExitCode {
@@ -104,20 +100,12 @@ pub fn isJust<T>(input: Option<T>) -> bool {
     input.is_some()
 }
 
-pub fn null<T>(input: Vec<T>) -> bool {
-    input.is_empty()
-}
-
 pub fn lines(input: String) -> Vec<String> {
     input.lines().map(|x| x.to_string()).collect()
 }
 
 pub fn unlines(input: Vec<String>) -> String {
     input.join("\n")
-}
-
-pub fn ord(input: char) -> isize {
-    input as isize
 }
 
 pub fn isAscii(input: char) -> bool {
@@ -163,62 +151,8 @@ pub fn takeWhile_str<F: Fn(char) -> bool>(cond: F, input: String) -> String {
     left.into_iter().collect()
 }
 
-
-pub fn fromIntegral(left: isize) -> isize {
-    left
-}
-
 pub fn drop_str(len: isize, input: String) -> String {
     input.chars().skip(len as usize).collect()
-}
-
-pub fn chr(input: isize) -> char {
-    input as u8 as char
-}
-
-// ShowS, ReadS
-
-pub trait ShowS {
-    fn show_s(&self, String) -> String;
-}
-
-
-pub struct showOct(pub isize);
-impl ShowS for showOct {
-    fn show_s(&self, input: String) -> String {
-        format!("{:o}{}", self.0, input)
-    }
-}
-
-pub struct showHex(pub isize);
-impl ShowS for showHex {
-    fn show_s(&self, input: String) -> String {
-        format!("{:x}{}", self.0, input)
-    }
-}
-
-pub struct showString(pub String);
-impl ShowS for showString {
-    fn show_s(&self, input: String) -> String {
-        format!("{}{}", self.0, input)
-    }
-}
-
-
-pub trait ReadS<A> {
-    fn read_s(&self) -> Vec<(A, String)>;
-    fn map<F: Fn((isize, String)) -> (isize, String)>(self, f: F) -> Self where Self: Sized {
-        // TODO
-        self
-    }
-}
-
-// TODO
-use std::fmt;
-impl<A> fmt::Display for ReadS<A> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "...")
-    }
 }
 
 // Map stuff
