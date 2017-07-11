@@ -73,8 +73,8 @@ impl Parser {
         self.user.tyidents.insert(ident);
     }
 
-    pub fn shadowTypedef(&mut self, ident: Ident) {
-        self.user.tyidents.remove(&ident);
+    pub fn shadowTypedef(&mut self, ident: &Ident) {
+        self.user.tyidents.remove(ident);
     }
 
     pub fn isTypeIdent(&self, ident: &Ident) -> bool {
@@ -137,9 +137,28 @@ impl Parser {
                 if declspecs.iter().any(is_typedef) {
                     self.addTypedef(ident)
                 } else {
-                    self.shadowTypedef(ident)
+                    self.shadowTypedef(&ident)
                 }
             },
+        }
+    }
+
+    pub fn doFuncParamDeclIdent(&mut self, decl: &CDeclr) {
+        if decl.1.is_empty() {
+            return;
+        }
+        if let CFunDeclr(Either::Right((ref params, _)), _, _) = decl.1[0] {
+            for param in params {
+                if let CDecl(_, ref dle, _) = *param {
+                    for dl in dle {
+                        if let (Some(ref declr), _, _,) = *dl {
+                            if let Some(ref ident) = declr.0 {
+                                self.shadowTypedef(ident);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

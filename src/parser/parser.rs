@@ -15904,7 +15904,7 @@ fn happyReduction_26(p: &mut Parser) -> Res<HappyAbsSyn> {
         HappyAbsSyn66(happy_var_1) => {
             let declr = happy_var_1.reverse();
             p.enterScope();
-            doFuncParamDeclIdent(declr.clone())?;
+            p.doFuncParamDeclIdent(&declr);
             Ok(declr)
         }.map(HappyAbsSyn11),
         _ => panic!("irrefutable pattern")
@@ -22033,31 +22033,6 @@ fn addTrailingAttrs(declspecs: Reversed<Vec<CDeclSpec>>,
         },
         _ => {
             rappend(declspecs, liftCAttrs(new_attrs))
-        },
-    }
-}
-
-fn doFuncParamDeclIdent(_0: CDeclarator<NodeInfo>) -> Res<()> {
-    match (_0) {
-        CDeclarator(_, ref arg, _, _, _)
-            if arg.len() == 2 && matches!(arg[0].clone(), CFunDeclr(params, _, _)) => {
-                let params = if let CFunDeclr(params, _, _) = arg[0].clone() { params } else { unreachable!() };
-            //TODO
-            let arg = arg.clone();
-            unreachable!();
-            // params.map(|x| fst(x)).unwrap_or(vec![])
-                // .flat_map(|CDecl(_, dle, _)| dle)
-                // .flat_map(|(declr, _, _)| declr.map(|x| vec![x]).unwrap_or(vec![]))
-                // .map(|declr| {
-                //     match getCDeclrIdent(declr) {
-                //         None => P()
-                //         Some(ident) => shadowTypedef(ident)
-                //     }
-                // })
-            // TODO thread P through this
-        },
-        _ => {
-            Ok(())
         },
     }
 }
