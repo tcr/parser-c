@@ -10,6 +10,7 @@ actions have to be translated.
 
 */
 
+use std::sync::Arc;
 use std::str::FromStr;
 
 use data::input_stream::*;
@@ -33384,7 +33385,7 @@ pub fn adjustLineDirective(pragma: String, pos: Position) -> Position {
     let fname = &pragma[fname_start+1..fname_start+fname_end+1];
 
     let current_fname = pos.file();
-    let new_fname = if current_fname == fname { current_fname } else { fname.to_string() };
+    let new_fname = if &*current_fname == fname { current_fname } else { Arc::new(fname.to_string()) };
     Position::new(offs_q, new_fname, row, 1)
 }
 

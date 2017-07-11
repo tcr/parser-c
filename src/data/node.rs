@@ -119,7 +119,7 @@ impl NodeInfo {
 pub fn fileOfNode<A: CNode>(obj: A) -> Option<FilePath> {
     let pos = obj.into_pos();
     if pos.isSource() {
-        Some(FilePath { path: pos.file() })
+        Some(FilePath { path: (*pos.file()).clone() })
     } else {
         None
     }
