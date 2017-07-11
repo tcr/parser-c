@@ -146,7 +146,8 @@ $white+         ;
 --
 \#$space*@int$space*(\"($infname|@charesc)*\"$space*)?(@int$space*)*\r?$eol
   {
-    seqP(setPos(adjustLineDirective(inp.take_string(len), pos)), lexToken_q(false))
+     p.setPos(adjustLineDirective(inp.take_string(len), pos));
+     lexToken_q(p, false)
   }
 
 -- #pragma directive (K&R A12.8)
@@ -165,7 +166,7 @@ $white+         ;
 
 -- identifiers and keywords (follows K&R A2.3 and A2.4)
 --
-$identletter($identletter|$digit)*   { idkwtok(inp.take_string(len), pos) }
+$identletter($identletter|$digit)*   { idkwtok(p, inp.take_string(len), pos) }
 
 -- constants (follows K&R A2.5)
 --
@@ -328,7 +329,7 @@ label __label__
 */
 // Tokens: _Alignas _Alignof __alignof alignof __alignof__ __asm asm __asm__ _Atomic auto break _Bool case char __const const __const__ continue _Complex __complex__ default do double else enum extern float for _Generic goto if __inline inline __inline__ int __int128 long _Noreturn  _Nullable __nullable _Nonnull __nonnull register __restrict restrict __restrict__ return short __signed signed __signed__ sizeof static _Static_assert struct switch typedef __typeof typeof __typeof__ __thread _Thread_local union unsigned void __volatile volatile __volatile__ while __label__ __attribute __attribute__ __extension__ __real __real__ __imag __imag__ __builtin_va_arg __builtin_offsetof __builtin_types_compatible_p
 
-pub fn idkwtok(id: String, pos: Position) -> P<CToken> {
+pub fn idkwtok(p: &mut Parser, id: String, pos: Position) -> P<CToken> {
     match id.as_ref() {
         "_Alignas" => tok(8, box CTokAlignas, pos),
         "_Alignof" => tok(8, box CTokAlignof, pos),
@@ -411,40 +412,33 @@ pub fn idkwtok(id: String, pos: Position) -> P<CToken> {
         "__volatile__" => tok(12, box CTokVolatile, pos),
         "while" => tok(5, box CTokWhile, pos),
         _ => {
-            thenP(
-                getNewName(),
-                box move |name| {
-                    let len = id.len() as isize;
-                    let ident = Ident::new(pos.clone(), id, name);
-
-                    thenP(isTypeIdent(ident.clone()), box move |tyident| {
-                        if tyident {
-                            returnP(CTokTyIdent((pos, len), ident))
-                        } else {
-                            returnP(CTokIdent((pos, len), ident))
-                        }
-                    })
-                })
+            let name = p.getNewName();
+            let len = id.len() as isize;
+            let ident = Ident::new(pos.clone(), id, name);
+            if p.isTypeIdent(&ident) {
+                Ok(CTokTyIdent((pos, len), ident))
+            } else {
+                Ok(CTokIdent((pos, len), ident))
+            }
         },
     }
 }
 
-pub fn ignoreAttribute() -> P<()> {
-    pub fn skipTokens(n: isize) -> P<()> {
-        thenP(lexToken_q(false), box move |ntok| {
-            match ntok {
-                CTokRParen(_) if n == 1 => { returnP(()) }
-                CTokRParen(_) => { skipTokens(n - 1) }
-                CTokLParen(_) => { skipTokens(n + 1) },
-                _             => { skipTokens(n) },
-            }
-        })
+pub fn ignoreAttribute(p: &mut Parser) -> P<()> {
+    pub fn skipTokens(p: &mut Parser, n: isize) -> P<()> {
+        let ntok = lexToken_q(p, false)?;
+        match ntok {
+            CTokRParen(_) if n == 1 => Ok(()),
+            CTokRParen(_) => skipTokens(p, n - 1),
+            CTokLParen(_) => skipTokens(p, n + 1),
+            _             => skipTokens(p, n),
+        }
     }
-    skipTokens(0)
+    skipTokens(p, 0)
 }
 
 pub fn tok(len: isize, tc: Box<Fn(PosLength) -> CToken>, pos: Position) -> P<CToken> {
-    returnP(tc((pos, len)))
+    Ok(tc((pos, len)))
 }
 
 pub fn adjustLineDirective(pragma: String, pos: Position) -> Position {
@@ -483,18 +477,18 @@ pub fn unescapeMultiChars(cs: String) -> String {
 /// token that ignores the string
 pub fn token_(len: isize, mkTok: Box<Fn(PosLength) -> CToken>, pos: Position,
               _: isize, _: InputStream) -> P<CToken> {
-    returnP(mkTok((pos, len)))
+    Ok(mkTok((pos, len)))
 }
 
 /// error token
 pub fn token_fail(errmsg: &str, pos: Position, _: isize, _: InputStream) -> P<CToken> {
-    failP(pos, vec!["Lexical Error !".to_string(), errmsg.to_string()])
+    Err(ParseError::new(pos, vec!["Lexical Error !".to_string(), errmsg.to_string()]))
 }
 
 /// token that uses the string
 pub fn token<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
                 fromStr: Box<Fn(String) -> a>, pos: Position, len: isize, __str: InputStream) -> P<CToken> {
-    returnP(mkTok((pos, len), fromStr(__str.take_string(len))))
+    Ok(mkTok((pos, len), fromStr(__str.take_string(len))))
 }
 
 /// token that may fail
@@ -503,10 +497,10 @@ pub fn token_plus<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
                      pos: Position, len: isize, __str: InputStream) -> P<CToken> {
     match fromStr(__str.take_string(len)) {
         Err(err) => {
-            failP(pos, vec!["Lexical error ! ".to_string(), err])
+            Err(ParseError::new(pos, vec!["Lexical error ! ".to_string(), err]))
         },
         Ok(ok) => {
-            returnP(mkTok((pos, len), ok))
+            Ok(mkTok((pos, len), ok))
         },
     }
 }
@@ -540,25 +534,22 @@ pub fn alexMove(pos: Position, ch: char) -> Position {
     }
 }
 
-pub fn lexicalError<a: 'static>() -> P<a> {
-    thenP(getPos(), box move |pos: Position| {
-        thenP(getInput(), box move |input: InputStream| {
-            let (c, _) = input.take_char();
-            failP(pos, vec![
-                "Lexical error !".to_string(),
-                format!("The character {} does not fit here.", c),
-            ])
-        })
-    })
+pub fn lexicalError<T>(p: &mut Parser) -> P<T> {
+    let pos = p.getPos();
+    let input = p.getInput();
+    let (c, _) = input.take_char();
+    Err(ParseError::new(pos, vec![
+        "Lexical error !".to_string(),
+        format!("The character {} does not fit here.", c),
+    ]))
 }
 
-pub fn parseError<a: 'static>() -> P<a> {
-    thenP(getLastToken(), box move |lastTok: CToken| {
-        failP(lastTok.clone().into_pos(), vec![
-            "Syntax error !".to_string(),
-            format!("The symbol `{}' does not fit here.", lastTok)
-        ])
-    })
+pub fn parseError<T>(p: &mut Parser) -> P<T> {
+    let lastTok = p.getLastToken();
+    Err(ParseError::new(lastTok.clone().into_pos(), vec![
+        "Syntax error !".to_string(),
+        format!("The symbol `{}' does not fit here.", lastTok)
+    ]))
 }
 
 
@@ -574,43 +565,38 @@ pub fn parseError<a: 'static>() -> P<a> {
 // we get `int (pos 4,0)', and have [x (1,4), int (4,1) ] in the token cache (fine)
 // but then, we again call setLastToken when returning and get [int (4,1),int (4,1)] in the token cache (bad)
 // to resolve this, recursive calls invoke lexToken' False.
-pub fn lexToken() -> P<CToken> {
-    lexToken_q(true)
+pub fn lexC(p: &mut Parser) -> P<CToken> {
+    lexToken_q(p, true)
 }
 
-pub fn lexToken_q(modifyCache: bool) -> P<CToken> {
-    thenP(getPos(), box move |pos: Position| {
-        thenP(getInput(), box move |inp: InputStream| {
-            match alexScan((pos.clone(), inp.clone()), 0) {
-                AlexEOF => {
-                    seqP(handleEofToken(), returnP(CTokEof))
-                },
-                AlexError(_inp) => {
-                    lexicalError()
-                },
-                AlexSkip((pos_q, inp_q), _len) => {
-                    seqP(setPos(pos_q),
-                         seqP(setInput(inp_q),
-                              lexToken_q(modifyCache)))
-                },
-                AlexToken((pos_q, inp_q), len, action) => {
-                    seqP(setPos(pos_q),
-                         seqP(setInput(inp_q),
-                              thenP(action(pos, len, inp), box move |nextTok: CToken| {
-                                  if modifyCache {
-                                      seqP(setLastToken(nextTok.clone()), returnP(nextTok))
-                                  } else {
-                                      returnP(nextTok)
-                                  }
-                              })))
-                },
+pub fn lexToken_q(p: &mut Parser, modifyCache: bool) -> P<CToken> {
+    let pos = p.getPos();
+    let inp = p.getInput();
+    match alexScan((pos.clone(), inp.clone()), 0) {
+        AlexEOF => {
+            p.handleEofToken();
+            Ok(CTokEof)
+        },
+        AlexError(_inp) => {
+            lexicalError(p)
+        },
+        AlexSkip((pos_q, inp_q), _len) => {
+            p.setPos(pos_q);
+            p.setInput(inp_q);
+            lexToken_q(p, modifyCache)
+        },
+        AlexToken((pos_q, inp_q), len, action) => {
+            p.setPos(pos_q);
+            p.setInput(inp_q);
+            let nextTok = action(p, pos, len, inp)?;
+            if modifyCache {
+                p.setLastToken(nextTok.clone());
+                Ok(nextTok)
+            } else {
+                Ok(nextTok)
             }
-        })
-    })
-}
-
-pub fn lexC<a: 'static>(cont: Box<FnBox(CToken) -> P<a>>) -> P<a> {
-    thenP(lexToken(), cont)
+        },
+    }
 }
 
 }
