@@ -55,6 +55,7 @@ actions have to be translated.
 
 */
 
+use std::sync::Arc;
 use std::str::FromStr;
 
 use data::input_stream::*;
@@ -63,13 +64,6 @@ use data::position::*;
 use syntax::constants::*;
 use parser::{Parser, ParseError};
 use parser::tokens::*;
-
-// fn(A, B) -> fn(C) -> {eval fn(A, B, C)}
-#[allow(unused_macros)]
-macro_rules! partial_1 {
-    ($inner: expr) => ( box $inner );
-    ($inner: expr, $($arg: expr),+ ) => ( box |_0| { $inner($($arg),+ , _0) } )
-}
 
 type Token = CToken;
 type Res<T> = Result<T, ParseError>;
@@ -179,49 +173,40 @@ $identletter($identletter|$digit)*   { idkwtok(p, inp.take_string(len), pos) }
 
 -- integer constants (follows K&R A2.5.1, C99 6.4.4.1)
 -- NOTE: 0 is lexed as octal integer constant, and readCOctal takes care of this
-0$octdigit*@intgnusuffix?       { token_plus(box CTokILit, box readCOctal, pos, len, inp) }
-$digitNZ$digit*@intgnusuffix?   { token_plus(box CTokILit, partial_1!(readCInteger, DecRepr), pos, len, inp) }
-0[xX]$hexdigit+@intgnusuffix?   { token_plus(box CTokILit, box move |_0| readCInteger(HexRepr, &_0[2..]),
-                                             pos, len, inp) }
+0$octdigit*@intgnusuffix?       { token_plus(CTokILit, readCOctal, pos, len, inp) }
+$digitNZ$digit*@intgnusuffix?   { token_plus(CTokILit, |lit| readCInteger(DecRepr, lit), pos, len, inp) }
+0[xX]$hexdigit+@intgnusuffix?   { token_plus(CTokILit, |lit| readCInteger(HexRepr, &lit[2..]), pos, len, inp) }
 
 (0$octdigit*|$digitNZ$digit*|0[xX]$hexdigit+)[uUlL]+ { token_fail("Invalid integer constant suffix", pos, len, inp) }
 
 -- character constants (follows K&R A2.5.2, C99 6.4.4.4)
 --
 -- * Universal Character Names are unsupported and cause an error.
-\'($inchar|@charesc)\'  { token(box CTokCLit,
-                                box move |_0| cChar(unescapeChar(&_0[1..]).0),
-                                pos, len, inp) }
-L\'($inchar|@charesc)\' { token(box CTokCLit,
-                                box move |_0| cChar_w(unescapeChar(&_0[2..]).0),
-                                pos, len, inp) }
-\'($inchar|@charesc){2,}\' { token(box CTokCLit,
-                                   box move |_0| cChars(false, unescapeMultiChars(&_0[1.._0.len()-1])),
-                                   pos, len, inp) }
-L\'($inchar|@charesc){2,}\' { token(box CTokCLit,
-                                    box move |_0| cChars(true, unescapeMultiChars(&_0[2.._0.len()-1])),
+\'($inchar|@charesc)\'      { token(CTokCLit, |lit| cChar(unescapeChar(&lit[1..]).0), pos, len, inp) }
+L\'($inchar|@charesc)\'     { token(CTokCLit, |lit| cChar_w(unescapeChar(&lit[2..]).0), pos, len, inp) }
+\'($inchar|@charesc){2,}\'  { token(CTokCLit, |lit| cChars(false, unescapeMultiChars(&lit[1..lit.len()-1])),
+                                    pos, len, inp) }
+L\'($inchar|@charesc){2,}\' { token(CTokCLit, |lit| cChars(true, unescapeMultiChars(&lit[2..lit.len()-1])),
                                     pos, len, inp) }
 
 -- Clang version literals
-@clangversion           { token(box move |pos, _0| { CTokClangC(pos, ClangCTok(_0)) },
-                                box readClangCVersion, pos, len, inp) }
+@clangversion               { token(|pos, vers| CTokClangC(pos, ClangCTok(vers)),
+                                    readClangCVersion, pos, len, inp) }
 
 -- float constants (follows K&R A2.5.3. C99 6.4.4.2)
 --
 -- * NOTE: Hexadecimal floating constants without binary exponents are forbidden.
 --         They generate a lexer error, because they are hard to recognize in the parser.
-(@mantpart@exppart?|@intpart@exppart)@floatgnusuffix?  { token(box CTokFLit, box readCFloat, pos, len, inp) }
-@hexprefix(@hexmant|@hexdigits)@binexp@floatgnusuffix? { token(box CTokFLit, box readCFloat, pos, len, inp) }
+(@mantpart@exppart?|@intpart@exppart)@floatgnusuffix?  { token(CTokFLit, readCFloat, pos, len, inp) }
+@hexprefix(@hexmant|@hexdigits)@binexp@floatgnusuffix? { token(CTokFLit, readCFloat, pos, len, inp) }
 @hexprefix@hexmant                                     { token_fail("Hexadecimal floating constant requires an exponent",
                                                                     pos, len, inp) }
 
 -- string literal (follows K&R A2.6)
 -- C99: 6.4.5.
-\"($instr|@charesc)*\"      { token(box CTokSLit,
-                                    box move |_0| cString(unescapeString(&_0[1.._0.len()-1])),
+\"($instr|@charesc)*\"      { token(CTokSLit, |lit| cString(unescapeString(&lit[1..lit.len()-1])),
                                     pos, len, inp) }
-L\"($instr|@charesc)*\"     { token(box CTokSLit,
-                                    box move |_0| cString_w(unescapeString(&_0[2.._0.len()-1])),
+L\"($instr|@charesc)*\"     { token(CTokSLit, |lit| cString_w(unescapeString(&lit[2..lit.len()-1])),
                                     pos, len, inp) }
 
 L?\'@ucn\'                        { token_fail("Universal character names are unsupported", pos, len, inp) }
@@ -233,52 +218,52 @@ L?\"($inchar|@charesc)*@ucn($inchar|@charesc|@ucn)*\"
 
 -- operators and separators
 --
-"("   { token_(1, box CTokLParen, pos, len, inp) }
-")"   { token_(1, box CTokRParen, pos, len, inp)  }
-"["   { token_(1, box CTokLBracket, pos, len, inp) }
-"]"   { token_(1, box CTokRBracket, pos, len, inp) }
-"->"  { token_(2, box CTokArrow, pos, len, inp) }
-"."   { token_(1, box CTokDot, pos, len, inp) }
-"!"   { token_(1, box CTokExclam, pos, len, inp) }
-"~"   { token_(1, box CTokTilde, pos, len, inp) }
-"++"  { token_(2, box CTokInc, pos, len, inp) }
-"--"  { token_(2, box CTokDec, pos, len, inp) }
-"+"   { token_(1, box CTokPlus, pos, len, inp) }
-"-"   { token_(1, box CTokMinus, pos, len, inp) }
-"*"   { token_(1, box CTokStar, pos, len, inp) }
-"/"   { token_(1, box CTokSlash, pos, len, inp) }
-"%"   { token_(1, box CTokPercent, pos, len, inp) }
-"&"   { token_(1, box CTokAmper, pos, len, inp) }
-"<<"  { token_(2, box CTokShiftL, pos, len, inp) }
-">>"  { token_(2, box CTokShiftR, pos, len, inp) }
-"<"   { token_(1, box CTokLess, pos, len, inp) }
-"<="  { token_(2, box CTokLessEq, pos, len, inp) }
-">"   { token_(1, box CTokHigh, pos, len, inp) }
-">="  { token_(2, box CTokHighEq, pos, len, inp) }
-"=="  { token_(2, box CTokEqual, pos, len, inp) }
-"!="  { token_(2, box CTokUnequal, pos, len, inp) }
-"^"   { token_(1, box CTokHat, pos, len, inp) }
-"|"   { token_(1, box CTokBar, pos, len, inp) }
-"&&"  { token_(2, box CTokAnd, pos, len, inp) }
-"||"  { token_(2, box CTokOr, pos, len, inp) }
-"?"   { token_(1, box CTokQuest, pos, len, inp) }
-":"   { token_(1, box CTokColon, pos, len, inp) }
-"="   { token_(1, box CTokAssign, pos, len, inp) }
-"+="  { token_(2, box CTokPlusAss, pos, len, inp) }
-"-="  { token_(2, box CTokMinusAss, pos, len, inp) }
-"*="  { token_(2, box CTokStarAss, pos, len, inp) }
-"/="  { token_(2, box CTokSlashAss, pos, len, inp) }
-"%="  { token_(2, box CTokPercAss, pos, len, inp) }
-"&="  { token_(2, box CTokAmpAss, pos, len, inp) }
-"^="  { token_(2, box CTokHatAss, pos, len, inp) }
-"|="  { token_(2, box CTokBarAss, pos, len, inp) }
-"<<=" { token_(3, box CTokSLAss, pos, len, inp) }
-">>=" { token_(3, box CTokSRAss, pos, len, inp) }
-","   { token_(1, box CTokComma, pos, len, inp) }
-\;    { token_(1, box CTokSemic, pos, len, inp) }
-"{"   { token_(1, box CTokLBrace, pos, len, inp) }
-"}"   { token_(1, box CTokRBrace, pos, len, inp) }
-"..." { token_(3, box CTokEllipsis, pos, len, inp) }
+"("   { tok(1, CTokLParen, pos) }
+")"   { tok(1, CTokRParen, pos)  }
+"["   { tok(1, CTokLBracket, pos) }
+"]"   { tok(1, CTokRBracket, pos) }
+"->"  { tok(2, CTokArrow, pos) }
+"."   { tok(1, CTokDot, pos) }
+"!"   { tok(1, CTokExclam, pos) }
+"~"   { tok(1, CTokTilde, pos) }
+"++"  { tok(2, CTokInc, pos) }
+"--"  { tok(2, CTokDec, pos) }
+"+"   { tok(1, CTokPlus, pos) }
+"-"   { tok(1, CTokMinus, pos) }
+"*"   { tok(1, CTokStar, pos) }
+"/"   { tok(1, CTokSlash, pos) }
+"%"   { tok(1, CTokPercent, pos) }
+"&"   { tok(1, CTokAmper, pos) }
+"<<"  { tok(2, CTokShiftL, pos) }
+">>"  { tok(2, CTokShiftR, pos) }
+"<"   { tok(1, CTokLess, pos) }
+"<="  { tok(2, CTokLessEq, pos) }
+">"   { tok(1, CTokHigh, pos) }
+">="  { tok(2, CTokHighEq, pos) }
+"=="  { tok(2, CTokEqual, pos) }
+"!="  { tok(2, CTokUnequal, pos) }
+"^"   { tok(1, CTokHat, pos) }
+"|"   { tok(1, CTokBar, pos) }
+"&&"  { tok(2, CTokAnd, pos) }
+"||"  { tok(2, CTokOr, pos) }
+"?"   { tok(1, CTokQuest, pos) }
+":"   { tok(1, CTokColon, pos) }
+"="   { tok(1, CTokAssign, pos) }
+"+="  { tok(2, CTokPlusAss, pos) }
+"-="  { tok(2, CTokMinusAss, pos) }
+"*="  { tok(2, CTokStarAss, pos) }
+"/="  { tok(2, CTokSlashAss, pos) }
+"%="  { tok(2, CTokPercAss, pos) }
+"&="  { tok(2, CTokAmpAss, pos) }
+"^="  { tok(2, CTokHatAss, pos) }
+"|="  { tok(2, CTokBarAss, pos) }
+"<<=" { tok(3, CTokSLAss, pos) }
+">>=" { tok(3, CTokSRAss, pos) }
+","   { tok(1, CTokComma, pos) }
+\;    { tok(1, CTokSemic, pos) }
+"{"   { tok(1, CTokLBrace, pos) }
+"}"   { tok(1, CTokRBrace, pos) }
+"..." { tok(3, CTokEllipsis, pos) }
 
 
 {
@@ -319,92 +304,92 @@ label __label__
 */
 // Tokens: _Alignas _Alignof __alignof alignof __alignof__ __asm asm __asm__ _Atomic auto break _Bool case char __const const __const__ continue _Complex __complex__ default do double else enum extern float for _Generic goto if __inline inline __inline__ int __int128 long _Noreturn  _Nullable __nullable _Nonnull __nonnull register __restrict restrict __restrict__ return short __signed signed __signed__ sizeof static _Static_assert struct switch typedef __typeof typeof __typeof__ __thread _Thread_local union unsigned void __volatile volatile __volatile__ while __label__ __attribute __attribute__ __extension__ __real __real__ __imag __imag__ __builtin_va_arg __builtin_offsetof __builtin_types_compatible_p
 
-pub fn idkwtok(p: &mut Parser, id: String, pos: Position) -> Res<CToken> {
+pub fn idkwtok(p: &mut Parser, id: &str, pos: Position) -> Res<CToken> {
     match id.as_ref() {
-        "_Alignas" => tok(8, box CTokAlignas, pos),
-        "_Alignof" => tok(8, box CTokAlignof, pos),
-        "_Atomic" => tok(7, box CTokAtomic, pos),
-        "_Bool" => tok(5, box CTokBool, pos),
-        "_Complex" => tok(8, box CTokComplex, pos),
-        "_Nonnull" => tok(8, box CTokNonnull, pos),
-        "_Generic" => tok(8, box CTokGeneric, pos),
-        "_Noreturn" => tok(9, box CTokNoreturn, pos),
-        "_Nullable" => tok(9, box CTokNullable, pos),
-        "_Static_assert" => tok(14, box CTokStaticAssert, pos),
-        "_Thread_local" => tok(13, box CTokThread, pos),
-        "__alignof" => tok(9, box CTokAlignof, pos),
-        "alignof" => tok(7, box CTokAlignof, pos),
-        "__alignof__" => tok(11, box CTokAlignof, pos),
-        "__asm" => tok(5, box CTokAsm, pos),
-        "asm" => tok(3, box CTokAsm, pos),
-        "__asm__" => tok(7, box CTokAsm, pos),
-        "__attribute" => tok(11, partial_1!(CTokGnuC, GnuCAttrTok), pos),
-        "__attribute__" => tok(13, partial_1!(CTokGnuC, GnuCAttrTok), pos),
-        "auto" => tok(4, box CTokAuto, pos),
-        "break" => tok(5, box CTokBreak, pos),
-        "__builtin_offsetof" => tok(18, partial_1!(CTokGnuC, GnuCOffsetof), pos),
-        "__builtin_types_compatible_p" => tok(28, partial_1!(CTokGnuC, GnuCTyCompat), pos),
-        "__builtin_va_arg" => tok(16, partial_1!(CTokGnuC, GnuCVaArg), pos),
-        "case" => tok(4, box CTokCase, pos),
-        "char" => tok(4, box CTokChar, pos),
-        "__complex__" => tok(11, box CTokComplex, pos),
-        "__const" => tok(7, box CTokConst, pos),
-        "const" => tok(5, box CTokConst, pos),
-        "__const__" => tok(9, box CTokConst, pos),
-        "continue" => tok(8, box CTokContinue, pos),
-        "default" => tok(7, box CTokDefault, pos),
-        "do" => tok(2, box CTokDo, pos),
-        "double" => tok(6, box CTokDouble, pos),
-        "else" => tok(4, box CTokElse, pos),
-        "enum" => tok(4, box CTokEnum, pos),
-        "__extension__" => tok(13, partial_1!(CTokGnuC, GnuCExtTok), pos),
-        "extern" => tok(6, box CTokExtern, pos),
-        "float" => tok(5, box CTokFloat, pos),
-        "for" => tok(3, box CTokFor, pos),
-        "goto" => tok(4, box CTokGoto, pos),
-        "if" => tok(2, box CTokIf, pos),
-        "__imag" => tok(6, partial_1!(CTokGnuC, GnuCComplexImag), pos),
-        "__imag__" => tok(8, partial_1!(CTokGnuC, GnuCComplexImag), pos),
-        "__inline" => tok(8, box CTokInline, pos),
-        "inline" => tok(6, box CTokInline, pos),
-        "__inline__" => tok(10, box CTokInline, pos),
-        "int" => tok(3, box CTokInt, pos),
-        "__int128" => tok(8, box CTokInt128, pos),
-        "__label__" => tok(9, box CTokLabel, pos),
-        "long" => tok(4, box CTokLong, pos),
-        "__nonnull" => tok(9, box CTokNonnull, pos),
-        "__nullable" => tok(10, box CTokNullable, pos),
-        "__real" => tok(6, partial_1!(CTokGnuC, GnuCComplexReal), pos),
-        "__real__" => tok(8, partial_1!(CTokGnuC, GnuCComplexReal), pos),
-        "register" => tok(8, box CTokRegister, pos),
-        "__restrict" => tok(10, box CTokRestrict, pos),
-        "restrict" => tok(8, box CTokRestrict, pos),
-        "__restrict__" => tok(12, box CTokRestrict, pos),
-        "return" => tok(6, box CTokReturn, pos),
-        "short" => tok(5, box CTokShort, pos),
-        "__signed" => tok(8, box CTokSigned, pos),
-        "signed" => tok(6, box CTokSigned, pos),
-        "__signed__" => tok(10, box CTokSigned, pos),
-        "sizeof" => tok(6, box CTokSizeof, pos),
-        "static" => tok(6, box CTokStatic, pos),
-        "struct" => tok(6, box CTokStruct, pos),
-        "switch" => tok(6, box CTokSwitch, pos),
-        "__thread" => tok(8, box CTokThread, pos),
-        "typedef" => tok(7, box CTokTypedef, pos),
-        "__typeof" => tok(8, box CTokTypeof, pos),
-        "typeof" => tok(6, box CTokTypeof, pos),
-        "__typeof__" => tok(10, box CTokTypeof, pos),
-        "union" => tok(5, box CTokUnion, pos),
-        "unsigned" => tok(8, box CTokUnsigned, pos),
-        "void" => tok(4, box CTokVoid, pos),
-        "__volatile" => tok(10, box CTokVolatile, pos),
-        "volatile" => tok(8, box CTokVolatile, pos),
-        "__volatile__" => tok(12, box CTokVolatile, pos),
-        "while" => tok(5, box CTokWhile, pos),
+        "_Alignas" => tok(8, CTokAlignas, pos),
+        "_Alignof" => tok(8, CTokAlignof, pos),
+        "_Atomic" => tok(7, CTokAtomic, pos),
+        "_Bool" => tok(5, CTokBool, pos),
+        "_Complex" => tok(8, CTokComplex, pos),
+        "_Nonnull" => tok(8, CTokNonnull, pos),
+        "_Generic" => tok(8, CTokGeneric, pos),
+        "_Noreturn" => tok(9, CTokNoreturn, pos),
+        "_Nullable" => tok(9, CTokNullable, pos),
+        "_Static_assert" => tok(14, CTokStaticAssert, pos),
+        "_Thread_local" => tok(13, CTokThread, pos),
+        "__alignof" => tok(9, CTokAlignof, pos),
+        "alignof" => tok(7, CTokAlignof, pos),
+        "__alignof__" => tok(11, CTokAlignof, pos),
+        "__asm" => tok(5, CTokAsm, pos),
+        "asm" => tok(3, CTokAsm, pos),
+        "__asm__" => tok(7, CTokAsm, pos),
+        "__attribute" => tok(11, |posl| CTokGnuC(GnuCAttrTok, posl), pos),
+        "__attribute__" => tok(13, |posl| CTokGnuC(GnuCAttrTok, posl), pos),
+        "auto" => tok(4, CTokAuto, pos),
+        "break" => tok(5, CTokBreak, pos),
+        "__builtin_offsetof" => tok(18, |posl| CTokGnuC(GnuCOffsetof, posl), pos),
+        "__builtin_types_compatible_p" => tok(28, |posl| CTokGnuC(GnuCTyCompat, posl), pos),
+        "__builtin_va_arg" => tok(16, |posl| CTokGnuC(GnuCVaArg, posl), pos),
+        "case" => tok(4, CTokCase, pos),
+        "char" => tok(4, CTokChar, pos),
+        "__complex__" => tok(11, CTokComplex, pos),
+        "__const" => tok(7, CTokConst, pos),
+        "const" => tok(5, CTokConst, pos),
+        "__const__" => tok(9, CTokConst, pos),
+        "continue" => tok(8, CTokContinue, pos),
+        "default" => tok(7, CTokDefault, pos),
+        "do" => tok(2, CTokDo, pos),
+        "double" => tok(6, CTokDouble, pos),
+        "else" => tok(4, CTokElse, pos),
+        "enum" => tok(4, CTokEnum, pos),
+        "__extension__" => tok(13, |posl| CTokGnuC(GnuCExtTok, posl), pos),
+        "extern" => tok(6, CTokExtern, pos),
+        "float" => tok(5, CTokFloat, pos),
+        "for" => tok(3, CTokFor, pos),
+        "goto" => tok(4, CTokGoto, pos),
+        "if" => tok(2, CTokIf, pos),
+        "__imag" => tok(6, |posl| CTokGnuC(GnuCComplexImag, posl), pos),
+        "__imag__" => tok(8, |posl| CTokGnuC(GnuCComplexImag, posl), pos),
+        "__inline" => tok(8, CTokInline, pos),
+        "inline" => tok(6, CTokInline, pos),
+        "__inline__" => tok(10, CTokInline, pos),
+        "int" => tok(3, CTokInt, pos),
+        "__int128" => tok(8, CTokInt128, pos),
+        "__label__" => tok(9, CTokLabel, pos),
+        "long" => tok(4, CTokLong, pos),
+        "__nonnull" => tok(9, CTokNonnull, pos),
+        "__nullable" => tok(10, CTokNullable, pos),
+        "__real" => tok(6, |posl| CTokGnuC(GnuCComplexReal, posl), pos),
+        "__real__" => tok(8, |posl| CTokGnuC(GnuCComplexReal, posl), pos),
+        "register" => tok(8, CTokRegister, pos),
+        "__restrict" => tok(10, CTokRestrict, pos),
+        "restrict" => tok(8, CTokRestrict, pos),
+        "__restrict__" => tok(12, CTokRestrict, pos),
+        "return" => tok(6, CTokReturn, pos),
+        "short" => tok(5, CTokShort, pos),
+        "__signed" => tok(8, CTokSigned, pos),
+        "signed" => tok(6, CTokSigned, pos),
+        "__signed__" => tok(10, CTokSigned, pos),
+        "sizeof" => tok(6, CTokSizeof, pos),
+        "static" => tok(6, CTokStatic, pos),
+        "struct" => tok(6, CTokStruct, pos),
+        "switch" => tok(6, CTokSwitch, pos),
+        "__thread" => tok(8, CTokThread, pos),
+        "typedef" => tok(7, CTokTypedef, pos),
+        "__typeof" => tok(8, CTokTypeof, pos),
+        "typeof" => tok(6, CTokTypeof, pos),
+        "__typeof__" => tok(10, CTokTypeof, pos),
+        "union" => tok(5, CTokUnion, pos),
+        "unsigned" => tok(8, CTokUnsigned, pos),
+        "void" => tok(4, CTokVoid, pos),
+        "__volatile" => tok(10, CTokVolatile, pos),
+        "volatile" => tok(8, CTokVolatile, pos),
+        "__volatile__" => tok(12, CTokVolatile, pos),
+        "while" => tok(5, CTokWhile, pos),
         _ => {
             let name = p.getNewName();
             let len = id.len() as isize;
-            let ident = Ident::new(pos.clone(), id, name);
+            let ident = Ident::new(pos.clone(), id.to_string(), name);
             if p.isTypeIdent(&ident) {
                 Ok(CTokTyIdent((pos, len), ident))
             } else {
@@ -427,11 +412,7 @@ pub fn ignoreAttribute(p: &mut Parser) -> Res<()> {
     skipTokens(p, 0)
 }
 
-pub fn tok(len: isize, tc: Box<Fn(PosLength) -> CToken>, pos: Position) -> Res<CToken> {
-    Ok(tc((pos, len)))
-}
-
-pub fn adjustLineDirective(pragma: String, pos: Position) -> Position {
+pub fn adjustLineDirective(pragma: &str, pos: Position) -> Position {
     // note: it is ensured by the lexer that the requisite parts of the line are present
     // so we just use unwrap()
 
@@ -446,13 +427,13 @@ pub fn adjustLineDirective(pragma: String, pos: Position) -> Position {
     let fname = &pragma[fname_start+1..fname_start+fname_end+1];
 
     let current_fname = pos.file();
-    let new_fname = if current_fname == fname { current_fname } else { fname.to_string() };
+    let new_fname = if &*current_fname == fname { current_fname } else { Arc::new(fname.to_string()) };
     Position::new(offs_q, new_fname, row, 1)
 }
 
-/// token that ignores the string
-pub fn token_(len: isize, mkTok: Box<Fn(PosLength) -> CToken>, pos: Position,
-              _: isize, _: InputStream) -> Res<CToken> {
+pub fn tok<M>(len: isize, mkTok: M, pos: Position) -> Res<CToken>
+    where M: Fn(PosLength) -> CToken
+{
     Ok(mkTok((pos, len)))
 }
 
@@ -462,22 +443,19 @@ pub fn token_fail(errmsg: &str, pos: Position, _: isize, _: InputStream) -> Res<
 }
 
 /// token that uses the string
-pub fn token<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
-                fromStr: Box<Fn(String) -> a>, pos: Position, len: isize, __str: InputStream) -> Res<CToken> {
-    Ok(mkTok((pos, len), fromStr(__str.take_string(len))))
+pub fn token<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: InputStream) -> Res<CToken>
+    where R: Fn(&str) -> T, M: Fn(PosLength, T) -> CToken
+{
+    Ok(mkTok((pos, len), fromStr(inp.take_string(len))))
 }
 
 /// token that may fail
-pub fn token_plus<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
-                     fromStr: Box<Fn(&str) -> Result<a, String>>,
-                     pos: Position, len: isize, inp: InputStream) -> Res<CToken> {
-    match fromStr(&inp.take_string(len)) {
-        Err(err) => {
-            Err(ParseError::new(pos, vec!["Lexical error ! ".to_string(), err]))
-        },
-        Ok(ok) => {
-            Ok(mkTok((pos, len), ok))
-        },
+pub fn token_plus<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: InputStream) -> Res<CToken>
+    where R: Fn(&str) -> Result<T, String>, M: Fn(PosLength, T) -> CToken
+{
+    match fromStr(inp.take_string(len)) {
+        Err(err) => Err(ParseError::new(pos, vec!["Lexical error ! ".to_string(), err])),
+        Ok(ok)   => Ok(mkTok((pos, len), ok)),
     }
 }
 

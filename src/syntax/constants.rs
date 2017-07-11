@@ -148,16 +148,16 @@ pub fn cFloat(input: f32) -> CFloat {
     CFloat(input.to_string())
 }
 
-pub fn readCFloat(input: String) -> CFloat {
-    CFloat(input)
+pub fn readCFloat(input: &str) -> CFloat {
+    CFloat(input.to_string())
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ClangCVersion(pub String);
 
 
-pub fn readClangCVersion(input: String) -> ClangCVersion {
-    ClangCVersion(input)
+pub fn readClangCVersion(input: &str) -> ClangCVersion {
+    ClangCVersion(input.to_string())
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

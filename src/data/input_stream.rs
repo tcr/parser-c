@@ -4,6 +4,7 @@
 #[macro_use]
 use corollary_support::*;
 
+use std::str;
 use std::rc::Rc;
 use std::fs::File;
 use std::io::Read;
@@ -50,12 +51,8 @@ impl InputStream {
         (ch, self)
     }
 
-    pub fn take_char_vec(self, n: isize) -> Vec<char> {
-        self.src[self.pos..].iter().take(n as usize).map(|&x| x as char).collect()
-    }
-
-    pub fn take_string(self, n: isize) -> String {
-        self.src[self.pos..].iter().take(n as usize).map(|&x| x as char).collect()
+    pub fn take_string(&self, n: isize) -> &str {
+        str::from_utf8(&self.src[self.pos..self.pos + n as usize]).unwrap() // TODO UNICODE
     }
 
     pub fn count_lines(self) -> isize {
