@@ -56,8 +56,8 @@ use syntax::preprocess::*;
 use syntax::ast::*;
 use data::input_stream::InputStream;
 use data::position::Position;
-use parser::parser_monad::ParseError;
-use parser::parser::parseC;
+use parser::parser_utils::ParseError;
+use parser::parseC;
 
 // NOTE: These imports are advisory. You probably need to change them to support Rust.
 // use Language::C::Data;
