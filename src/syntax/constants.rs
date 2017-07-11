@@ -4,16 +4,7 @@
 #[macro_use]
 use corollary_support::*;
 
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Data::Bits;
-// use Data::char;
-// use Numeric;
-// use showOct;
-// use Data::Generics;
-
-use num::ToPrimitive;
-use std::marker::PhantomData;
-use data::error::Error;
+use std::char;
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -23,37 +14,33 @@ pub enum CChar {
 }
 pub use self::CChar::*;
 
-pub fn showCharConst(c: char) -> Box<ShowS> {
-    sQuote(escapeCChar(c))
+pub fn showCharConst(c: char) -> String {
+    format!("'{}'", escapeCChar(c))
 }
 
-pub fn _showWideFlag(flag: bool) -> Box<ShowS> {
-    box if flag {
-        showString("L".to_string())
-    } else {
-        showString("".to_string())
-    }
+pub fn showWideFlag(flag: bool) -> &'static str {
+    if flag { "L" } else { "" }
 }
 
-pub fn getCChar(_0: CChar) -> String {
-    match (_0) {
+pub fn getCChar(ch: CChar) -> String {
+    match (ch) {
         CChar(c, _) => c.to_string(),
         CChars(cs, _) => cs.into_iter().collect(),
     }
 }
 
-pub fn getCCharAsInt(_0: CChar) -> isize {
-    match (_0) {
-        CChar(c, _) => fromIntegral(c as isize),
-        CChars(_cs, _) => {
+pub fn getCCharAsInt(ch: CChar) -> isize {
+    match ch {
+        CChar(c, _) => c as isize,
+        CChars(_, _) => {
             panic!("integer value of multi-character character constants is implementation defined")
         }
     }
 }
 
-pub fn isWideChar(_0: CChar) -> bool {
-    match (_0) {
-        CChar(_, wideFlag) => wideFlag,
+pub fn isWideChar(ch: CChar) -> bool {
+    match ch {
+        CChar(_, wideFlag) |
         CChars(_, wideFlag) => wideFlag,
     }
 }
@@ -158,7 +145,7 @@ pub struct CFloat(pub String);
 
 
 pub fn cFloat(input: f32) -> CFloat {
-    CFloat(show(input))
+    CFloat(input.to_string())
 }
 
 pub fn readCFloat(input: String) -> CFloat {
@@ -178,8 +165,8 @@ pub struct CString(pub String, pub bool);
 
 impl Display for CString {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        let CString(s, b) = self.clone();
-        write!(f, "{}", _showWideFlag(b).show_s(showStringLit(s).show_s("".to_string())))
+        let CString(ref s, b) = *self;
+        write!(f, "{}{}", showWideFlag(b), showStringLit(s))
     }
 }
 
@@ -205,16 +192,20 @@ pub fn concatCStrings(cs: Vec<CString>) -> CString {
         .collect::<Vec<_>>().join(""), (any(isWideString, cs)))
 }
 
-pub fn showStringLit(s: String) -> Box<ShowS> {
-    dQuote(s.chars().map(|c| {
-        if isSChar(c) {
-            format!("{}", c)
-        } else if c == '"' {
-            "\\\"".to_string()
+pub fn showStringLit(s: &str) -> String {
+    let mut new_s = String::with_capacity(s.len());
+    new_s.push('"');
+    for ch in s.chars() {
+        if isSChar(ch) {
+            new_s.push(ch);
+        } else if ch == '"' {
+            new_s.push_str("\\\"");
         } else {
-            escapeChar(c)
+            new_s.push_str(&escapeChar(ch));
         }
-    }).collect::<Vec<_>>().join(""))
+    }
+    new_s.push('"');
+    new_s
 }
 
 pub fn isAsciiSourceChar(c: char) -> bool {
@@ -230,16 +221,11 @@ pub fn isCChar(_0: char) -> bool {
     }
 }
 
-pub fn escapeCChar(_0: char) -> String {
-    match (_0) {
+pub fn escapeCChar(ch: char) -> String {
+    match ch {
         '\'' => "\\\'".to_string(),
-        c => {
-            if isSChar(c) {
-                c.to_string()
-            } else {
-                escapeChar(c)
-            }
-        }
+        ch if isSChar(ch) => ch.to_string(),
+        _ => escapeChar(ch)
     }
 }
 
@@ -263,12 +249,10 @@ pub fn escapeChar(_0: char) -> String {
         '\r' => "\\r".to_string(),
         '\t' => "\\t".to_string(),
         '\u{b}' => "\\v".to_string(),
-        c => {
-            if ord(c) < 512 {
-                format!("\\{:03o}", ord(c))
-            } else {
-                format!("\\x{:x}", ord(c))
-            }
+        c => if (c as u32) < 512 {
+            format!("\\{:03o}", c as u32)
+        } else {
+            format!("\\x{:x}", c as u32)
         }
     }
 }
@@ -298,7 +282,7 @@ pub fn unescapeChar(s: &str) -> (char, &str) {
                     if digits == 0 {
                         panic!("bad hex escape sequence"); // TODO should be a Result
                     }
-                    (chr(isize::from_str_radix(&s[2..2+digits], 16).unwrap()),
+                    (char::from_u32(u32::from_str_radix(&s[2..2+digits], 16).unwrap()).unwrap(),
                      &s[1+digits..])
                 }
                 dig0 => {
@@ -306,7 +290,7 @@ pub fn unescapeChar(s: &str) -> (char, &str) {
                         panic!("bad hex escape sequence"); // TODO should be a Result
                     }
                     let digits = iter.position(|x| !x.is_digit(8)).unwrap_or(s.len() - 2);
-                    (chr(isize::from_str_radix(&s[1..2+digits], 8).unwrap()),
+                    (char::from_u32(u32::from_str_radix(&s[1..2+digits], 8).unwrap()).unwrap(),
                      &s[2+digits..])
                 }
             }
@@ -333,14 +317,6 @@ pub fn unescapeMultiChars(mut cs: &str) -> Vec<char> {
         new_vec.push(ch);
     }
     new_vec
-}
-
-pub fn sQuote(s: String) -> Box<ShowS> {
-    box showString(format!("\'{}\'", s))
-}
-
-pub fn dQuote(s: String) -> Box<ShowS> {
-    box showString(format!("\"{}\"", s))
 }
 
 pub fn head_q<a>(msg: &str, mut _1: Vec<a>) -> a {
