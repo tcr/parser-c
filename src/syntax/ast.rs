@@ -6,6 +6,8 @@ use corollary_support::*;
 #[macro_use]
 use parser_c_macro;
 
+use either::Either;
+
 use data::node::*;
 use data::ident::*;
 use syntax::ops::*;

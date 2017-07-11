@@ -14,6 +14,7 @@ use std::rc::Rc;
 use std::boxed::FnBox;
 use std::iter::FromIterator;
 use std::collections::HashSet;
+use either::Either;
 
 pub use parser::parser::Parser;
 use parser::parser::translUnitP;
