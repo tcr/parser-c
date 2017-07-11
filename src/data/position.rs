@@ -4,6 +4,8 @@
 #[macro_use]
 use corollary_support::*;
 
+use std::sync::Arc;
+
 // TODO use a deque
 use data::r_list::Reversed;
 
@@ -11,7 +13,7 @@ use data::r_list::Reversed;
 pub enum Position {
     Position {
         offset: isize,
-        file: String,
+        file: Arc<String>,
         row: isize,
         column: isize,
     },
@@ -29,12 +31,12 @@ impl ::std::fmt::Display for Position {
 }
 
 impl Position {
-    pub fn new(offset: isize, file: String, row: isize, column: isize) -> Position {
-        Position::Position { offset, file, row, column }
+    pub fn new(offset: isize, file: Arc<String>, row: isize, column: isize) -> Position {
+        Position::Position { offset, file: file, row, column }
     }
 
     pub fn from_file(file: FilePath) -> Position {
-        Self::new(0, file.into(), 1, 1)
+        Position::Position { offset: 0, file: Arc::new(file.into()), row: 1, column: 1 }
     }
 
     pub fn none() -> Position {
@@ -57,7 +59,7 @@ impl Position {
         }
     }
 
-    pub fn file(&self) -> String {
+    pub fn file(&self) -> Arc<String> {
         if let Position::Position { ref file, .. } = *self {
             file.clone()
         } else {
@@ -119,7 +121,7 @@ impl Position {
     pub fn adjust(self, new_file: FilePath, row: isize) -> Position {
         match self {
             Position::Position { offset, .. } =>
-                Self::new(offset, new_file.into(), row, 1),
+                Self::new(offset, Arc::new(new_file.into()), row, 1),
             p => p,
         }
     }
