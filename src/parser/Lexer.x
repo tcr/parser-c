@@ -55,14 +55,15 @@ actions have to be translated.
 
 */
 
+use std::str::FromStr;
+
 use data::input_stream::*;
 use data::ident::*;
 use data::position::*;
 use syntax::constants::*;
-use parser::parser_monad::*;
+use parser::parser::Parser;
+use parser::parser_utils::ParseError;
 use parser::tokens::*;
-use std::str::FromStr;
-use std::boxed::FnBox;
 
 // fn(A, B) -> fn(C) -> {eval fn(A, B, C)}
 #[allow(unused_macros)]
@@ -70,6 +71,9 @@ macro_rules! partial_1 {
     ($inner: expr) => ( box $inner );
     ($inner: expr, $($arg: expr),+ ) => ( box |_0| { $inner($($arg),+ , _0) } )
 }
+
+type Token = CToken;
+type Res<T> = Result<T, ParseError>;
 
 }
 
@@ -329,7 +333,7 @@ label __label__
 */
 // Tokens: _Alignas _Alignof __alignof alignof __alignof__ __asm asm __asm__ _Atomic auto break _Bool case char __const const __const__ continue _Complex __complex__ default do double else enum extern float for _Generic goto if __inline inline __inline__ int __int128 long _Noreturn  _Nullable __nullable _Nonnull __nonnull register __restrict restrict __restrict__ return short __signed signed __signed__ sizeof static _Static_assert struct switch typedef __typeof typeof __typeof__ __thread _Thread_local union unsigned void __volatile volatile __volatile__ while __label__ __attribute __attribute__ __extension__ __real __real__ __imag __imag__ __builtin_va_arg __builtin_offsetof __builtin_types_compatible_p
 
-pub fn idkwtok(p: &mut Parser, id: String, pos: Position) -> P<CToken> {
+pub fn idkwtok(p: &mut Parser, id: String, pos: Position) -> Res<CToken> {
     match id.as_ref() {
         "_Alignas" => tok(8, box CTokAlignas, pos),
         "_Alignof" => tok(8, box CTokAlignof, pos),
@@ -424,8 +428,8 @@ pub fn idkwtok(p: &mut Parser, id: String, pos: Position) -> P<CToken> {
     }
 }
 
-pub fn ignoreAttribute(p: &mut Parser) -> P<()> {
-    pub fn skipTokens(p: &mut Parser, n: isize) -> P<()> {
+pub fn ignoreAttribute(p: &mut Parser) -> Res<()> {
+    pub fn skipTokens(p: &mut Parser, n: isize) -> Res<()> {
         let ntok = lexToken_q(p, false)?;
         match ntok {
             CTokRParen(_) if n == 1 => Ok(()),
@@ -437,7 +441,7 @@ pub fn ignoreAttribute(p: &mut Parser) -> P<()> {
     skipTokens(p, 0)
 }
 
-pub fn tok(len: isize, tc: Box<Fn(PosLength) -> CToken>, pos: Position) -> P<CToken> {
+pub fn tok(len: isize, tc: Box<Fn(PosLength) -> CToken>, pos: Position) -> Res<CToken> {
     Ok(tc((pos, len)))
 }
 
@@ -476,25 +480,25 @@ pub fn unescapeMultiChars(cs: String) -> String {
 
 /// token that ignores the string
 pub fn token_(len: isize, mkTok: Box<Fn(PosLength) -> CToken>, pos: Position,
-              _: isize, _: InputStream) -> P<CToken> {
+              _: isize, _: InputStream) -> Res<CToken> {
     Ok(mkTok((pos, len)))
 }
 
 /// error token
-pub fn token_fail(errmsg: &str, pos: Position, _: isize, _: InputStream) -> P<CToken> {
+pub fn token_fail(errmsg: &str, pos: Position, _: isize, _: InputStream) -> Res<CToken> {
     Err(ParseError::new(pos, vec!["Lexical Error !".to_string(), errmsg.to_string()]))
 }
 
 /// token that uses the string
 pub fn token<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
-                fromStr: Box<Fn(String) -> a>, pos: Position, len: isize, __str: InputStream) -> P<CToken> {
+                fromStr: Box<Fn(String) -> a>, pos: Position, len: isize, __str: InputStream) -> Res<CToken> {
     Ok(mkTok((pos, len), fromStr(__str.take_string(len))))
 }
 
 /// token that may fail
 pub fn token_plus<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
                      fromStr: Box<Fn(String) -> Result<a, String>>,
-                     pos: Position, len: isize, __str: InputStream) -> P<CToken> {
+                     pos: Position, len: isize, __str: InputStream) -> Res<CToken> {
     match fromStr(__str.take_string(len)) {
         Err(err) => {
             Err(ParseError::new(pos, vec!["Lexical error ! ".to_string(), err]))
@@ -534,7 +538,7 @@ pub fn alexMove(pos: Position, ch: char) -> Position {
     }
 }
 
-pub fn lexicalError<T>(p: &mut Parser) -> P<T> {
+pub fn lexicalError<T>(p: &mut Parser) -> Res<T> {
     let pos = p.getPos();
     let input = p.getInput();
     let (c, _) = input.take_char();
@@ -544,7 +548,7 @@ pub fn lexicalError<T>(p: &mut Parser) -> P<T> {
     ]))
 }
 
-pub fn parseError<T>(p: &mut Parser) -> P<T> {
+pub fn parseError<T>(p: &mut Parser) -> Res<T> {
     let lastTok = p.getLastToken();
     Err(ParseError::new(lastTok.clone().into_pos(), vec![
         "Syntax error !".to_string(),
@@ -565,11 +569,11 @@ pub fn parseError<T>(p: &mut Parser) -> P<T> {
 // we get `int (pos 4,0)', and have [x (1,4), int (4,1) ] in the token cache (fine)
 // but then, we again call setLastToken when returning and get [int (4,1),int (4,1)] in the token cache (bad)
 // to resolve this, recursive calls invoke lexToken' False.
-pub fn lexC(p: &mut Parser) -> P<CToken> {
+pub fn lexC(p: &mut Parser) -> Res<CToken> {
     lexToken_q(p, true)
 }
 
-pub fn lexToken_q(p: &mut Parser, modifyCache: bool) -> P<CToken> {
+pub fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
     let pos = p.getPos();
     let inp = p.getInput();
     match alexScan((pos.clone(), inp.clone()), 0) {

@@ -32,33 +32,34 @@
 {
 
 #[macro_use] use corollary_support::*;
-use std::boxed::FnBox;
+
 use std::rc::Rc;
 
 use parser_c_macro::refute;
 
-use data::input_stream::*;
-use data::position::*;
-use parser::parser_monad::*;
+use data::position::{Located, Pos};
+use data::r_list::RList::*;
+use data::r_list::{Reversed, snoc};
+use data::node::{NodeInfo, CNode};
+use data::ident::Ident;
+use data::name::Name;
+use parser::tokens::*;
+use parser::builtin::builtinTypeNames;
+use parser::lexer::{lexC, parseError};
+use parser::parser_utils::{ParseError, PState, CDeclrR, appendDeclrAttrs};
+use syntax::ops::*;
 use syntax::ast::*;
 use syntax::constants::*;
-use parser::tokens::*;
-use data::r_list::RList::*;
-use data::r_list::Reversed;
-use data::node::*;
-use data::r_list::snoc;
-use data::ident::*;
-use data::name::*;
-use syntax::ops::*;
-use parser::lexer::{lexC, parseError};
-use parser::builtin::builtinTypeNames;
-use data::name::new_name_supply;
 
 // fn(A, B) -> fn(C) -> {eval fn(A, B, C)}
 macro_rules! partial_1 {
     ($inner: expr) => ( box $inner );
     ($inner: expr, $($arg: expr),+ ) => ( box move |_0| { $inner($($arg),+ , _0) } )
 }
+
+type Error = ParseError;
+type State = PState;
+type Token = CToken;
 
 }
 
@@ -137,7 +138,7 @@ macro_rules! partial_1 {
 
 %tokentype { CToken }
 
-%monad { P } { >>= } { return }
+%monad { Res } { >>= } { return }
 %lexer { lexC } { CTokEof }
 
 %expect 1
@@ -271,7 +272,7 @@ translation_unit
                           Ok(CTranslationUnit(decls, nodeinfo))
                       } else {
                           let d = decls[0].clone();
-                          withNodeInfo(p, d, partial_1!(CTranslationUnit, decls))
+                          p.withNodeInfo(d, partial_1!(CTranslationUnit, decls))
                       }
                   }
 
@@ -298,7 +299,7 @@ external_declaration
   : function_definition                           { CFDefExt($1) }
   | declaration                                   { CDeclExt($1) }
   | "__extension__" external_declaration          { $2 }
-  | asm '(' string_literal ')' ';'                {% withNodeInfo(p, $1.clone(), partial_1!(CAsmExt, $3)) }
+  | asm '(' string_literal ')' ';'                {% p.withNodeInfo($1.clone(), partial_1!(CAsmExt, $3)) }
 
 
 -- parse C function definition (C99 6.9.1)
@@ -320,55 +321,55 @@ external_declaration
 function_definition :: { CFunDef }
 function_definition
   :                            function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, vec![], $1, vec![], $2)) }
 
   | attrs                      function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, liftCAttrs($1), $2, vec![], $3)) }
 
   | declaration_specifier      function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, $1, $2, vec![], $3)) }
 
   | type_specifier             function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, $1, $2, vec![], $3)) }
 
   | declaration_qualifier_list function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, reverse($1), $2, vec![], $3)) }
 
   | type_qualifier_list        function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, liftTypeQuals($1), $2, vec![], $3)) }
 
   | type_qualifier_list  attrs function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), $3, vec![], $4)) }
 
   -- old function declarators
 
   |                            function_declarator_old declaration_list compound_statement
-        {% withNodeInfo(p, $1.clone(), partial_1!(CFunctionDef, vec![], $1, reverse($2), $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CFunctionDef, vec![], $1, reverse($2), $3)) }
 
   |                      attrs function_declarator_old declaration_list compound_statement
-        {% withNodeInfo(p, $2.clone(), partial_1!(CFunctionDef, liftCAttrs($1), $2, reverse($3), $4)) }
+        {% p.withNodeInfo($2.clone(), partial_1!(CFunctionDef, liftCAttrs($1), $2, reverse($3), $4)) }
 
   | declaration_specifier      function_declarator_old declaration_list compound_statement
-        {% withNodeInfo(p, $1.clone(), partial_1!(CFunctionDef, $1, $2, reverse($3), $4)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CFunctionDef, $1, $2, reverse($3), $4)) }
 
   | type_specifier             function_declarator_old declaration_list compound_statement
-        {% withNodeInfo(p, $1.clone(), partial_1!(CFunctionDef, $1, $2, reverse($3), $4)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CFunctionDef, $1, $2, reverse($3), $4)) }
 
   | declaration_qualifier_list function_declarator_old declaration_list compound_statement
-        {% withNodeInfo(p, $1.clone(), partial_1!(CFunctionDef, reverse($1), $2, reverse($3), $4)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CFunctionDef, reverse($1), $2, reverse($3), $4)) }
 
   | type_qualifier_list   function_declarator_old declaration_list compound_statement
-        {% withNodeInfo(p, $1.clone(), partial_1!(CFunctionDef, liftTypeQuals($1), $2, reverse($3), $4)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CFunctionDef, liftTypeQuals($1), $2, reverse($3), $4)) }
 
   | type_qualifier_list attrs  function_declarator_old declaration_list compound_statement
-        {% withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), $3, reverse($4), $5)) }
 
 -- Read declarator and put function
@@ -395,7 +396,7 @@ statement
   | selection_statement         { $1 }
   | iteration_statement         { $1 }
   | jump_statement              { $1 }
-  | asm_statement               {% withNodeInfo(p, $1.clone(), partial_1!(CAsm, $1)) }
+  | asm_statement               {% p.withNodeInfo($1.clone(), partial_1!(CAsm, $1)) }
 
 
 -- parse C labeled statement (C99 6.8.1)
@@ -404,11 +405,11 @@ statement
 --
 labeled_statement :: { CStat }
 labeled_statement
-  : identifier ':' attrs_opt statement          {% withNodeInfo(p, $1.clone(), partial_1!(CLabel, $1, box $4, $3)) }
-  | case constant_expression ':' statement      {% withNodeInfo(p, $1, partial_1!(CCase, $2, box $4)) }
-  | default ':' statement                       {% withNodeInfo(p, $1, partial_1!(CDefault, box $3)) }
+  : identifier ':' attrs_opt statement          {% p.withNodeInfo($1.clone(), partial_1!(CLabel, $1, box $4, $3)) }
+  | case constant_expression ':' statement      {% p.withNodeInfo($1, partial_1!(CCase, $2, box $4)) }
+  | default ':' statement                       {% p.withNodeInfo($1, partial_1!(CDefault, box $3)) }
   | case constant_expression "..." constant_expression ':' statement
-        {% withNodeInfo(p, $1, partial_1!(CCases, $2, $4, box $6)) }
+        {% p.withNodeInfo($1, partial_1!(CCases, $2, $4, box $6)) }
 
 
 -- parse C compound statement (C99 6.8.2)
@@ -418,10 +419,10 @@ labeled_statement
 compound_statement :: { CStat }
 compound_statement
   : '{' enter_scope block_item_list leave_scope '}'
-        {% withNodeInfo(p, $1, partial_1!(CCompound, vec![], reverse($3))) }
+        {% p.withNodeInfo($1, partial_1!(CCompound, vec![], reverse($3))) }
 
   | '{' enter_scope label_declarations block_item_list leave_scope '}'
-        {% withNodeInfo(p, $1, partial_1!(CCompound, reverse($3), reverse($4))) }
+        {% p.withNodeInfo($1, partial_1!(CCompound, reverse($3), reverse($4))) }
 
 
 -- No syntax for these, just side effecting semantic actions.
@@ -451,23 +452,23 @@ nested_declaration
 nested_function_definition :: { CFunDef }
 nested_function_definition
   : declaration_specifier      function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, $1, $2, vec![], $3)) }
 
   | type_specifier             function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, $1, $2, vec![], $3)) }
 
   | declaration_qualifier_list function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, reverse($1), $2, vec![], $3)) }
 
   | type_qualifier_list   function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, liftTypeQuals($1), $2, vec![], $3)) }
 
   | type_qualifier_list   attrs function_declarator compound_statement
-        {% p.leaveScope(); withNodeInfo(p, $1.clone(), partial_1!(
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
             CFunctionDef, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), $3, vec![], $4)) }
 
 
@@ -481,8 +482,8 @@ label_declarations
 --
 expression_statement :: { CStat }
 expression_statement
-  : ';'                         {% withNodeInfo(p, $1, partial_1!(CExpr, None)) }
-  | expression ';'              {% withNodeInfo(p, $1.clone(), partial_1!(CExpr, Some($1))) }
+  : ';'                         {% p.withNodeInfo($1, partial_1!(CExpr, None)) }
+  | expression ';'              {% p.withNodeInfo($1.clone(), partial_1!(CExpr, Some($1))) }
 
 
 -- parse C selection statement (C99 6.8.4)
@@ -490,13 +491,13 @@ expression_statement
 selection_statement :: { CStat }
 selection_statement
   : if '(' expression ')' statement
-        {% withNodeInfo(p, $1, partial_1!(CIf, $3, box $5, None)) }
+        {% p.withNodeInfo($1, partial_1!(CIf, $3, box $5, None)) }
 
   | if '(' expression ')' statement else statement
-        {% withNodeInfo(p, $1, partial_1!(CIf, $3, box $5, Some(box $7))) }
+        {% p.withNodeInfo($1, partial_1!(CIf, $3, box $5, Some(box $7))) }
 
   | switch '(' expression ')' statement
-        {% withNodeInfo(p, $1, partial_1!(CSwitch, $3, box $5)) }
+        {% p.withNodeInfo($1, partial_1!(CSwitch, $3, box $5)) }
 
 
 -- parse C iteration statement (C99 6.8.5)
@@ -504,16 +505,16 @@ selection_statement
 iteration_statement :: { CStat }
 iteration_statement
   : while '(' expression ')' statement
-        {% withNodeInfo(p, $1, partial_1!(CWhile, $3, box $5, false)) }
+        {% p.withNodeInfo($1, partial_1!(CWhile, $3, box $5, false)) }
 
   | do statement while '(' expression ')' ';'
-        {% withNodeInfo(p, $1, partial_1!(CWhile, $5, box $2, true)) }
+        {% p.withNodeInfo($1, partial_1!(CWhile, $5, box $2, true)) }
 
   | for '(' expression_opt ';' expression_opt ';' expression_opt ')' statement
-        {% withNodeInfo(p, $1, partial_1!(CFor, Left($3), $5, $7, box $9)) }
+        {% p.withNodeInfo($1, partial_1!(CFor, Left($3), $5, $7, box $9)) }
 
   | for '(' enter_scope declaration expression_opt ';' expression_opt ')' statement leave_scope
-        {% withNodeInfo(p, $1, partial_1!(CFor, Right($4), $5, $7, box $9)) }
+        {% p.withNodeInfo($1, partial_1!(CFor, Right($4), $5, $7, box $9)) }
 
 
 -- parse C jump statement (C99 6.8.6)
@@ -522,11 +523,11 @@ iteration_statement
 --
 jump_statement :: { CStat }
 jump_statement
-  : goto identifier ';'                 {% withNodeInfo(p, $1, partial_1!(CGoto, $2)) }
-  | goto '*' expression ';'             {% withNodeInfo(p, $1, partial_1!(CGotoPtr, $3)) }
-  | continue ';'                        {% withNodeInfo(p, $1, partial_1!(CCont)) }
-  | break ';'                           {% withNodeInfo(p, $1, partial_1!(CBreak)) }
-  | return expression_opt ';'           {% withNodeInfo(p, $1, partial_1!(CReturn, $2)) }
+  : goto identifier ';'                 {% p.withNodeInfo($1, partial_1!(CGoto, $2)) }
+  | goto '*' expression ';'             {% p.withNodeInfo($1, partial_1!(CGotoPtr, $3)) }
+  | continue ';'                        {% p.withNodeInfo($1, partial_1!(CCont)) }
+  | break ';'                           {% p.withNodeInfo($1, partial_1!(CBreak)) }
+  | return expression_opt ';'           {% p.withNodeInfo($1, partial_1!(CReturn, $2)) }
 
 
 -- parse GNU C __asm__ statement (compatible with C99: J.5.10)
@@ -538,16 +539,16 @@ jump_statement
 asm_statement :: { CAsmStmt }
 asm_statement
   : asm maybe_type_qualifier '(' string_literal ')' ';'
-        {% withNodeInfo(p, $1, partial_1!(CAssemblyStatement, $2, $4, vec![], vec![], vec![])) }
+        {% p.withNodeInfo($1, partial_1!(CAssemblyStatement, $2, $4, vec![], vec![], vec![])) }
 
   | asm maybe_type_qualifier '(' string_literal ':' asm_operands ')' ';'
-        {% withNodeInfo(p, $1, partial_1!(CAssemblyStatement, $2, $4, $6, vec![], vec![])) }
+        {% p.withNodeInfo($1, partial_1!(CAssemblyStatement, $2, $4, $6, vec![], vec![])) }
 
   | asm maybe_type_qualifier '(' string_literal ':' asm_operands ':' asm_operands ')' ';'
-        {% withNodeInfo(p, $1, partial_1!(CAssemblyStatement, $2, $4, $6, $8, vec![])) }
+        {% p.withNodeInfo($1, partial_1!(CAssemblyStatement, $2, $4, $6, $8, vec![])) }
 
   | asm maybe_type_qualifier '(' string_literal ':' asm_operands ':' asm_operands ':' asm_clobbers ')' ';'
-        {% withNodeInfo(p, $1, partial_1!(CAssemblyStatement, $2, $4, $6, $8, reverse($10))) }
+        {% p.withNodeInfo($1, partial_1!(CAssemblyStatement, $2, $4, $6, $8, reverse($10))) }
 
 
 maybe_type_qualifier :: { Option<CTypeQual> }
@@ -568,11 +569,11 @@ nonnull_asm_operands
 asm_operand :: { CAsmOperand }
 asm_operand
   : string_literal '(' expression ')'
-        {% withNodeInfo(p, $1.clone(), partial_1!(CAssemblyOperand, None, $1, $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CAssemblyOperand, None, $1, $3)) }
   | '[' ident ']' string_literal '(' expression ')'
-        {% withNodeInfo(p, $1, partial_1!(CAssemblyOperand, Some($2), $4, $6)) }
+        {% p.withNodeInfo($1, partial_1!(CAssemblyOperand, Some($2), $4, $6)) }
   | '[' tyident ']' string_literal '(' expression ')'
-        {% withNodeInfo(p, $1, partial_1!(CAssemblyOperand, Some($2), $4, $6)) }
+        {% p.withNodeInfo($1, partial_1!(CAssemblyOperand, Some($2), $4, $6)) }
 
 
 asm_clobbers :: { Reversed<Vec<CStrLit>> }
@@ -694,15 +695,15 @@ tbc.
 declaration :: { CDecl }
 declaration
   : sue_declaration_specifier ';'
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, reverse($1), vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, reverse($1), vec![])) }
 
   | sue_type_specifier ';'
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, reverse($1), vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, reverse($1), vec![])) }
 
   | declaring_list ';'
         {%
             if let CDecl(declspecs, dies, at) = $1 {
-                withLength(p, at, partial_1!(CDecl, declspecs, List::reverse(dies)))
+                p.withLength(at, partial_1!(CDecl, declspecs, List::reverse(dies)))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -711,13 +712,13 @@ declaration
   | default_declaring_list ';'
         {%
             if let CDecl(declspecs, dies, at) = $1 {
-                withLength(p, at, partial_1!(CDecl, declspecs, List::reverse(dies)))
+                p.withLength(at, partial_1!(CDecl, declspecs, List::reverse(dies)))
             } else {
                 panic!("irrefutable pattern")
             }
         }
   | "_Static_assert" '(' constant_expression ',' string_literal ')' ';'
-        {% withNodeInfo(p, $1, partial_1!(CStaticAssert, $3, $5)) }
+        {% p.withNodeInfo($1, partial_1!(CStaticAssert, $3, $5)) }
 
 declaration_list :: { Reversed<Vec<CDecl>> }
 declaration_list
@@ -740,8 +741,8 @@ default_declaring_list
             let declspecs = reverse($1.clone());
             let declr = withAsmNameAttrs($3, $2)?;
             // TODO: borrow these instead
-            doDeclIdent(p, &declspecs, declr.clone());
-            withNodeInfo(p, $1, partial_1!(CDecl, declspecs,
+            p.doDeclIdent(&declspecs, declr.clone());
+            p.withNodeInfo($1, partial_1!(CDecl, declspecs,
                                            vec![(Some(reverseDeclr(declr)), $4, None)]))
         }
 
@@ -749,8 +750,8 @@ default_declaring_list
         {%
             let declspecs = liftTypeQuals($1.clone());
             let declr = withAsmNameAttrs($3, $2)?;
-            doDeclIdent(p, &declspecs, declr.clone());
-            withNodeInfo(p, $1, partial_1!(CDecl, declspecs,
+            p.doDeclIdent(&declspecs, declr.clone());
+            p.withNodeInfo($1, partial_1!(CDecl, declspecs,
                                            vec![(Some(reverseDeclr(declr)), $4, None)]))
         }
 
@@ -758,8 +759,8 @@ default_declaring_list
         {%
             let declspecs = liftTypeQuals($1.clone());
             let declr = withAsmNameAttrs($4, $3)?;
-            doDeclIdent(p, &declspecs, declr.clone());
-            withNodeInfo(p, $1, partial_1!(CDecl, __op_addadd(declspecs, liftCAttrs($2)),
+            p.doDeclIdent(&declspecs, declr.clone());
+            p.withNodeInfo($1, partial_1!(CDecl, __op_addadd(declspecs, liftCAttrs($2)),
                                            vec![(Some(reverseDeclr(declr)), $5, None)]))
         }
 
@@ -768,8 +769,8 @@ default_declaring_list
         {%
             let declspecs = liftCAttrs($1.clone());
             let declr = withAsmNameAttrs($3, $2)?;
-            doDeclIdent(p, &declspecs, declr.clone());
-            withNodeInfo(p, $1, partial_1!(CDecl, declspecs,
+            p.doDeclIdent(&declspecs, declr.clone());
+            p.withNodeInfo($1, partial_1!(CDecl, declspecs,
                                            vec![(Some(reverseDeclr(declr)), $4, None)]))
         }
 
@@ -778,8 +779,8 @@ default_declaring_list
             if let CDecl(declspecs, dies, at) = $1 {
                 let (f, s) = $5;
                 let declr = withAsmNameAttrs((f, __op_addadd(s, $3)), $4)?;
-                doDeclIdent(p, &declspecs, declr.clone());
-                withLength(p, at, partial_1!(CDecl, declspecs,
+                p.doDeclIdent(&declspecs, declr.clone());
+                p.withLength(at, partial_1!(CDecl, declspecs,
                                              __op_concat((Some(reverseDeclr(declr)), $6, None), dies)))
             } else {
                 panic!("irrefutable pattern")
@@ -804,15 +805,15 @@ declaring_list
   : declaration_specifier declarator asm_attrs_opt initializer_opt
         {%
             let declr = withAsmNameAttrs($3, $2)?;
-            doDeclIdent(p, &$1, declr.clone());
-            withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr(declr)), $4, None)]))
+            p.doDeclIdent(&$1, declr.clone());
+            p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr(declr)), $4, None)]))
         }
 
   | type_specifier declarator asm_attrs_opt initializer_opt
         {%
             let declr = withAsmNameAttrs($3, $2)?;
-            doDeclIdent(p, &$1, declr.clone());
-            withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr(declr)), $4, None)]))
+            p.doDeclIdent(&$1, declr.clone());
+            p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr(declr)), $4, None)]))
         }
 
   | declaring_list ',' attrs_opt declarator asm_attrs_opt initializer_opt
@@ -820,7 +821,7 @@ declaring_list
             if let CDecl(declspecs, dies, at) = $1 {
                 let (f, s) = $5;
                 let declr = withAsmNameAttrs((f, __op_addadd(s, $3)), $4)?;
-                doDeclIdent(p, &declspecs, declr.clone());
+                p.doDeclIdent(&declspecs, declr.clone());
                 Ok(CDecl(declspecs, __op_concat((Some(reverseDeclr(declr)), $6, None), dies), at))
             } else {
                 panic!("irrefutable pattern")
@@ -893,24 +894,24 @@ declaration_qualifier_without_types :: { CDeclSpec }
 --
 storage_class :: { CStorageSpec }
 storage_class
-  : typedef                     {% withNodeInfo(p, $1, partial_1!(CTypedef)) }
-  | extern                      {% withNodeInfo(p, $1, partial_1!(CExtern)) }
-  | static                      {% withNodeInfo(p, $1, partial_1!(CStatic)) }
-  | auto                        {% withNodeInfo(p, $1, partial_1!(CAuto)) }
-  | register                    {% withNodeInfo(p, $1, partial_1!(CRegister)) }
-  | "__thread"                  {% withNodeInfo(p, $1, partial_1!(CThread)) }
+  : typedef                     {% p.withNodeInfo($1, partial_1!(CTypedef)) }
+  | extern                      {% p.withNodeInfo($1, partial_1!(CExtern)) }
+  | static                      {% p.withNodeInfo($1, partial_1!(CStatic)) }
+  | auto                        {% p.withNodeInfo($1, partial_1!(CAuto)) }
+  | register                    {% p.withNodeInfo($1, partial_1!(CRegister)) }
+  | "__thread"                  {% p.withNodeInfo($1, partial_1!(CThread)) }
 
 -- parse C function specifier (C11 6.7.4)
 function_specifier :: { CFunSpec }
 function_specifier
-  : inline              {% withNodeInfo(p, $1, partial_1!(CInlineQual)) }
-  | "_Noreturn"         {% withNodeInfo(p, $1, partial_1!(CNoreturnQual)) }
+  : inline              {% p.withNodeInfo($1, partial_1!(CInlineQual)) }
+  | "_Noreturn"         {% p.withNodeInfo($1, partial_1!(CNoreturnQual)) }
 
 -- parse C alignment specifier (C11 6.7.5)
 alignment_specifier :: { CAlignSpec }
 alignment_specifier
-  : alignas '(' type_name ')'           {% withNodeInfo(p, $1, partial_1!(CAlignAsType, $3)) }
-  | alignas '(' constant_expression ')' {% withNodeInfo(p, $1, partial_1!(CAlignAsExpr, $3)) }
+  : alignas '(' type_name ')'           {% p.withNodeInfo($1, partial_1!(CAlignAsType, $3)) }
+  | alignas '(' constant_expression ')' {% p.withNodeInfo($1, partial_1!(CAlignAsExpr, $3)) }
 
 -- parse C type specifier (C99 6.7.2)
 --
@@ -930,18 +931,18 @@ type_specifier
 
 basic_type_name :: { CTypeSpec }
 basic_type_name
-  : void                        {% withNodeInfo(p, $1, partial_1!(CVoidType)) }
-  | char                        {% withNodeInfo(p, $1, partial_1!(CCharType)) }
-  | short                       {% withNodeInfo(p, $1, partial_1!(CShortType)) }
-  | int                         {% withNodeInfo(p, $1, partial_1!(CIntType)) }
-  | long                        {% withNodeInfo(p, $1, partial_1!(CLongType)) }
-  | float                       {% withNodeInfo(p, $1, partial_1!(CFloatType)) }
-  | double                      {% withNodeInfo(p, $1, partial_1!(CDoubleType)) }
-  | signed                      {% withNodeInfo(p, $1, partial_1!(CSignedType)) }
-  | unsigned                    {% withNodeInfo(p, $1, partial_1!(CUnsigType)) }
-  | "_Bool"                     {% withNodeInfo(p, $1, partial_1!(CBoolType)) }
-  | "_Complex"                  {% withNodeInfo(p, $1, partial_1!(CComplexType)) }
-  | "__int128"                  {% withNodeInfo(p, $1, partial_1!(CInt128Type)) }
+  : void                        {% p.withNodeInfo($1, partial_1!(CVoidType)) }
+  | char                        {% p.withNodeInfo($1, partial_1!(CCharType)) }
+  | short                       {% p.withNodeInfo($1, partial_1!(CShortType)) }
+  | int                         {% p.withNodeInfo($1, partial_1!(CIntType)) }
+  | long                        {% p.withNodeInfo($1, partial_1!(CLongType)) }
+  | float                       {% p.withNodeInfo($1, partial_1!(CFloatType)) }
+  | double                      {% p.withNodeInfo($1, partial_1!(CDoubleType)) }
+  | signed                      {% p.withNodeInfo($1, partial_1!(CSignedType)) }
+  | unsigned                    {% p.withNodeInfo($1, partial_1!(CUnsigType)) }
+  | "_Bool"                     {% p.withNodeInfo($1, partial_1!(CBoolType)) }
+  | "_Complex"                  {% p.withNodeInfo($1, partial_1!(CComplexType)) }
+  | "__int128"                  {% p.withNodeInfo($1, partial_1!(CInt128Type)) }
 
 
 -- A mixture of type qualifiers, storage class and basic type names in any
@@ -1069,13 +1070,13 @@ typedef_declaration_specifier
         { snoc($1, CStorageSpec($2)) }
 
   | declaration_qualifier_list tyident
-        {% withNodeInfo(p, $2.clone(), box |at| snoc($1, CTypeSpec(CTypeDef($2, at)))) }
+        {% p.withNodeInfo($2.clone(), box |at| snoc($1, CTypeSpec(CTypeDef($2, at)))) }
 
   | declaration_qualifier_list typeof '(' expression ')'
-        {% withNodeInfo(p, $2, box |at| snoc($1, CTypeSpec(CTypeOfExpr($4, at)))) }
+        {% p.withNodeInfo($2, box |at| snoc($1, CTypeSpec(CTypeOfExpr($4, at)))) }
 
   | declaration_qualifier_list typeof '(' type_name ')'
-        {% withNodeInfo(p, $2, box |at| snoc($1, CTypeSpec(CTypeOfType($4, at)))) }
+        {% p.withNodeInfo($2, box |at| snoc($1, CTypeSpec(CTypeOfType($4, at)))) }
 
   | typedef_declaration_specifier declaration_qualifier
         { snoc($1, $2) }
@@ -1092,43 +1093,43 @@ typedef_declaration_specifier
 typedef_type_specifier :: { Reversed<Vec<CDeclSpec>> }
 typedef_type_specifier
   : tyident
-        {% withNodeInfo(p, $1.clone(), box |at| singleton(CTypeSpec(CTypeDef($1, at)))) }
+        {% p.withNodeInfo($1.clone(), box |at| singleton(CTypeSpec(CTypeDef($1, at)))) }
 
   | typeof '(' expression ')'
-        {% withNodeInfo(p, $1, box |at| singleton(CTypeSpec(CTypeOfExpr($3, at)))) }
+        {% p.withNodeInfo($1, box |at| singleton(CTypeSpec(CTypeOfExpr($3, at)))) }
 
   | typeof '(' type_name ')'
-        {% withNodeInfo(p, $1, box |at| singleton(CTypeSpec(CTypeOfType($3, at)))) }
+        {% p.withNodeInfo($1, box |at| singleton(CTypeSpec(CTypeOfType($3, at)))) }
 
   | type_qualifier_list tyident
-        {% withNodeInfo(p, $2.clone(), box |at| snoc(rmap(CTypeQual, $1), CTypeSpec(CTypeDef($2, at)))) }
+        {% p.withNodeInfo($2.clone(), box |at| snoc(rmap(CTypeQual, $1), CTypeSpec(CTypeDef($2, at)))) }
 
   | type_qualifier_list typeof '(' expression ')'
-        {% withNodeInfo(p, $2, box |at| snoc(rmap(CTypeQual, $1), CTypeSpec(CTypeOfExpr($4, at)))) }
+        {% p.withNodeInfo($2, box |at| snoc(rmap(CTypeQual, $1), CTypeSpec(CTypeOfExpr($4, at)))) }
 
   | type_qualifier_list typeof '(' type_name ')'
-        {% withNodeInfo(p, $2, box |at| snoc(rmap(CTypeQual, $1), CTypeSpec(CTypeOfType($4, at)))) }
+        {% p.withNodeInfo($2, box |at| snoc(rmap(CTypeQual, $1), CTypeSpec(CTypeOfType($4, at)))) }
 
   -- repeat with attrs (this could be easier if type qualifier list wouldn't allow leading attributes)
   | attrs tyident
-        {% withNodeInfo(p, $2.clone(), box |at| snoc(reverseList(liftCAttrs($1)), CTypeSpec(CTypeDef($2, at)))) }
+        {% p.withNodeInfo($2.clone(), box |at| snoc(reverseList(liftCAttrs($1)), CTypeSpec(CTypeDef($2, at)))) }
 
   | attrs typeof '(' expression ')'
-        {% withNodeInfo(p, $1.clone(), box |at| snoc(reverseList(liftCAttrs($1)), CTypeSpec(CTypeOfExpr($4, at)))) }
+        {% p.withNodeInfo($1.clone(), box |at| snoc(reverseList(liftCAttrs($1)), CTypeSpec(CTypeOfExpr($4, at)))) }
 
   | attrs typeof '(' type_name ')'
-        {% withNodeInfo(p, $2, box |at| snoc(reverseList(liftCAttrs($1)), CTypeSpec(CTypeOfType($4, at)))) }
+        {% p.withNodeInfo($2, box |at| snoc(reverseList(liftCAttrs($1)), CTypeSpec(CTypeOfType($4, at)))) }
 
   | type_qualifier_list attrs tyident
-        {% withNodeInfo(p, $3.clone(), box |at| snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)),
+        {% p.withNodeInfo($3.clone(), box |at| snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)),
                                                   CTypeSpec(CTypeDef($3, at)))) }
 
   | type_qualifier_list attrs typeof '(' expression ')'
-        {% withNodeInfo(p, $3, box |at| snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)),
+        {% p.withNodeInfo($3, box |at| snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)),
                                           CTypeSpec(CTypeOfExpr($5, at)))) }
 
   | type_qualifier_list attrs typeof '(' type_name ')'
-        {% withNodeInfo(p, $3, box |at| snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)),
+        {% p.withNodeInfo($3, box |at| snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)),
                                           CTypeSpec(CTypeOfType($5, at)))) }
 
   | typedef_type_specifier type_qualifier
@@ -1145,8 +1146,8 @@ typedef_type_specifier
 --
 elaborated_type_name :: { CTypeSpec }
 elaborated_type_name
-  : struct_or_union_specifier   {% withNodeInfo(p, $1.clone(), partial_1!(CSUType, $1)) }
-  | enum_specifier              {% withNodeInfo(p, $1.clone(), partial_1!(CEnumType, $1)) }
+  : struct_or_union_specifier   {% p.withNodeInfo($1.clone(), partial_1!(CSUType, $1)) }
+  | enum_specifier              {% p.withNodeInfo($1.clone(), partial_1!(CEnumType, $1)) }
 
 
 -- parse C structure or union declaration (C99 6.7.2.1)
@@ -1157,19 +1158,19 @@ elaborated_type_name
 struct_or_union_specifier :: { CStructUnion }
 struct_or_union_specifier
   : struct_or_union attrs_opt identifier '{' struct_declaration_list  '}'
-        {% withNodeInfo(p, $1.clone(), partial_1!(CStructureUnion, unL($1), Some($3), Some(reverse($5)), $2)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CStructureUnion, $1.into_inner(), Some($3), Some(reverse($5)), $2)) }
 
   | struct_or_union attrs_opt '{' struct_declaration_list  '}'
-        {% withNodeInfo(p, $1.clone(), partial_1!(CStructureUnion, unL($1), None,     Some(reverse($4)), $2)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CStructureUnion, $1.into_inner(), None,     Some(reverse($4)), $2)) }
 
   | struct_or_union attrs_opt identifier
-        {% withNodeInfo(p, $1.clone(), partial_1!(CStructureUnion, unL($1), Some($3), None,              $2)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CStructureUnion, $1.into_inner(), Some($3), None,              $2)) }
 
 
 struct_or_union :: { Located<CStructTag> }
 struct_or_union
-  : struct                      { Located(CStructTag, $1.into_pos()) }
-  | union                       { Located(CUnionTag, $1.into_pos()) }
+  : struct                      { Located::new(CStructTag, $1) }
+  | union                       { Located::new(CUnionTag, $1) }
 
 
 struct_declaration_list :: { Reversed<Vec<CDecl>> }
@@ -1212,7 +1213,7 @@ struct_default_declaring_list :: { CDecl }
 struct_default_declaring_list
   : type_qualifier_list attrs_opt struct_identifier_declarator
         {%
-            withNodeInfo(p, $1.clone(), match $3 {
+            p.withNodeInfo($1.clone(), match $3 {
                 (d, s) => partial_1!(CDecl, __op_addadd(liftTypeQuals($1), liftCAttrs($2)),
                                      vec![(d, None, s)])
             })
@@ -1221,7 +1222,7 @@ struct_default_declaring_list
   -- GNU extension: __attribute__ as only type qualifier
   | attrs struct_identifier_declarator
         {%
-            withNodeInfo(p, $1.clone(), match $2 {
+            p.withNodeInfo($1.clone(), match $2 {
                 (d, s) => partial_1!(CDecl, liftCAttrs($1), vec![(d, None, s)]),
             })
         }
@@ -1250,7 +1251,7 @@ struct_declaring_list :: { CDecl }
 struct_declaring_list
   : type_specifier struct_declarator attrs_opt
         {%
-            withNodeInfo(p, $1.clone(), match $2 {
+            p.withNodeInfo($1.clone(), match $2 {
                 (Some(d), s) => {
                     partial_1!(CDecl, $1, vec![(Some(appendObjAttrs($3, d)), None, s)])
                 },
@@ -1286,7 +1287,7 @@ struct_declaring_list
   -- Note that a plain type specifier can have a trailing attribute
 
   | type_specifier
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1, vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![])) }
 
 
 -- parse C structure declarator (C99 6.7.2.1)
@@ -1320,19 +1321,19 @@ struct_identifier_declarator
 enum_specifier :: { CEnum }
 enum_specifier
   : enum attrs_opt '{' enumerator_list '}'
-        {% withNodeInfo(p, $1, partial_1!(CEnumeration, None, Some(reverse($4)), $2)) }
+        {% p.withNodeInfo($1, partial_1!(CEnumeration, None, Some(reverse($4)), $2)) }
 
   | enum attrs_opt '{' enumerator_list ',' '}'
-        {% withNodeInfo(p, $1, partial_1!(CEnumeration, None, Some(reverse($4)), $2)) }
+        {% p.withNodeInfo($1, partial_1!(CEnumeration, None, Some(reverse($4)), $2)) }
 
   | enum attrs_opt identifier '{' enumerator_list '}'
-        {% withNodeInfo(p, $1, partial_1!(CEnumeration, Some($3), Some(reverse($5)), $2)) }
+        {% p.withNodeInfo($1, partial_1!(CEnumeration, Some($3), Some(reverse($5)), $2)) }
 
   | enum attrs_opt identifier '{' enumerator_list ',' '}'
-        {% withNodeInfo(p, $1, partial_1!(CEnumeration, Some($3), Some(reverse($5)), $2)) }
+        {% p.withNodeInfo($1, partial_1!(CEnumeration, Some($3), Some(reverse($5)), $2)) }
 
   | enum attrs_opt identifier
-        {% withNodeInfo(p, $1, partial_1!(CEnumeration, Some($3), None, $2)) }
+        {% p.withNodeInfo($1, partial_1!(CEnumeration, Some($3), None, $2)) }
 
 enumerator_list :: { Reversed<Vec<(Ident, Option<CExpr>)>> }
 enumerator_list
@@ -1354,12 +1355,12 @@ enumerator
 -- parenthesis, it should be interpreted as a type specifier (with a type name), not as a type qualifier
 type_qualifier :: { CTypeQual }
 type_qualifier
-  : const               {% withNodeInfo(p, $1, partial_1!(CConstQual)) }
-  | volatile            {% withNodeInfo(p, $1, partial_1!(CVolatQual)) }
-  | restrict            {% withNodeInfo(p, $1, partial_1!(CRestrQual)) }
-  | "_Nullable"         {% withNodeInfo(p, $1, partial_1!(CNullableQual)) }
-  | "_Nonnull"          {% withNodeInfo(p, $1, partial_1!(CNonnullQual)) }
-  | "_Atomic"           {% withNodeInfo(p, $1, partial_1!(CAtomicQual)) }
+  : const               {% p.withNodeInfo($1, partial_1!(CConstQual)) }
+  | volatile            {% p.withNodeInfo($1, partial_1!(CVolatQual)) }
+  | restrict            {% p.withNodeInfo($1, partial_1!(CRestrQual)) }
+  | "_Nullable"         {% p.withNodeInfo($1, partial_1!(CNullableQual)) }
+  | "_Nonnull"          {% p.withNodeInfo($1, partial_1!(CNonnullQual)) }
+  | "_Atomic"           {% p.withNodeInfo($1, partial_1!(CAtomicQual)) }
 
 -- a list containing at least one type_qualifier (const, volatile, restrict, inline, _Noreturn)
 --    and additionally CAttrs
@@ -1404,10 +1405,10 @@ typedef_declarator
 parameter_typedef_declarator :: { CDeclrR }
 parameter_typedef_declarator
   : tyident
-        {% withNodeInfo(p, $1.clone(), partial_1!(mkVarDeclr, $1)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(mkVarDeclr, $1)) }
 
   | tyident postfixing_abstract_declarator
-        {% withNodeInfo(p, $1.clone(), box move |at| { $2(mkVarDeclr($1, at)) }) }
+        {% p.withNodeInfo($1.clone(), box move |at| { $2(mkVarDeclr($1, at)) }) }
 
   | clean_typedef_declarator
         { $1 }
@@ -1425,16 +1426,16 @@ clean_typedef_declarator
         { $1 }
 
   | '*' parameter_typedef_declarator
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $2, vec![])) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $2, vec![])) }
 
   | '*' attrs parameter_typedef_declarator
-        {% withAttribute(p, $1, $2, partial_1!(ptrDeclr, $3, vec![])) }
+        {% p.withAttribute($1, $2, partial_1!(ptrDeclr, $3, vec![])) }
 
   | '*' type_qualifier_list  parameter_typedef_declarator
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $3, reverse($2))) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $3, reverse($2))) }
 
   | '*' type_qualifier_list attrs parameter_typedef_declarator
-        {% withAttribute(p, $1, $3, partial_1!(ptrDeclr, $4, reverse($2))) }
+        {% p.withAttribute($1, $3, partial_1!(ptrDeclr, $4, reverse($2))) }
 
 -- clean_postfix_typedef_declarator :- ( attrs? clean_typedef_declarator ) declarator_postfix?
 --
@@ -1456,20 +1457,20 @@ paren_typedef_declarator
 
   -- redundant paren
   | '*' '(' simple_paren_typedef_declarator ')'
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $3, vec![])) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $3, vec![])) }
 
   | '*' type_qualifier_list '(' simple_paren_typedef_declarator ')'
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $4, reverse($2))) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $4, reverse($2))) }
   | '*' type_qualifier_list attrs '(' simple_paren_typedef_declarator ')'
-        {% withAttribute(p, $1, $3, partial_1!(ptrDeclr, $5, reverse($2)))  }
+        {% p.withAttribute($1, $3, partial_1!(ptrDeclr, $5, reverse($2)))  }
 
   | '*' paren_typedef_declarator
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $2, vec![])) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $2, vec![])) }
 
   | '*' type_qualifier_list paren_typedef_declarator
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $3, reverse($2))) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $3, reverse($2))) }
   | '*' type_qualifier_list attrs paren_typedef_declarator
-        {% withAttribute(p, $1, $3, partial_1!(ptrDeclr, $4, reverse($2))) }
+        {% p.withAttribute($1, $3, partial_1!(ptrDeclr, $4, reverse($2))) }
 
 -- redundant paren to left of tname
 paren_postfix_typedef_declarator :: { CDeclrR }
@@ -1490,7 +1491,7 @@ paren_postfix_typedef_declarator
 simple_paren_typedef_declarator :: { CDeclrR }
 simple_paren_typedef_declarator
   : tyident
-        {% withNodeInfo(p, $1.clone(), partial_1!(mkVarDeclr, $1)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(mkVarDeclr, $1)) }
 
   | '(' simple_paren_typedef_declarator ')'
         { $2 }
@@ -1513,16 +1514,16 @@ unary_identifier_declarator
         { $1 }
 
   | '*' identifier_declarator
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $2, vec![])) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $2, vec![])) }
 
   | '*' attrs identifier_declarator
-        {% withAttribute(p, $1, $2, partial_1!(ptrDeclr, $3, vec![])) }
+        {% p.withAttribute($1, $2, partial_1!(ptrDeclr, $3, vec![])) }
 
   | '*' type_qualifier_list identifier_declarator
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $3, reverse($2))) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $3, reverse($2))) }
 
   | '*' type_qualifier_list attrs identifier_declarator
-        {% withAttribute(p, $1, $3, partial_1!(ptrDeclr, $4, reverse($2))) }
+        {% p.withAttribute($1, $3, partial_1!(ptrDeclr, $4, reverse($2))) }
 
 postfix_identifier_declarator :: { CDeclrR }
 postfix_identifier_declarator
@@ -1546,7 +1547,7 @@ postfix_identifier_declarator
 paren_identifier_declarator :: { CDeclrR }
 paren_identifier_declarator
   : ident
-        {% withNodeInfo(p, $1.clone(), partial_1!(mkVarDeclr, $1)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(mkVarDeclr, $1)) }
 
   | '(' paren_identifier_declarator ')'
         { $2 }
@@ -1565,15 +1566,15 @@ old_function_declarator
         { $1 }
 
   | '*' old_function_declarator
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $2, vec![])) } -- FIXME: no attr possible here ???
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $2, vec![])) } -- FIXME: no attr possible here ???
 
   | '*' type_qualifier_list old_function_declarator
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $3, reverse($2))) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $3, reverse($2))) }
 
 postfix_old_function_declarator :: { CDeclrR }
 postfix_old_function_declarator
   : paren_identifier_declarator '(' identifier_list ')'
-        {% withNodeInfo(p, $1.clone(), partial_1!(funDeclr, $1, Left(reverse($3)), vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(funDeclr, $1, Left(reverse($3)), vec![])) }
 
   | '(' old_function_declarator ')'
         { $2 }
@@ -1598,54 +1599,54 @@ parameter_list
 parameter_declaration :: { CDecl }
 parameter_declaration
   : declaration_specifier
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1, vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![])) }
 
   | declaration_specifier abstract_declarator
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr($2)), None, None)])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr($2)), None, None)])) }
 
   | declaration_specifier identifier_declarator attrs_opt
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1,
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1,
                                                vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
 
   | declaration_specifier parameter_typedef_declarator attrs_opt
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1,
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1,
                                                vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
 
   | declaration_qualifier_list
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, reverse($1), vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, reverse($1), vec![])) }
 
   | declaration_qualifier_list abstract_declarator
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, reverse($1), vec![(Some(reverseDeclr($2)), None, None)])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, reverse($1), vec![(Some(reverseDeclr($2)), None, None)])) }
 
   | declaration_qualifier_list identifier_declarator attrs_opt
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, reverse($1),
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, reverse($1),
                                                vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
 
   | type_specifier
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1, vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![])) }
 
   | type_specifier abstract_declarator
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr($2)), None, None)])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr($2)), None, None)])) }
 
   | type_specifier identifier_declarator attrs_opt
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1,
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1,
                                                vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
 
   | type_specifier parameter_typedef_declarator attrs_opt
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1,
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1,
                                                vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
 
   | type_qualifier_list
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, liftTypeQuals($1), vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, liftTypeQuals($1), vec![])) }
   | type_qualifier_list attr
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), vec![])) }
 
   | type_qualifier_list abstract_declarator
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, liftTypeQuals($1),
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, liftTypeQuals($1),
                                                vec![(Some(reverseDeclr($2)), None, None)])) }
 
   | type_qualifier_list identifier_declarator attrs_opt
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, liftTypeQuals($1),
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, liftTypeQuals($1),
                                                vec![(Some(reverseDeclr(appendDeclrAttrs($3, $2))), None, None)])) }
 
 
@@ -1660,16 +1661,16 @@ identifier_list
 type_name :: { CDecl }
 type_name
   :  type_specifier
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1, vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![])) }
 
   |  type_specifier abstract_declarator
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr($2)), None, None)])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some(reverseDeclr($2)), None, None)])) }
 
   |  type_qualifier_list attr
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), vec![])) }
 
   |  type_qualifier_list abstract_declarator
-        {% withNodeInfo(p, $1.clone(), partial_1!(CDecl, liftTypeQuals($1),
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, liftTypeQuals($1),
                                                vec![(Some(reverseDeclr($2)), None, None)])) }
 
 -- parse C abstract declarator (C99 6.7.6)
@@ -1695,7 +1696,7 @@ postfixing_abstract_declarator
 
   | '(' parameter_type_list ')'
         {%
-            withNodeInfo(p, $1, box move |at: NodeInfo| {
+            p.withNodeInfo($1, box move |at: NodeInfo| {
                 let a: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |declr| {
                     let (params, variadic) = $2.clone();
                     funDeclr(declr, (Right((params, variadic))), vec![], at.clone())
@@ -1724,7 +1725,7 @@ postfix_array_abstract_declarator :: { Rc<Box<Fn(CDeclrR) -> CDeclrR>> }
 postfix_array_abstract_declarator
   : '[' assignment_expression_opt ']'
         {%
-            withNodeInfo(p, $1.clone(), box move |at: NodeInfo| {
+            p.withNodeInfo($1.clone(), box move |at: NodeInfo| {
                 let a: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |declr| {
                     arrDeclr(declr, vec![], false, false, $2.clone(), at.clone())
                 });
@@ -1733,12 +1734,12 @@ postfix_array_abstract_declarator
         }
 
   | '[' attrs assignment_expression_opt ']'
-        {% withAttributePF(p, $1, $2, box move |at, declr|
+        {% p.withAttributePF($1, $2, box move |at, declr|
                            arrDeclr(declr, vec![], false, false, $3.clone(), at)) }
 
   | '[' type_qualifier_list assignment_expression_opt ']'
         {%
-            withNodeInfo(p, $1.clone(), box move |at: NodeInfo| {
+            p.withNodeInfo($1.clone(), box move |at: NodeInfo| {
                 let a: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(
                     box move |declr| { arrDeclr(declr, reverse($2.clone()),
                                                 false, false, $3.clone(), at.clone()) });
@@ -1747,53 +1748,53 @@ postfix_array_abstract_declarator
         }
 
   | '[' type_qualifier_list attrs assignment_expression_opt ']'
-        {% withAttributePF(p, $1, $3, box move |at, declr|
+        {% p.withAttributePF($1, $3, box move |at, declr|
                            arrDeclr(declr, reverse($2.clone()), false, false, $4.clone(), at)) }
 
   | '[' static attrs_opt assignment_expression ']'
-        {% withAttributePF(p, $1, $3, box move |at, declr|
+        {% p.withAttributePF($1, $3, box move |at, declr|
                            arrDeclr(declr, vec![], false, true, Some($4.clone()), at)) }
 
   | '[' static type_qualifier_list attrs_opt assignment_expression ']'
-        {% withAttributePF(p, $1, $4, box move |at, declr|
+        {% p.withAttributePF($1, $4, box move |at, declr|
                            arrDeclr(declr, reverse($3.clone()), false, true, Some($5.clone()), at)) }
 
   | '[' type_qualifier_list attrs_opt static attrs_opt assignment_expression ']'
-        {% withAttributePF(p, $1, __op_addadd($3, $5), box move |at, declr|
+        {% p.withAttributePF($1, __op_addadd($3, $5), box move |at, declr|
                            arrDeclr(declr, reverse($2.clone()), false, true, Some($6.clone()), at)) }
 
   | '[' '*' attrs_opt ']'
-        {% withAttributePF(p, $1, $3, box move |at, declr|
+        {% p.withAttributePF($1, $3, box move |at, declr|
                            arrDeclr(declr, vec![], true, false, None, at)) }
   | '[' attrs '*' attrs_opt ']'
-        {% withAttributePF(p, $1, __op_addadd($2, $4), box move |at, declr|
+        {% p.withAttributePF($1, __op_addadd($2, $4), box move |at, declr|
                            arrDeclr(declr, vec![], true, false, None, at)) }
 
   | '[' type_qualifier_list '*' attrs_opt ']'
-        {% withAttributePF(p, $1, $4, box move |at, declr|
+        {% p.withAttributePF($1, $4, box move |at, declr|
                            arrDeclr(declr, reverse($2.clone()), true, false, None, at)) }
   | '[' type_qualifier_list attrs '*' attrs_opt ']'
-        {% withAttributePF(p, $1, __op_addadd($3, $5), box move |at, declr|
+        {% p.withAttributePF($1, __op_addadd($3, $5), box move |at, declr|
                            arrDeclr(declr, reverse($2.clone()), true, false, None, at)) }
 
 unary_abstract_declarator :: { CDeclrR }
 unary_abstract_declarator
   : '*'
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, emptyDeclr(), vec![])) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, emptyDeclr(), vec![])) }
 
   | '*' type_qualifier_list attrs_opt
-        {% withAttribute(p, $1, $3, partial_1!(ptrDeclr, emptyDeclr(), reverse($2))) }
+        {% p.withAttribute($1, $3, partial_1!(ptrDeclr, emptyDeclr(), reverse($2))) }
 
   | '*' abstract_declarator
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $2, vec![])) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $2, vec![])) }
 
   | '*' type_qualifier_list abstract_declarator
-        {% withNodeInfo(p, $1, partial_1!(ptrDeclr, $3, reverse($2))) }
+        {% p.withNodeInfo($1, partial_1!(ptrDeclr, $3, reverse($2))) }
 
   | '*' attrs
-        {% withAttribute(p, $1, $2, partial_1!(ptrDeclr, emptyDeclr(), vec![])) }
+        {% p.withAttribute($1, $2, partial_1!(ptrDeclr, emptyDeclr(), vec![])) }
   | '*' attrs abstract_declarator
-        {% withAttribute(p, $1, $2, partial_1!(ptrDeclr, $3, vec![])) }
+        {% p.withAttribute($1, $2, partial_1!(ptrDeclr, $3, vec![])) }
 
 -- postfix_ad starts with '(', postfixing with '(' or '[', unary_abstract starts with '*'
 postfix_abstract_declarator :: { CDeclrR }
@@ -1815,9 +1816,9 @@ postfix_abstract_declarator
 --
 initializer :: { CInit }
 initializer
-  : assignment_expression               {% withNodeInfo(p, $1.clone(), partial_1!(CInitExpr, $1)) }
-  | '{' initializer_list '}'            {% withNodeInfo(p, $1, partial_1!(CInitList, reverse($2))) }
-  | '{' initializer_list ',' '}'        {% withNodeInfo(p, $1, partial_1!(CInitList, reverse($2))) }
+  : assignment_expression               {% p.withNodeInfo($1.clone(), partial_1!(CInitExpr, $1)) }
+  | '{' initializer_list '}'            {% p.withNodeInfo($1, partial_1!(CInitList, reverse($2))) }
+  | '{' initializer_list ',' '}'        {% p.withNodeInfo($1, partial_1!(CInitList, reverse($2))) }
 
 
 initializer_opt :: { Option<CInit> }
@@ -1844,7 +1845,7 @@ initializer_list
 designation :: { Vec<CDesignator> }
 designation
   : designator_list '='         { reverse($1) }
-  | identifier ':'              {% withNodeInfo(p, $1.clone(), box |_0| vec![CMemberDesig($1, _0)]) }
+  | identifier ':'              {% p.withNodeInfo($1.clone(), box |_0| vec![CMemberDesig($1, _0)]) }
   | array_designator            { vec![$1] }
 
 
@@ -1856,15 +1857,15 @@ designator_list
 
 designator :: { CDesignator }
 designator
-  : '[' constant_expression ']'         {% withNodeInfo(p, $1, partial_1!(CArrDesig, $2)) }
-  | '.' identifier                      {% withNodeInfo(p, $1, partial_1!(CMemberDesig, $2)) }
+  : '[' constant_expression ']'         {% p.withNodeInfo($1, partial_1!(CArrDesig, $2)) }
+  | '.' identifier                      {% p.withNodeInfo($1, partial_1!(CMemberDesig, $2)) }
   | array_designator                    { $1 }
 
 
 array_designator :: { CDesignator }
 array_designator
   : '[' constant_expression "..." constant_expression ']'
-        {% withNodeInfo(p, $1, partial_1!(CRangeDesig, $2, $4)) }
+        {% p.withNodeInfo($1, partial_1!(CRangeDesig, $2, $4)) }
 
 
 -- parse C primary expression (C11 6.5.1)
@@ -1879,24 +1880,24 @@ array_designator
 --     __builtin_types_compatible_p
 primary_expression :: { CExpr }
 primary_expression
-  : ident                {% withNodeInfo(p, $1.clone(), partial_1!(CVar, $1)) }
+  : ident                {% p.withNodeInfo($1.clone(), partial_1!(CVar, $1)) }
   | constant             { CConst($1) }
   | string_literal       { CConst(liftStrLit($1)) }
   | '(' expression ')'   { $2 }
   | "_Generic" '(' assignment_expression ',' generic_assoc_list ')'
-        {% withNodeInfo(p, $1, partial_1!(CGenericSelection, box $3, reverse($5))) }
+        {% p.withNodeInfo($1, partial_1!(CGenericSelection, box $3, reverse($5))) }
   -- GNU extensions
   | '(' compound_statement ')'
-        {% withNodeInfo(p, $1, partial_1!(CStatExpr, box $2)) }
+        {% p.withNodeInfo($1, partial_1!(CStatExpr, box $2)) }
 
   | "__builtin_va_arg" '(' assignment_expression ',' type_name ')'
-        {% withNodeInfo(p, $1, box move |_0| CBuiltinExpr(box CBuiltinVaArg($3, $5, _0))) }
+        {% p.withNodeInfo($1, box move |_0| CBuiltinExpr(box CBuiltinVaArg($3, $5, _0))) }
 
   | "__builtin_offsetof" '(' type_name ',' offsetof_member_designator ')'
-        {% withNodeInfo(p, $1, box move |_0| CBuiltinExpr(box CBuiltinOffsetOf($3, reverse($5), _0))) }
+        {% p.withNodeInfo($1, box move |_0| CBuiltinExpr(box CBuiltinOffsetOf($3, reverse($5), _0))) }
 
   | "__builtin_types_compatible_p" '(' type_name ',' type_name ')'
-        {% withNodeInfo(p, $1, box move |_0| CBuiltinExpr(box CBuiltinTypesCompatible($3, $5, _0))) }
+        {% p.withNodeInfo($1, box move |_0| CBuiltinExpr(box CBuiltinTypesCompatible($3, $5, _0))) }
 
 -- Generic Selection association list (C11 6.5.1.1)
 --
@@ -1912,11 +1913,11 @@ generic_assoc
 offsetof_member_designator :: { Reversed<Vec<CDesignator>> }
 offsetof_member_designator
   : identifier
-        {% withNodeInfo(p, $1.clone(), box move |_0| singleton(CMemberDesig($1, _0))) }
+        {% p.withNodeInfo($1.clone(), box move |_0| singleton(CMemberDesig($1, _0))) }
   | offsetof_member_designator '.' identifier
-        {% withNodeInfo(p, $3.clone(), box move |_0| snoc($1, CMemberDesig($3, _0))) }
+        {% p.withNodeInfo($3.clone(), box move |_0| snoc($1, CMemberDesig($3, _0))) }
   | offsetof_member_designator '[' expression ']'
-        {% withNodeInfo(p, $3.clone(), box move |_0| snoc($1, CArrDesig($3, _0))) }
+        {% p.withNodeInfo($3.clone(), box move |_0| snoc($1, CArrDesig($3, _0))) }
 
 
 -- parse C postfix expression (C99 6.5.2)
@@ -1927,31 +1928,31 @@ postfix_expression
         { $1 }
 
   | postfix_expression '[' expression ']'
-        {% withNodeInfo(p, $1.clone(), partial_1!(CIndex, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CIndex, box $1, box $3)) }
 
   | postfix_expression '(' ')'
-        {% withNodeInfo(p, $1.clone(), partial_1!(CCall, box $1, vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CCall, box $1, vec![])) }
 
   | postfix_expression '(' argument_expression_list ')'
-        {% withNodeInfo(p, $1.clone(), partial_1!(CCall, box $1, reverse($3))) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CCall, box $1, reverse($3))) }
 
   | postfix_expression '.' identifier
-        {% withNodeInfo(p, $1.clone(), partial_1!(CMember, box $1, $3, false)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CMember, box $1, $3, false)) }
 
   | postfix_expression "->" identifier
-        {% withNodeInfo(p, $1.clone(), partial_1!(CMember, box $1, $3, true)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CMember, box $1, $3, true)) }
 
   | postfix_expression "++"
-        {% withNodeInfo(p, $1.clone(), partial_1!(CUnary, CPostIncOp, box $1)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CUnary, CPostIncOp, box $1)) }
 
   | postfix_expression "--"
-        {% withNodeInfo(p, $1.clone(), partial_1!(CUnary, CPostDecOp, box $1)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CUnary, CPostDecOp, box $1)) }
 
   | '(' type_name ')' '{' initializer_list '}'
-        {% withNodeInfo(p, $1, partial_1!(CCompoundLit, box $2, reverse($5))) }
+        {% p.withNodeInfo($1, partial_1!(CCompoundLit, box $2, reverse($5))) }
 
   | '(' type_name ')' '{' initializer_list ',' '}'
-        {% withNodeInfo(p, $1, partial_1!(CCompoundLit, box $2, reverse($5))) }
+        {% p.withNodeInfo($1, partial_1!(CCompoundLit, box $2, reverse($5))) }
 
 
 argument_expression_list :: { Reversed<Vec<CExpr>> }
@@ -1971,28 +1972,28 @@ argument_expression_list
 unary_expression :: { CExpr }
 unary_expression
   : postfix_expression                  { $1 }
-  | "++" unary_expression               {% withNodeInfo(p, $1, partial_1!(CUnary, CPreIncOp, box $2)) }
-  | "--" unary_expression               {% withNodeInfo(p, $1, partial_1!(CUnary, CPreDecOp, box $2)) }
+  | "++" unary_expression               {% p.withNodeInfo($1, partial_1!(CUnary, CPreIncOp, box $2)) }
+  | "--" unary_expression               {% p.withNodeInfo($1, partial_1!(CUnary, CPreDecOp, box $2)) }
   | "__extension__" cast_expression     { $2 }
-  | unary_operator cast_expression      {% withNodeInfo(p, $1.clone(), partial_1!(CUnary, unL($1), box $2)) }
-  | sizeof unary_expression             {% withNodeInfo(p, $1, partial_1!(CSizeofExpr, box $2)) }
-  | sizeof '(' type_name ')'            {% withNodeInfo(p, $1, partial_1!(CSizeofType, box $3)) }
+  | unary_operator cast_expression      {% p.withNodeInfo($1.clone(), partial_1!(CUnary, $1.into_inner(), box $2)) }
+  | sizeof unary_expression             {% p.withNodeInfo($1, partial_1!(CSizeofExpr, box $2)) }
+  | sizeof '(' type_name ')'            {% p.withNodeInfo($1, partial_1!(CSizeofType, box $3)) }
   -- GNU: alignof, complex and && extension
-  | alignof unary_expression            {% withNodeInfo(p, $1, partial_1!(CAlignofExpr, box $2)) }
-  | alignof '(' type_name ')'           {% withNodeInfo(p, $1, partial_1!(CAlignofType, box $3)) }
-  | "__real__" unary_expression         {% withNodeInfo(p, $1, partial_1!(CComplexReal, box $2)) }
-  | "__imag__" unary_expression         {% withNodeInfo(p, $1, partial_1!(CComplexImag, box $2)) }
-  | "&&" identifier                     {% withNodeInfo(p, $1, partial_1!(CLabAddrExpr, $2)) }
+  | alignof unary_expression            {% p.withNodeInfo($1, partial_1!(CAlignofExpr, box $2)) }
+  | alignof '(' type_name ')'           {% p.withNodeInfo($1, partial_1!(CAlignofType, box $3)) }
+  | "__real__" unary_expression         {% p.withNodeInfo($1, partial_1!(CComplexReal, box $2)) }
+  | "__imag__" unary_expression         {% p.withNodeInfo($1, partial_1!(CComplexImag, box $2)) }
+  | "&&" identifier                     {% p.withNodeInfo($1, partial_1!(CLabAddrExpr, $2)) }
 
 
 unary_operator :: { Located<CUnaryOp> }
 unary_operator
-  : '&'         { Located(CAdrOp,  $1.into_pos()) }
-  | '*'         { Located(CIndOp,  $1.into_pos()) }
-  | '+'         { Located(CPlusOp, $1.into_pos()) }
-  | '-'         { Located(CMinOp,  $1.into_pos()) }
-  | '~'         { Located(CCompOp, $1.into_pos()) }
-  | '!'         { Located(CNegOp,  $1.into_pos()) }
+  : '&'         { Located::new(CAdrOp,  $1) }
+  | '*'         { Located::new(CIndOp,  $1) }
+  | '+'         { Located::new(CPlusOp, $1) }
+  | '-'         { Located::new(CMinOp,  $1) }
+  | '~'         { Located::new(CCompOp, $1) }
+  | '!'         { Located::new(CNegOp,  $1) }
 
 
 -- parse C cast expression (C99 6.5.4)
@@ -2000,7 +2001,7 @@ unary_operator
 cast_expression :: { CExpr }
 cast_expression
   : unary_expression                    { $1 }
-  | '(' type_name ')' cast_expression   {% withNodeInfo(p, $1, partial_1!(CCast, box $2, box $4)) }
+  | '(' type_name ')' cast_expression   {% p.withNodeInfo($1, partial_1!(CCast, box $2, box $4)) }
 
 
 -- parse C multiplicative expression (C99 6.5.5)
@@ -2011,13 +2012,13 @@ multiplicative_expression
         { $1 }
 
   | multiplicative_expression '*' cast_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CMulOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CMulOp, box $1, box $3)) }
 
   | multiplicative_expression '/' cast_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CDivOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CDivOp, box $1, box $3)) }
 
   | multiplicative_expression '%' cast_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CRmdOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CRmdOp, box $1, box $3)) }
 
 
 -- parse C additive expression (C99 6.5.6)
@@ -2028,10 +2029,10 @@ additive_expression
         { $1 }
 
   | additive_expression '+' multiplicative_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CAddOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CAddOp, box $1, box $3)) }
 
   | additive_expression '-' multiplicative_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CSubOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CSubOp, box $1, box $3)) }
 
 
 -- parse C shift expression (C99 6.5.7)
@@ -2042,10 +2043,10 @@ shift_expression
         { $1 }
 
   | shift_expression "<<" additive_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CShlOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CShlOp, box $1, box $3)) }
 
   | shift_expression ">>" additive_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CShrOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CShrOp, box $1, box $3)) }
 
 
 -- parse C relational expression (C99 6.5.8)
@@ -2056,16 +2057,16 @@ relational_expression
         { $1 }
 
   | relational_expression '<' shift_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CLeOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CLeOp, box $1, box $3)) }
 
   | relational_expression '>' shift_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CGrOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CGrOp, box $1, box $3)) }
 
   | relational_expression "<=" shift_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CLeqOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CLeqOp, box $1, box $3)) }
 
   | relational_expression ">=" shift_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CGeqOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CGeqOp, box $1, box $3)) }
 
 
 -- parse C equality expression (C99 6.5.9)
@@ -2076,10 +2077,10 @@ equality_expression
         { $1 }
 
   | equality_expression "==" relational_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CEqOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CEqOp, box $1, box $3)) }
 
   | equality_expression "!=" relational_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CNeqOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CNeqOp, box $1, box $3)) }
 
 
 -- parse C bitwise and expression (C99 6.5.10)
@@ -2090,7 +2091,7 @@ and_expression
         { $1 }
 
   | and_expression '&' equality_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CAndOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CAndOp, box $1, box $3)) }
 
 
 -- parse C bitwise exclusive or expression (C99 6.5.11)
@@ -2101,7 +2102,7 @@ exclusive_or_expression
         { $1 }
 
   | exclusive_or_expression '^' and_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CXorOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CXorOp, box $1, box $3)) }
 
 
 -- parse C bitwise or expression (C99 6.5.12)
@@ -2112,7 +2113,7 @@ inclusive_or_expression
         { $1 }
 
   | inclusive_or_expression '|' exclusive_or_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, COrOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, COrOp, box $1, box $3)) }
 
 
 -- parse C logical and expression (C99 6.5.13)
@@ -2123,7 +2124,7 @@ logical_and_expression
         { $1 }
 
   | logical_and_expression "&&" inclusive_or_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CLndOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CLndOp, box $1, box $3)) }
 
 
 -- parse C logical or expression (C99 6.5.14)
@@ -2134,7 +2135,7 @@ logical_or_expression
         { $1 }
 
   | logical_or_expression "||" logical_and_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CBinary, CLorOp, box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CBinary, CLorOp, box $1, box $3)) }
 
 
 -- parse C conditional expression (C99 6.5.15)
@@ -2147,10 +2148,10 @@ conditional_expression
         { $1 }
 
   | logical_or_expression '?' expression ':' conditional_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CCond, box $1, Some(box $3), box $5)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CCond, box $1, Some(box $3), box $5)) }
 
   | logical_or_expression '?' ':' conditional_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CCond, box $1, None, box $4)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CCond, box $1, None, box $4)) }
 
 
 -- parse C assignment expression (C99 6.5.16)
@@ -2164,22 +2165,22 @@ assignment_expression
         { $1 }
 
   | unary_expression assignment_operator assignment_expression
-        {% withNodeInfo(p, $1.clone(), partial_1!(CAssign, unL($2), box $1, box $3)) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CAssign, $2.into_inner(), box $1, box $3)) }
 
 
 assignment_operator :: { Located<CAssignOp> }
 assignment_operator
-  : '='                 { Located(CAssignOp, $1.into_pos()) }
-  | "*="                { Located(CMulAssOp, $1.into_pos()) }
-  | "/="                { Located(CDivAssOp, $1.into_pos()) }
-  | "%="                { Located(CRmdAssOp, $1.into_pos()) }
-  | "+="                { Located(CAddAssOp, $1.into_pos()) }
-  | "-="                { Located(CSubAssOp, $1.into_pos()) }
-  | "<<="               { Located(CShlAssOp, $1.into_pos()) }
-  | ">>="               { Located(CShrAssOp, $1.into_pos()) }
-  | "&="                { Located(CAndAssOp, $1.into_pos()) }
-  | "^="                { Located(CXorAssOp, $1.into_pos()) }
-  | "|="                { Located(COrAssOp,  $1.into_pos()) }
+  : '='                 { Located::new(CAssignOp, $1) }
+  | "*="                { Located::new(CMulAssOp, $1) }
+  | "/="                { Located::new(CDivAssOp, $1) }
+  | "%="                { Located::new(CRmdAssOp, $1) }
+  | "+="                { Located::new(CAddAssOp, $1) }
+  | "-="                { Located::new(CSubAssOp, $1) }
+  | "<<="               { Located::new(CShlAssOp, $1) }
+  | ">>="               { Located::new(CShrAssOp, $1) }
+  | "&="                { Located::new(CAndAssOp, $1) }
+  | "^="                { Located::new(CXorAssOp, $1) }
+  | "|="                { Located::new(COrAssOp,  $1) }
 
 
 -- parse C expression (C99 6.5.17)
@@ -2192,7 +2193,7 @@ expression
   | assignment_expression ',' comma_expression
         {%
             let es = reverse($3);
-            withNodeInfo(p, es.clone(), partial_1!(CComma, __op_concat($1, es)))
+            p.withNodeInfo(es.clone(), partial_1!(CComma, __op_concat($1, es)))
         }
 
 comma_expression :: { Reversed<Vec<CExpr>> }
@@ -2227,7 +2228,7 @@ constant_expression
 constant :: { CConst }
 constant
   : cint        {%
-                    withNodeInfo(p, $1.clone(), box move |_0| {
+                    p.withNodeInfo($1.clone(), box move |_0| {
                         // TODO: I don't get why this is a Fn closure...
                         if let CTokILit(_, ref i) = $1 {
                             CIntConst(i.clone(), _0)
@@ -2237,7 +2238,7 @@ constant
                     })
                 }
   | cchar       {%
-                    withNodeInfo(p, $1.clone(), box move |_0| {
+                    p.withNodeInfo($1.clone(), box move |_0| {
                         if let CTokCLit(_, ref c) = $1 {
                             CCharConst(c.clone(), _0)
                         } else {
@@ -2246,7 +2247,7 @@ constant
                     })
                 }
   | cfloat      {%
-                    withNodeInfo(p, $1.clone(), box move |_0| {
+                    p.withNodeInfo($1.clone(), box move |_0| {
                         if let CTokFLit(_, ref f) = $1 {
                             CFloatConst(f.clone(), _0)
                         } else {
@@ -2260,7 +2261,7 @@ string_literal :: { CStrLit }
 string_literal
   : cstr
         {%
-            withNodeInfo(p, $1.clone(), box move |_0| {
+            p.withNodeInfo($1.clone(), box move |_0| {
                 if let CTokSLit(_, ref s) = $1 {
                     CStringLiteral(s.clone(), _0)
                 } else {
@@ -2271,7 +2272,7 @@ string_literal
 
   | cstr string_literal_list
         {%
-            withNodeInfo(p, $1.clone(), box move |_0| {
+            p.withNodeInfo($1.clone(), box move |_0| {
                 if let CTokSLit(_, s) = $1 {
                     CStringLiteral(concatCStrings(__op_concat(s, reverse($2))), _0)
                 } else {
@@ -2342,13 +2343,13 @@ attribute :: { Option<CAttr> }
 attribute
   : {- empty -}                         { None }
   | ident
-        {% withNodeInfo(p, $1.clone(), box move |_0| Some(CAttribute($1, vec![], _0))) }
+        {% p.withNodeInfo($1.clone(), box move |_0| Some(CAttribute($1, vec![], _0))) }
   | const
-        {% withNodeInfo(p, $1, box move |_0| Some(CAttribute(Ident::internal("const".into()), vec![], _0))) }
+        {% p.withNodeInfo($1, box move |_0| Some(CAttribute(Ident::internal("const".into()), vec![], _0))) }
   | ident '(' attribute_params ')'
-        {% withNodeInfo(p, $1.clone(), box move |_0| Some(CAttribute($1, reverse($3), _0))) }
+        {% p.withNodeInfo($1.clone(), box move |_0| Some(CAttribute($1, reverse($3), _0))) }
   | ident '(' ')'
-        {% withNodeInfo(p, $1.clone(), box move |_0| Some(CAttribute($1, vec![], _0))) }
+        {% p.withNodeInfo($1.clone(), box move |_0| Some(CAttribute($1, vec![], _0))) }
 
 -- OS X 10.9 (Mavericks) makes use of more liberal attribute syntax
 -- that includes assignment-like expressions referencing version
@@ -2370,79 +2371,8 @@ fn reverseList<a>(l: Vec<a>) -> Reversed<Vec<a>> {
     Reversed(List::reverse(l))
 }
 
-/// We occasionally need things to have a location when they don't naturally
-/// have one built in as tokens and most AST elements do.
-#[derive(Clone)]
-pub struct Located<T>(T, Position);
-
-impl<T> Pos for Located<T> {
-    fn pos(&self) -> &Position {
-        &self.1
-    }
-    fn into_pos(self) -> Position {
-        self.1
-    }
-}
-
-fn unL<T>(Located(a, pos): Located<T>) -> T {
-    a
-}
-
-fn withNodeInfo<T: 'static, N: Pos + 'static>(p: &mut Parser, node: N, mkAttrNode: Box<FnBox(NodeInfo) -> T>) -> P<T> {
-    let name = p.getNewName();
-    let lastTok = p.getSavedToken();
-    let firstPos = node.into_pos();
-    let attrs = NodeInfo::new(firstPos, movePosLenOfTok(lastTok), name);
-    Ok(mkAttrNode(attrs))
-}
-
-fn withLength<a: Clone + 'static>(p: &mut Parser, nodeinfo: NodeInfo, mkAttrNode: Box<FnBox(NodeInfo) -> a>) -> P<a> {
-    let lastTok = p.getSavedToken();
-    let firstPos = nodeinfo.pos().clone();
-    let attrs = NodeInfo::new(firstPos, movePosLenOfTok(lastTok),
-                              nodeinfo.name().unwrap_or_else(|| panic!("nameOfNode")));
-    Ok(mkAttrNode(attrs))
-}
-
-#[derive(Clone)]
-pub struct CDeclrR(Option<Ident>,
-                   Reversed<Vec<CDerivedDeclr>>,
-                   Option<CStringLiteral<NodeInfo>>,
-                   Vec<CAttribute<NodeInfo>>,
-                   NodeInfo);
-
-impl CNode for CDeclrR {
-    fn node_info(&self) -> &NodeInfo {
-        &self.4
-    }
-    fn into_node_info(self) -> NodeInfo {
-        self.4
-    }
-}
-
 fn reverseDeclr(CDeclrR(ide, reversedDDs, asmname, cattrs, at): CDeclrR) -> CDeclarator<NodeInfo> {
     CDeclarator::<NodeInfo>(ide, reverse(reversedDDs), asmname, cattrs, at)
-}
-
-fn withAttribute<node: Pos + 'static>(p: &mut Parser, node: node, cattrs: Vec<CAttribute<NodeInfo>>,
-                                      mkDeclrNode: Box<FnBox(NodeInfo) -> CDeclrR>) -> P<CDeclrR> {
-    let name = p.getNewName();
-    let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
-    let newDeclr = appendDeclrAttrs(cattrs.clone(), mkDeclrNode(attrs));
-    Ok(newDeclr)
-}
-
-fn withAttributePF<N: Pos + 'static>(p: &mut Parser,
-    node: N, cattrs: Vec<CAttribute<NodeInfo>>,
-    mkDeclrCtor: Box<Fn(NodeInfo, CDeclrR) -> CDeclrR>) -> P<Rc<Box<Fn(CDeclrR) -> CDeclrR>>>
-{
-    let mkDeclrCtor = Rc::new(mkDeclrCtor);
-    let name = p.getNewName();
-    let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
-    let newDeclr: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |_0| {
-        appendDeclrAttrs(cattrs.clone(), mkDeclrCtor(attrs.clone(), _0))
-    });
-    Ok(newDeclr)
 }
 
 fn appendObjAttrs(newAttrs: Vec<CAttribute<NodeInfo>>,
@@ -2457,7 +2387,7 @@ fn appendObjAttrsR(newAttrs: Vec<CAttribute<NodeInfo>>,
 }
 
 fn setAsmName(mAsmName: Option<CStringLiteral<NodeInfo>>,
-              CDeclrR(ident, indirections, oldName, cattrs, at): CDeclrR) -> P<CDeclrR> {
+              CDeclrR(ident, indirections, oldName, cattrs, at): CDeclrR) -> Res<CDeclrR> {
 
     let combinedName = match (mAsmName, oldName) {
         (None, None) => Right(None),
@@ -2481,27 +2411,8 @@ fn setAsmName(mAsmName: Option<CStringLiteral<NodeInfo>>,
 }
 
 fn withAsmNameAttrs((mAsmName, newAttrs): (Option<CStringLiteral<NodeInfo>>, Vec<CAttribute<NodeInfo>>),
-                    declr: CDeclrR) -> P<CDeclrR> {
+                    declr: CDeclrR) -> Res<CDeclrR> {
     setAsmName(mAsmName, appendObjAttrsR(newAttrs, declr))
-}
-
-fn appendDeclrAttrs(newAttrs: Vec<CAttribute<NodeInfo>>, declr: CDeclrR) -> CDeclrR {
-    let CDeclrR(ident, Reversed(mut inner), asmname, cattrs, at) = declr;
-    if inner.len() == 0 {
-        CDeclrR(ident, empty(), asmname, __op_addadd(cattrs, newAttrs), at)
-    } else {
-        let x = inner.remove(0);
-        let xs = inner;
-        let appendAttrs = |_0| match _0 {
-            CPtrDeclr(typeQuals, at) =>
-                CPtrDeclr(__op_addadd(typeQuals, __map!(CAttrQual, newAttrs)), at),
-            CArrDeclr(typeQuals, arraySize, at) =>
-                CArrDeclr(__op_addadd(typeQuals, __map!(CAttrQual, newAttrs)), arraySize, at),
-            CFunDeclr(parameters, cattrs, at) =>
-                CFunDeclr(parameters, __op_addadd(cattrs, newAttrs), at),
-        };
-        CDeclrR(ident, Reversed(__op_concat(appendAttrs(x), xs)), asmname, cattrs, at)
-    }
 }
 
 fn ptrDeclr(CDeclrR(ident, derivedDeclrs, asmname, cattrs, dat): CDeclrR,
@@ -2551,27 +2462,6 @@ fn addTrailingAttrs(declspecs: Reversed<Vec<CDeclSpec>>,
     }
 }
 
-// convenient instance, the position of a list of things is the position of
-// the first thing in the list
-
-impl<A: Pos> Pos for Vec<A> {
-    fn pos(&self) -> &Position {
-        self[0].pos()
-    }
-    fn into_pos(mut self) -> Position {
-        self.remove(0).into_pos()
-    }
-}
-
-impl<A: Pos> Pos for Reversed<A> {
-    fn pos(&self) -> &Position {
-        (self.0).pos()
-    }
-    fn into_pos(self) -> Position {
-        (self.0).into_pos()
-    }
-}
-
 fn emptyDeclr() -> CDeclrR {
     CDeclrR(None, empty(), None, vec![], NodeInfo::undef())
 }
@@ -2580,25 +2470,7 @@ fn mkVarDeclr(ident: Ident, ni: NodeInfo) -> CDeclrR {
     CDeclrR(Some(ident), empty(), None, vec![], ni)
 }
 
-fn doDeclIdent(p: &mut Parser, declspecs: &[CDeclSpec], CDeclrR(mIdent, _, _, _, _): CDeclrR) {
-    let is_typedef = |declspec: &CDeclSpec| match *declspec {
-        CStorageSpec(CTypedef(_)) => true,
-        _ => false,
-    };
-
-    match mIdent {
-        None => (),
-        Some(ident) => {
-            if declspecs.iter().any(is_typedef) {
-                p.addTypedef(ident)
-            } else {
-                p.shadowTypedef(ident)
-            }
-        },
-    }
-}
-
-fn doFuncParamDeclIdent(_0: CDeclarator<NodeInfo>) -> P<()> {
+fn doFuncParamDeclIdent(_0: CDeclarator<NodeInfo>) -> Res<()> {
     match (_0) {
         CDeclarator(_, ref arg, _, _, _)
             if arg.len() == 2 && matches!(arg[0].clone(), CFunDeclr(params, _, _)) => {
@@ -2627,28 +2499,23 @@ fn getCDeclrIdent(CDeclarator(mIdent, _, _, _, _): CDeclarator<NodeInfo>) -> Opt
     mIdent
 }
 
-fn happyError<T>(p: &mut Parser) -> P<T> {
+fn happyError<T>(p: &mut Parser) -> Res<T> {
     parseError(p)
 }
 
-pub fn parseC(input: InputStream, initialPosition: Position) -> Result<CTranslationUnit<NodeInfo>, ParseError> {
-    execParser(input, initialPosition, builtinTypeNames(), new_name_supply(), translUnitP)
-        .map(|x| x.0)
-}
-
-pub fn translUnitP(p: &mut Parser) -> P<CTranslationUnit<NodeInfo>> {
+pub fn translUnitP(p: &mut Parser) -> Res<CTranslationUnit<NodeInfo>> {
     translation_unit(p)
 }
 
-pub fn extDeclP(p: &mut Parser) -> P<CExtDecl> {
+pub fn extDeclP(p: &mut Parser) -> Res<CExtDecl> {
     external_declaration(p)
 }
 
-pub fn statementP(p: &mut Parser) -> P<CStat> {
+pub fn statementP(p: &mut Parser) -> Res<CStat> {
     statement(p)
 }
 
-pub fn expressionP(p: &mut Parser) -> P<CExpr> {
+pub fn expressionP(p: &mut Parser) -> Res<CExpr> {
     expression(p)
 }
 

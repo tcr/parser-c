@@ -4,6 +4,9 @@
 #[macro_use]
 use corollary_support::*;
 
+// TODO use a deque
+use data::r_list::Reversed;
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum Position {
     Position {
@@ -136,4 +139,49 @@ pub type PosLength = (Position, isize);
 pub trait Pos {
     fn pos(&self) -> &Position;
     fn into_pos(self) -> Position;
+}
+
+// convenient instance, the position of a list of things is the position of
+// the first thing in the list
+
+impl<A: Pos> Pos for Vec<A> {
+    fn pos(&self) -> &Position {
+        self[0].pos()
+    }
+    fn into_pos(mut self) -> Position {
+        self.remove(0).into_pos()
+    }
+}
+
+impl<A: Pos> Pos for Reversed<A> {
+    fn pos(&self) -> &Position {
+        (self.0).pos()
+    }
+    fn into_pos(self) -> Position {
+        (self.0).into_pos()
+    }
+}
+
+// We occasionally need things to have a location when they don't naturally
+// have one built in as tokens and most AST elements do.
+
+#[derive(Clone)]
+pub struct Located<T>(T, Position);
+
+impl<T> Pos for Located<T> {
+    fn pos(&self) -> &Position {
+        &self.1
+    }
+    fn into_pos(self) -> Position {
+        self.1
+    }
+}
+
+impl<T> Located<T> {
+    pub fn new<P: Pos>(t: T, pos: P) -> Located<T> {
+        Located(t, pos.into_pos())
+    }
+    pub fn into_inner(self) -> T {
+        self.0
+    }
 }

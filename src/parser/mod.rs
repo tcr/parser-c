@@ -6,19 +6,24 @@ use corollary_support::*;
 
 pub mod builtin;
 pub mod lexer;
-pub mod parser_monad;
 pub mod parser;
+pub mod parser_utils;
 pub mod tokens;
 
-use parser::parser_monad::{P, Parser, execParser};
+use parser::parser::{Parser, translUnitP};
+use parser::parser_utils::{ParseError, execParser};
 use parser::builtin::*;
+use syntax::ast::CTranslUnit;
 use data::name::new_name_supply;
-use parser::parser_monad::ParseError;
 use data::position::Position;
 use data::input_stream::InputStream;
 
+pub fn parseC(input: InputStream, initialPosition: Position) -> Result<CTranslUnit, ParseError> {
+    execParser(input, initialPosition, builtinTypeNames(), new_name_supply(), translUnitP).map(|x| x.0)
+}
+
 pub fn execParser_<T, F>(do_parse: F, input: InputStream, pos: Position) -> Result<T, ParseError>
-    where T: 'static, F: Fn(&mut Parser) -> P<T>
+    where T: 'static, F: Fn(&mut Parser) -> Result<T, ParseError>
 {
     execParser(input, pos, builtinTypeNames(), new_name_supply(), do_parse).map(|x| x.0)
 }
