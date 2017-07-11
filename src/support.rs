@@ -60,22 +60,6 @@ macro_rules! __assign {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum Either<A, B> {
-    Left(A),
-    Right(B)
-}
-pub use self::Either::*;
-
-impl<A, B> Either<A, B> {
-    pub fn map<C, F: Fn(B) -> C>(self, f: F) -> Either<A, C> {
-        match self {
-            Either::Right(b) => Either::Right(f(b)),
-            Either::Left(a) => Either::Left(a),
-        }
-    }
-}
-
 
 use std::fmt::Display;
 pub fn show<A: Display>(a: A) -> String {

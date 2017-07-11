@@ -34,6 +34,7 @@
 #[macro_use] use corollary_support::*;
 
 use std::rc::Rc;
+use either::Either::*;
 
 use parser_c_macro::refute;
 
