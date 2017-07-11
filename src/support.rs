@@ -176,21 +176,6 @@ pub fn chr(input: isize) -> char {
     input as u8 as char
 }
 
-// bits
-
-pub fn setBit(left: isize, right: isize) -> isize {
-    left | (1 << right)
-}
-
-pub fn clearBit(left: isize, right: isize) -> isize {
-    left & !(1 << right)
-}
-
-pub fn testBit(left: isize, right: isize) -> bool {
-    left & (1 << right) != 0
-}
-
-
 // ShowS, ReadS
 
 pub trait ShowS {
