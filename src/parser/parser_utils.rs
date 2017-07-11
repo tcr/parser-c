@@ -10,7 +10,7 @@ use std::boxed::FnBox;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-use data::r_list::{Reversed, RList};
+use data::r_list::{Reversed, RList, snoc};
 use data::node::{NodeInfo, CNode};
 use data::position::{Position, Pos};
 use data::input_stream::InputStream;
@@ -18,8 +18,7 @@ use data::ident::Ident;
 use data::name::{Name, NameSupply, new_name_supply};
 use parser::tokens::{CToken, CTokEof, movePosLenOfTok};
 use parser::parser::Parser;
-use syntax::ast::{CDeclSpec, CTypedef, CStorageSpec, CAttribute, CDerivedDeclr,
-                  CStringLiteral, CPtrDeclr, CAttrQual, CArrDeclr, CFunDeclr};
+use syntax::ast::*;
 
 #[derive(Debug)]
 pub struct ParseError(pub (Vec<String>, Position));
@@ -126,13 +125,13 @@ impl Parser {
         self.user.savedToken = self.user.prevToken.clone();
     }
 
-    pub fn doDeclIdent(&mut self, declspecs: &[CDeclSpec], CDeclrR(mIdent, _, _, _, _): CDeclrR) {
+    pub fn doDeclIdent(&mut self, declspecs: &[CDeclSpec], declr: CDeclrR) {
         let is_typedef = |declspec: &CDeclSpec| match *declspec {
             CStorageSpec(CTypedef(_)) => true,
             _ => false,
         };
 
-        match mIdent {
+        match declr.ident {
             None => (),
             Some(ident) => {
                 if declspecs.iter().any(is_typedef) {
@@ -166,7 +165,7 @@ impl Parser {
                                  mkDeclrNode: Box<FnBox(NodeInfo) -> CDeclrR>) -> Result<CDeclrR, ParseError> {
         let name = self.getNewName();
         let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
-        let newDeclr = appendDeclrAttrs(cattrs.clone(), mkDeclrNode(attrs));
+        let newDeclr = mkDeclrNode(attrs).appendAttrs(cattrs);
         Ok(newDeclr)
     }
 
@@ -178,43 +177,108 @@ impl Parser {
         let name = self.getNewName();
         let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
         let newDeclr: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |_0| {
-            appendDeclrAttrs(cattrs.clone(), mkDeclrCtor(attrs.clone(), _0))
+            mkDeclrCtor(attrs.clone(), _0).appendAttrs(cattrs.clone())
         });
         Ok(newDeclr)
     }
 }
 
 #[derive(Clone)]
-pub struct CDeclrR(pub Option<Ident>,
-                   pub Reversed<Vec<CDerivedDeclr>>,
-                   pub Option<CStringLiteral<NodeInfo>>,
-                   pub Vec<CAttribute<NodeInfo>>,
-                   pub NodeInfo);
+pub struct CDeclrR {
+    ident: Option<Ident>,
+    inner: Reversed<Vec<CDerivedDeclr>>,
+    asmname: Option<CStringLiteral<NodeInfo>>,
+    cattrs: Vec<CAttribute<NodeInfo>>,
+    at: NodeInfo,
+}
 
 impl CNode for CDeclrR {
     fn node_info(&self) -> &NodeInfo {
-        &self.4
+        &self.at
     }
     fn into_node_info(self) -> NodeInfo {
-        self.4
+        self.at
     }
 }
 
-pub fn appendDeclrAttrs(newAttrs: Vec<CAttribute<NodeInfo>>, declr: CDeclrR) -> CDeclrR {
-    let CDeclrR(ident, Reversed(mut inner), asmname, cattrs, at) = declr;
-    if inner.len() == 0 {
-        CDeclrR(ident, RList::empty(), asmname, __op_addadd(cattrs, newAttrs), at)
-    } else {
-        let x = inner.remove(0);
-        let xs = inner;
-        let appendAttrs = |_0| match _0 {
-            CPtrDeclr(typeQuals, at) =>
-                CPtrDeclr(__op_addadd(typeQuals, __map!(CAttrQual, newAttrs)), at),
-            CArrDeclr(typeQuals, arraySize, at) =>
-                CArrDeclr(__op_addadd(typeQuals, __map!(CAttrQual, newAttrs)), arraySize, at),
-            CFunDeclr(parameters, cattrs, at) =>
-                CFunDeclr(parameters, __op_addadd(cattrs, newAttrs), at),
-        };
-        CDeclrR(ident, Reversed(__op_concat(appendAttrs(x), xs)), asmname, cattrs, at)
+impl CDeclrR {
+
+    pub fn empty() -> CDeclrR {
+        CDeclrR { ident: None, inner: RList::empty(), asmname: None, cattrs: vec![],
+                  at: NodeInfo::undef() }
     }
+
+    pub fn from_var(ident: Ident, ni: NodeInfo) -> CDeclrR {
+        CDeclrR { ident: Some(ident), inner: RList::empty(), asmname: None, cattrs: vec![], at: ni }
+    }
+
+    pub fn setAsmName(mut self, mAsmName: Option<CStringLiteral<NodeInfo>>) -> Result<CDeclrR, ParseError> {
+        if self.asmname.is_none() {
+            self.asmname = mAsmName;
+            Ok(self)
+        } else if mAsmName.is_none() {
+            Ok(self)
+        } else {
+            let newname = mAsmName.unwrap();
+            let oldname = self.asmname.as_ref().unwrap();
+            Err(ParseError::new(
+                newname.pos().clone(),
+                vec!["Duplicate assembler name: ".to_string(),
+                     oldname.0.to_string(), newname.0.to_string()]))
+        }
+    }
+
+    pub fn withAsmNameAttrs(self, (mAsmName, newAttrs): (Option<CStringLiteral<NodeInfo>>,
+                                                         Vec<CAttribute<NodeInfo>>))
+                            -> Result<CDeclrR, ParseError> {
+        self.appendObjAttrs(newAttrs).setAsmName(mAsmName)
+    }
+
+    pub fn funDeclr(mut self, params: Either<Vec<Ident>, (Vec<CDecl>, bool)>,
+                    cattrs: Vec<CAttribute<NodeInfo>>, at: NodeInfo) -> CDeclrR {
+        self.inner = snoc(self.inner, CFunDeclr(params, cattrs, at));
+        self
+    }
+
+    pub fn arrDeclr(mut self, tyquals: Vec<CTypeQual>, var_sized: bool, static_size: bool,
+                    size_expr_opt: Option<CExpr>, at: NodeInfo) -> CDeclrR {
+        let arr_sz = match size_expr_opt {
+            Some(e) => CArrSize(static_size, e),
+            None => CNoArrSize(var_sized)
+        };
+        self.inner = snoc(self.inner, CArrDeclr(tyquals, arr_sz, at));
+        self
+    }
+
+    pub fn appendAttrs(mut self, mut newAttrs: Vec<CAttribute<NodeInfo>>) -> Self {
+        match RList::get_mut(&mut self.inner, 0) {
+            None => self.cattrs.append(&mut newAttrs),
+            Some(&mut CPtrDeclr(ref mut typeQuals, _)) => {
+                typeQuals.extend(newAttrs.into_iter().map(CAttrQual))
+            }
+            Some(&mut CArrDeclr(ref mut typeQuals, _, _)) => {
+                typeQuals.extend(newAttrs.into_iter().map(CAttrQual))
+            }
+            Some(&mut CFunDeclr(_, ref mut cattrs, _)) => {
+                 cattrs.append(&mut newAttrs)
+            }
+        }
+        self
+    }
+
+    pub fn appendObjAttrs(mut self, mut newAttrs: Vec<CAttribute<NodeInfo>>) -> CDeclrR {
+        self.cattrs.append(&mut newAttrs);
+        self
+    }
+
+    pub fn reverse(self) -> CDeclarator<NodeInfo> {
+        let CDeclrR { ident, inner: reversedDDs, asmname, cattrs, at } = self;
+        CDeclarator(ident, RList::reverse(reversedDDs), asmname, cattrs, at)
+    }
+}
+
+// This is a free function since it is used with partial_1!()
+pub fn ptrDeclr(mut slf: CDeclrR, tyquals: Vec<CTypeQual>, at: NodeInfo) -> CDeclrR {
+    slf.inner = snoc(slf.inner, CPtrDeclr(tyquals, at));
+    slf
 }
