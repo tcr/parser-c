@@ -36,8 +36,6 @@
 use std::rc::Rc;
 use either::Either::*;
 
-use parser_c_macro::refute;
-
 use data::position::{Located, Pos};
 use data::r_list::RList::*;
 use data::r_list::{Reversed, snoc};
