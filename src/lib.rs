@@ -36,7 +36,7 @@
 #![recursion_limit="500"]
 
 extern crate num;
-#[macro_use] extern crate matches;
+#[macro_use] extern crate bitflags;
 extern crate num_derive;
 extern crate parser_c_macro;
 extern crate lazy_static;

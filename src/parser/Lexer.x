@@ -181,7 +181,7 @@ $identletter($identletter|$digit)*   { idkwtok(p, inp.take_string(len), pos) }
 -- NOTE: 0 is lexed as octal integer constant, and readCOctal takes care of this
 0$octdigit*@intgnusuffix?       { token_plus(box CTokILit, box readCOctal, pos, len, inp) }
 $digitNZ$digit*@intgnusuffix?   { token_plus(box CTokILit, partial_1!(readCInteger, DecRepr), pos, len, inp) }
-0[xX]$hexdigit+@intgnusuffix?   { token_plus(box CTokILit, box move |_0| readCInteger(HexRepr, drop_str(2, _0)),
+0[xX]$hexdigit+@intgnusuffix?   { token_plus(box CTokILit, box move |_0| readCInteger(HexRepr, &_0[2..]),
                                              pos, len, inp) }
 
 (0$octdigit*|$digitNZ$digit*|0[xX]$hexdigit+)[uUlL]+ { token_fail("Invalid integer constant suffix", pos, len, inp) }
@@ -284,12 +284,12 @@ L?\"($inchar|@charesc)*@ucn($inchar|@charesc|@ucn)*\"
 {
 
 /// Fix the 'octal' lexing of '0'
-pub fn readCOctal(s: String) -> Result<CInteger, String> {
+pub fn readCOctal(s: &str) -> Result<CInteger, String> {
     if s.chars().nth(0) == Some('0') {
         if s.len() > 1 && isDigit(s.chars().nth(1).unwrap()) {
-            readCInteger(OctalRepr, s[1..].to_string())
+            readCInteger(OctalRepr, &s[1..])
         } else {
-            readCInteger(DecRepr, s)
+            readCInteger(DecRepr, &s)
         }
     } else {
         panic!("ReadOctal: string does not start with `0'")
@@ -496,9 +496,9 @@ pub fn token<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
 
 /// token that may fail
 pub fn token_plus<a>(mkTok: Box<Fn(PosLength, a) -> CToken>,
-                     fromStr: Box<Fn(String) -> Result<a, String>>,
-                     pos: Position, len: isize, __str: InputStream) -> Res<CToken> {
-    match fromStr(__str.take_string(len)) {
+                     fromStr: Box<Fn(&str) -> Result<a, String>>,
+                     pos: Position, len: isize, inp: InputStream) -> Res<CToken> {
+    match fromStr(&inp.take_string(len)) {
         Err(err) => {
             Err(ParseError::new(pos, vec!["Lexical error ! ".to_string(), err]))
         },
