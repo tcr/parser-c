@@ -190,16 +190,16 @@ $digitNZ$digit*@intgnusuffix?   { token_plus(box CTokILit, partial_1!(readCInteg
 --
 -- * Universal Character Names are unsupported and cause an error.
 \'($inchar|@charesc)\'  { token(box CTokCLit,
-                                box move |_0| cChar(fst(unescapeChar(tail_str(_0)))),
+                                box move |_0| cChar(unescapeChar(&_0[1..]).0),
                                 pos, len, inp) }
 L\'($inchar|@charesc)\' { token(box CTokCLit,
-                                box move |_0| cChar_w(fst(unescapeChar(tail_str(tail_str(_0))))),
+                                box move |_0| cChar_w(unescapeChar(&_0[2..]).0),
                                 pos, len, inp) }
 \'($inchar|@charesc){2,}\' { token(box CTokCLit,
-                                   box move |_0| flip(cChars, false, unescapeMultiChars(tail_str(_0))),
+                                   box move |_0| cChars(false, unescapeMultiChars(&_0[1.._0.len()-1])),
                                    pos, len, inp) }
 L\'($inchar|@charesc){2,}\' { token(box CTokCLit,
-                                    box move |_0| flip(cChars, true, unescapeMultiChars(tail_str(tail_str(_0)))),
+                                    box move |_0| cChars(true, unescapeMultiChars(&_0[2.._0.len()-1])),
                                     pos, len, inp) }
 
 -- Clang version literals
@@ -218,10 +218,10 @@ L\'($inchar|@charesc){2,}\' { token(box CTokCLit,
 -- string literal (follows K&R A2.6)
 -- C99: 6.4.5.
 \"($instr|@charesc)*\"      { token(box CTokSLit,
-                                    box move |_0| cString(unescapeString(init_str(tail_str(_0)))),
+                                    box move |_0| cString(unescapeString(&_0[1.._0.len()-1])),
                                     pos, len, inp) }
 L\"($instr|@charesc)*\"     { token(box CTokSLit,
-                                    box move |_0| cString_w(unescapeString(init_str(tail_str(tail_str(_0))))),
+                                    box move |_0| cString_w(unescapeString(&_0[2.._0.len()-1])),
                                     pos, len, inp) }
 
 L?\'@ucn\'                        { token_fail("Universal character names are unsupported", pos, len, inp) }
@@ -282,19 +282,6 @@ L?\"($inchar|@charesc)*@ucn($inchar|@charesc|@ucn)*\"
 
 
 {
-
-/// Fix the 'octal' lexing of '0'
-pub fn readCOctal(s: &str) -> Result<CInteger, String> {
-    if s.chars().nth(0) == Some('0') {
-        if s.len() > 1 && isDigit(s.chars().nth(1).unwrap()) {
-            readCInteger(OctalRepr, &s[1..])
-        } else {
-            readCInteger(DecRepr, &s)
-        }
-    } else {
-        panic!("ReadOctal: string does not start with `0'")
-    }
-}
 
 // We use the odd looking list of string patterns here rather than normal
 // string literals since GHC converts the latter into a sequence of string
@@ -461,20 +448,6 @@ pub fn adjustLineDirective(pragma: String, pos: Position) -> Position {
     let current_fname = pos.file();
     let new_fname = if current_fname == fname { current_fname } else { fname.to_string() };
     Position::new(offs_q, new_fname, row, 1)
-}
-
-/// special utility for the lexer
-pub fn unescapeMultiChars(cs: String) -> String {
-    if cs.len() > 2 {
-        // TODO cleanup
-        let cs_0 = cs.chars().nth(0).unwrap();
-        let value = unescapeChar(cs.clone());
-        format!("{}{}", cs_0, unescapeMultiChars(cs.chars().skip(1).collect::<String>()))
-    } else if cs.len() == 1 && cs.chars().nth(0).unwrap() == '\'' {
-        "".to_string()
-    } else {
-        panic!("Unexpected end of multi-char constant")
-    }
 }
 
 /// token that ignores the string
