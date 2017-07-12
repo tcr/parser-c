@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 
-// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 49
+// Original location: ../../src/parser/Lexer.x, line 49
 
 
 
@@ -11,7 +11,7 @@ actions have to be translated.
 
 */
 
-use std::sync::Arc;
+use std::rc::Rc;
 
 use data::input_stream::InputStream;
 use data::ident::Ident;
@@ -33210,7 +33210,7 @@ const ALEX_ACTIONS: [AlexAction; 124] = [
     alex_action_1,
 ];
 
-// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 269
+// Original location: ../../src/parser/Lexer.x, line 269
 
 
 
@@ -33359,7 +33359,7 @@ fn adjustLineDirective(pragma: &str, pos: Position) -> Position {
     let fname = &pragma[fname_start+1..fname_start+fname_end+1];
 
     let current_fname = pos.file();
-    let new_fname = if &*current_fname == fname { current_fname } else { Arc::new(fname.to_string()) };
+    let new_fname = if &*current_fname == fname { current_fname } else { Rc::new(fname.to_string()) };
     Position::new(offs_q, new_fname, row, 1)
 }
 
