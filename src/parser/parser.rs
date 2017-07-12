@@ -14,12 +14,6 @@ use syntax::ops::*;
 use syntax::ast::*;
 use syntax::constants::*;
 
-// fn(A, B) -> fn(C) -> {eval fn(A, B, C)}
-macro_rules! partial_1 {
-    ($inner: expr) => ( $inner );
-    ($inner: expr, $($arg: expr),+ ) => ( |_0| { $inner($($arg),+ , _0) } )
-}
-
 type Error = ParseError;
 type State = PState;
 type Token = CToken;
@@ -15609,7 +15603,7 @@ fn happyReduction_4(p: &mut Parser) -> Res<HappyAbsSyn> {
                           Ok(CTranslationUnit(decls, nodeinfo))
                       } else {
                           let d = decls[0].clone();
-                          p.withNodeInfo(d, partial_1!(CTranslationUnit, decls))
+                          p.withNodeInfo(d, |at| CTranslationUnit(decls, at))
                       }
         }.map(HappyAbsSyn7),
         _ => panic!("irrefutable pattern")
@@ -15692,7 +15686,7 @@ fn happyReduce_11(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_11(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn128(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CAsmExt, happy_var_3))
+        (_, _, HappyAbsSyn128(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CAsmExt(happy_var_3, at))
         }.map(HappyAbsSyn9),
         _ => panic!("irrefutable pattern")
     }
@@ -15705,8 +15699,7 @@ fn happyReduce_12(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_12(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_2), HappyAbsSyn11(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, vec![], happy_var_1, vec![], happy_var_2))
+        (HappyAbsSyn12(happy_var_2), HappyAbsSyn11(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(vec![], happy_var_1, vec![], happy_var_2, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15719,8 +15712,7 @@ fn happyReduce_13(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_13(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn132(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, liftCAttrs(happy_var_1), happy_var_2, vec![], happy_var_3))
+        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn132(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(liftCAttrs(happy_var_1), happy_var_2, vec![], happy_var_3, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15733,8 +15725,7 @@ fn happyReduce_14(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_14(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))
+        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(happy_var_1, happy_var_2, vec![], happy_var_3, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15747,8 +15738,7 @@ fn happyReduce_15(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_15(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))
+        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(happy_var_1, happy_var_2, vec![], happy_var_3, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15761,8 +15751,7 @@ fn happyReduce_16(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_16(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn38(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, reverse(happy_var_1), happy_var_2, vec![], happy_var_3))
+        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn38(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(reverse(happy_var_1), happy_var_2, vec![], happy_var_3, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15775,8 +15764,7 @@ fn happyReduce_17(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_17(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, liftTypeQuals(happy_var_1), happy_var_2, vec![], happy_var_3))
+        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(liftTypeQuals(happy_var_1), happy_var_2, vec![], happy_var_3, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15789,8 +15777,7 @@ fn happyReduce_18(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_18(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_4), HappyAbsSyn11(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, vec![], happy_var_4))
+        (HappyAbsSyn12(happy_var_4), HappyAbsSyn11(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, vec![], happy_var_4, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15803,7 +15790,7 @@ fn happyReduce_19(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_19(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_3), HappyAbsSyn33(happy_var_2), HappyAbsSyn11(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, vec![], happy_var_1, reverse(happy_var_2), happy_var_3))
+        (HappyAbsSyn12(happy_var_3), HappyAbsSyn33(happy_var_2), HappyAbsSyn11(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(vec![], happy_var_1, reverse(happy_var_2), happy_var_3, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15816,7 +15803,7 @@ fn happyReduce_20(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_20(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_4), HappyAbsSyn33(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn132(happy_var_1)) => { p.withNodeInfo(happy_var_2.clone(), partial_1!(CFunctionDef, liftCAttrs(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4))
+        (HappyAbsSyn12(happy_var_4), HappyAbsSyn33(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn132(happy_var_1)) => { p.withNodeInfo(happy_var_2.clone(), |at| CFunctionDef(liftCAttrs(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15829,7 +15816,7 @@ fn happyReduce_21(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_21(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_4), HappyAbsSyn33(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, happy_var_1, happy_var_2, reverse(happy_var_3), happy_var_4))
+        (HappyAbsSyn12(happy_var_4), HappyAbsSyn33(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(happy_var_1, happy_var_2, reverse(happy_var_3), happy_var_4, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15842,7 +15829,7 @@ fn happyReduce_22(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_22(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_4), HappyAbsSyn33(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, happy_var_1, happy_var_2, reverse(happy_var_3), happy_var_4))
+        (HappyAbsSyn12(happy_var_4), HappyAbsSyn33(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(happy_var_1, happy_var_2, reverse(happy_var_3), happy_var_4, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15855,7 +15842,7 @@ fn happyReduce_23(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_23(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_4), HappyAbsSyn33(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn38(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, reverse(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4))
+        (HappyAbsSyn12(happy_var_4), HappyAbsSyn33(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn38(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(reverse(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15868,7 +15855,7 @@ fn happyReduce_24(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_24(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_4), HappyAbsSyn33(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CFunctionDef, liftTypeQuals(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4))
+        (HappyAbsSyn12(happy_var_4), HappyAbsSyn33(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(liftTypeQuals(happy_var_1), happy_var_2, reverse(happy_var_3), happy_var_4, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15881,8 +15868,8 @@ fn happyReduce_25(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_25(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_5), HappyAbsSyn33(happy_var_4), HappyAbsSyn11(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, reverse(happy_var_4), happy_var_5))
+        (HappyAbsSyn12(happy_var_5), HappyAbsSyn33(happy_var_4), HappyAbsSyn11(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)),
+                                                        happy_var_3, reverse(happy_var_4), happy_var_5, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -15984,7 +15971,7 @@ fn happyReduce_33(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_33(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyAbsSyn26(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CAsm, happy_var_1))
+        HappyAbsSyn26(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), |at| CAsm(happy_var_1, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -15997,7 +15984,7 @@ fn happyReduce_34(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_34(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_4), HappyAbsSyn132(happy_var_3), _, HappyAbsSyn131(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CLabel, happy_var_1, box happy_var_4, happy_var_3))
+        (HappyAbsSyn12(happy_var_4), HappyAbsSyn132(happy_var_3), _, HappyAbsSyn131(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CLabel(happy_var_1, box happy_var_4, happy_var_3, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16010,7 +15997,7 @@ fn happyReduce_35(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_35(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_4), _, HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CCase, happy_var_2, box happy_var_4))
+        (HappyAbsSyn12(happy_var_4), _, HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CCase(happy_var_2, box happy_var_4, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16023,7 +16010,7 @@ fn happyReduce_36(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_36(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CDefault, box happy_var_3))
+        (HappyAbsSyn12(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CDefault(box happy_var_3, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16036,7 +16023,7 @@ fn happyReduce_37(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_37(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_6), _, HappyAbsSyn100(happy_var_4), _, HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CCases, happy_var_2, happy_var_4, box happy_var_6))
+        (HappyAbsSyn12(happy_var_6), _, HappyAbsSyn100(happy_var_4), _, HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CCases(happy_var_2, happy_var_4, box happy_var_6, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16049,7 +16036,7 @@ fn happyReduce_38(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_38(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn17(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CCompound, vec![], reverse(happy_var_3)))
+        (_, _, HappyAbsSyn17(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CCompound(vec![], reverse(happy_var_3), at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16062,7 +16049,7 @@ fn happyReduce_39(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_39(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn17(happy_var_4), HappyAbsSyn21(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CCompound, reverse(happy_var_3), reverse(happy_var_4)))
+        (_, _, HappyAbsSyn17(happy_var_4), HappyAbsSyn21(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CCompound(reverse(happy_var_3), reverse(happy_var_4), at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16182,8 +16169,7 @@ fn happyReduce_49(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_49(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))
+        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(happy_var_1, happy_var_2, vec![], happy_var_3, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -16196,8 +16182,7 @@ fn happyReduce_50(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_50(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, happy_var_1, happy_var_2, vec![], happy_var_3))
+        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(happy_var_1, happy_var_2, vec![], happy_var_3, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -16210,8 +16195,7 @@ fn happyReduce_51(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_51(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn38(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, reverse(happy_var_1), happy_var_2, vec![], happy_var_3))
+        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn38(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(reverse(happy_var_1), happy_var_2, vec![], happy_var_3, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -16224,8 +16208,7 @@ fn happyReduce_52(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_52(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, liftTypeQuals(happy_var_1), happy_var_2, vec![], happy_var_3))
+        (HappyAbsSyn12(happy_var_3), HappyAbsSyn11(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(liftTypeQuals(happy_var_1), happy_var_2, vec![], happy_var_3, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -16238,8 +16221,7 @@ fn happyReduce_53(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_53(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_4), HappyAbsSyn11(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), partial_1!(
-            CFunctionDef, addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, vec![], happy_var_4))
+        (HappyAbsSyn12(happy_var_4), HappyAbsSyn11(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.leaveScope(); p.withNodeInfo(happy_var_1.clone(), |at| CFunctionDef(addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), happy_var_3, vec![], happy_var_4, at))
         }.map(HappyAbsSyn10),
         _ => panic!("irrefutable pattern")
     }
@@ -16276,7 +16258,7 @@ fn happyReduce_56(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_56(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CExpr, None))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, |at| CExpr(None, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16289,7 +16271,7 @@ fn happyReduce_57(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_57(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CExpr, Some(happy_var_1)))
+        (_, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CExpr(Some(happy_var_1), at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16302,7 +16284,7 @@ fn happyReduce_58(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_58(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CIf, happy_var_3, box happy_var_5, None))
+        (HappyAbsSyn12(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CIf(happy_var_3, box happy_var_5, None, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16315,7 +16297,7 @@ fn happyReduce_59(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_59(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_7), _, HappyAbsSyn12(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CIf, happy_var_3, box happy_var_5, Some(box happy_var_7)))
+        (HappyAbsSyn12(happy_var_7), _, HappyAbsSyn12(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CIf(happy_var_3, box happy_var_5, Some(box happy_var_7), at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16328,7 +16310,7 @@ fn happyReduce_60(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_60(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CSwitch, happy_var_3, box happy_var_5))
+        (HappyAbsSyn12(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CSwitch(happy_var_3, box happy_var_5, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16341,7 +16323,7 @@ fn happyReduce_61(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_61(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CWhile, happy_var_3, box happy_var_5, false))
+        (HappyAbsSyn12(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CWhile(happy_var_3, box happy_var_5, false, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16354,7 +16336,7 @@ fn happyReduce_62(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_62(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn100(happy_var_5), _, _, HappyAbsSyn12(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CWhile, happy_var_5, box happy_var_2, true))
+        (_, _, HappyAbsSyn100(happy_var_5), _, _, HappyAbsSyn12(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CWhile(happy_var_5, box happy_var_2, true, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16367,7 +16349,7 @@ fn happyReduce_63(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_63(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn12(happy_var_9), _, HappyAbsSyn124(happy_var_7), _, HappyAbsSyn124(happy_var_5), _, HappyAbsSyn124(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CFor, Left(happy_var_3), happy_var_5, happy_var_7, box happy_var_9))
+        (HappyAbsSyn12(happy_var_9), _, HappyAbsSyn124(happy_var_7), _, HappyAbsSyn124(happy_var_5), _, HappyAbsSyn124(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CFor(Left(happy_var_3), happy_var_5, happy_var_7, box happy_var_9, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16380,7 +16362,7 @@ fn happyReduce_64(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_64(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn12(happy_var_9), _, HappyAbsSyn124(happy_var_7), _, HappyAbsSyn124(happy_var_5), HappyAbsSyn32(happy_var_4), _, _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CFor, Right(happy_var_4), happy_var_5, happy_var_7, box happy_var_9))
+        (_, HappyAbsSyn12(happy_var_9), _, HappyAbsSyn124(happy_var_7), _, HappyAbsSyn124(happy_var_5), HappyAbsSyn32(happy_var_4), _, _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CFor(Right(happy_var_4), happy_var_5, happy_var_7, box happy_var_9, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16393,7 +16375,7 @@ fn happyReduce_65(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_65(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn131(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CGoto, happy_var_2))
+        (_, HappyAbsSyn131(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CGoto(happy_var_2, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16406,7 +16388,7 @@ fn happyReduce_66(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_66(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CGotoPtr, happy_var_3))
+        (_, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CGotoPtr(happy_var_3, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16419,7 +16401,7 @@ fn happyReduce_67(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_67(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CCont))
+        (_, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, CCont)
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16432,7 +16414,7 @@ fn happyReduce_68(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_68(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CBreak))
+        (_, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, CBreak)
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16445,7 +16427,7 @@ fn happyReduce_69(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_69(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn124(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CReturn, happy_var_2))
+        (_, HappyAbsSyn124(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CReturn(happy_var_2, at))
         }.map(HappyAbsSyn12),
         _ => panic!("irrefutable pattern")
     }
@@ -16458,7 +16440,7 @@ fn happyReduce_70(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_70(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn128(happy_var_4), _, HappyAbsSyn27(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, vec![], vec![], vec![]))
+        (_, _, HappyAbsSyn128(happy_var_4), _, HappyAbsSyn27(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CAssemblyStatement(happy_var_2, happy_var_4, vec![], vec![], vec![], at))
         }.map(HappyAbsSyn26),
         _ => panic!("irrefutable pattern")
     }
@@ -16471,7 +16453,7 @@ fn happyReduce_71(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_71(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn28(happy_var_6), _, HappyAbsSyn128(happy_var_4), _, HappyAbsSyn27(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, happy_var_6, vec![], vec![]))
+        (_, _, HappyAbsSyn28(happy_var_6), _, HappyAbsSyn128(happy_var_4), _, HappyAbsSyn27(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CAssemblyStatement(happy_var_2, happy_var_4, happy_var_6, vec![], vec![], at))
         }.map(HappyAbsSyn26),
         _ => panic!("irrefutable pattern")
     }
@@ -16484,7 +16466,7 @@ fn happyReduce_72(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_72(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn28(happy_var_8), _, HappyAbsSyn28(happy_var_6), _, HappyAbsSyn128(happy_var_4), _, HappyAbsSyn27(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, happy_var_6, happy_var_8, vec![]))
+        (_, _, HappyAbsSyn28(happy_var_8), _, HappyAbsSyn28(happy_var_6), _, HappyAbsSyn128(happy_var_4), _, HappyAbsSyn27(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CAssemblyStatement(happy_var_2, happy_var_4, happy_var_6, happy_var_8, vec![], at))
         }.map(HappyAbsSyn26),
         _ => panic!("irrefutable pattern")
     }
@@ -16497,7 +16479,7 @@ fn happyReduce_73(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_73(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn31(happy_var_10), _, HappyAbsSyn28(happy_var_8), _, HappyAbsSyn28(happy_var_6), _, HappyAbsSyn128(happy_var_4), _, HappyAbsSyn27(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CAssemblyStatement, happy_var_2, happy_var_4, happy_var_6, happy_var_8, reverse(happy_var_10)))
+        (_, _, HappyAbsSyn31(happy_var_10), _, HappyAbsSyn28(happy_var_8), _, HappyAbsSyn28(happy_var_6), _, HappyAbsSyn128(happy_var_4), _, HappyAbsSyn27(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CAssemblyStatement(happy_var_2, happy_var_4, happy_var_6, happy_var_8, reverse(happy_var_10), at))
         }.map(HappyAbsSyn26),
         _ => panic!("irrefutable pattern")
     }
@@ -16576,7 +16558,7 @@ fn happyReduce_80(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_80(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn100(happy_var_3), _, HappyAbsSyn128(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CAssemblyOperand, None, happy_var_1, happy_var_3))
+        (_, HappyAbsSyn100(happy_var_3), _, HappyAbsSyn128(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CAssemblyOperand(None, happy_var_1, happy_var_3, at))
         }.map(HappyAbsSyn30),
         _ => panic!("irrefutable pattern")
     }
@@ -16589,7 +16571,7 @@ fn happyReduce_81(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_81(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn100(happy_var_6), _, HappyAbsSyn128(happy_var_4), _, HappyTerminal(CTokIdent(_, happy_var_2)), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CAssemblyOperand, Some(happy_var_2), happy_var_4, happy_var_6))
+        (_, HappyAbsSyn100(happy_var_6), _, HappyAbsSyn128(happy_var_4), _, HappyTerminal(CTokIdent(_, happy_var_2)), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CAssemblyOperand(Some(happy_var_2), happy_var_4, happy_var_6, at))
         }.map(HappyAbsSyn30),
         _ => panic!("irrefutable pattern")
     }
@@ -16602,7 +16584,7 @@ fn happyReduce_82(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_82(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn100(happy_var_6), _, HappyAbsSyn128(happy_var_4), _, HappyTerminal(CTokTyIdent(_, happy_var_2)), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CAssemblyOperand, Some(happy_var_2), happy_var_4, happy_var_6))
+        (_, HappyAbsSyn100(happy_var_6), _, HappyAbsSyn128(happy_var_4), _, HappyTerminal(CTokTyIdent(_, happy_var_2)), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CAssemblyOperand(Some(happy_var_2), happy_var_4, happy_var_6, at))
         }.map(HappyAbsSyn30),
         _ => panic!("irrefutable pattern")
     }
@@ -16639,7 +16621,7 @@ fn happyReduce_85(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_85(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn38(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![]))
+        (_, HappyAbsSyn38(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(reverse(happy_var_1), vec![], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16652,7 +16634,7 @@ fn happyReduce_86(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_86(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn38(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![]))
+        (_, HappyAbsSyn38(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(reverse(happy_var_1), vec![], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16667,7 +16649,7 @@ fn happyReduction_87(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (_, HappyAbsSyn32(happy_var_1)) => {
             if let CDecl(declspecs, dies, at) = happy_var_1 {
-                p.withLength(at, partial_1!(CDecl, declspecs, revVec(dies)))
+                p.withLength(at, |at| CDecl(declspecs, revVec(dies), at))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -16685,7 +16667,7 @@ fn happyReduction_88(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (_, HappyAbsSyn32(happy_var_1)) => {
             if let CDecl(declspecs, dies, at) = happy_var_1 {
-                p.withLength(at, partial_1!(CDecl, declspecs, revVec(dies)))
+                p.withLength(at, |at| CDecl(declspecs, revVec(dies), at))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -16701,7 +16683,7 @@ fn happyReduce_89(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_89(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn128(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CStaticAssert, happy_var_3, happy_var_5))
+        (_, _, HappyAbsSyn128(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CStaticAssert(happy_var_3, happy_var_5, at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16740,8 +16722,7 @@ fn happyReduction_92(p: &mut Parser) -> Res<HappyAbsSyn> {
             let declr = happy_var_2.withAsmNameAttrs(happy_var_3)?;
             // TODO: borrow these instead
             p.doDeclIdent(&declspecs, declr.clone());
-            p.withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
-                                           vec![(Some(declr.reverse()), happy_var_4, None)]))
+            p.withNodeInfo(happy_var_1, |at| CDecl(declspecs, vec![(Some(declr.reverse()), happy_var_4, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16758,8 +16739,7 @@ fn happyReduction_93(p: &mut Parser) -> Res<HappyAbsSyn> {
             let declspecs = liftTypeQuals(happy_var_1.clone());
             let declr = happy_var_2.withAsmNameAttrs(happy_var_3)?;
             p.doDeclIdent(&declspecs, declr.clone());
-            p.withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
-                                           vec![(Some(declr.reverse()), happy_var_4, None)]))
+            p.withNodeInfo(happy_var_1, |at| CDecl(declspecs, vec![(Some(declr.reverse()), happy_var_4, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16776,8 +16756,8 @@ fn happyReduction_94(p: &mut Parser) -> Res<HappyAbsSyn> {
             let declspecs = liftTypeQuals(happy_var_1.clone());
             let declr = happy_var_3.withAsmNameAttrs(happy_var_4)?;
             p.doDeclIdent(&declspecs, declr.clone());
-            p.withNodeInfo(happy_var_1, partial_1!(CDecl, addVecs(declspecs, liftCAttrs(happy_var_2)),
-                                           vec![(Some(declr.reverse()), happy_var_5, None)]))
+            p.withNodeInfo(happy_var_1, |at| CDecl(addVecs(declspecs, liftCAttrs(happy_var_2)),
+                                          vec![(Some(declr.reverse()), happy_var_5, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16794,8 +16774,7 @@ fn happyReduction_95(p: &mut Parser) -> Res<HappyAbsSyn> {
             let declspecs = liftCAttrs(happy_var_1.clone());
             let declr = happy_var_2.withAsmNameAttrs(happy_var_3)?;
             p.doDeclIdent(&declspecs, declr.clone());
-            p.withNodeInfo(happy_var_1, partial_1!(CDecl, declspecs,
-                                           vec![(Some(declr.reverse()), happy_var_4, None)]))
+            p.withNodeInfo(happy_var_1, |at| CDecl(declspecs, vec![(Some(declr.reverse()), happy_var_4, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16813,8 +16792,7 @@ fn happyReduction_96(p: &mut Parser) -> Res<HappyAbsSyn> {
                 let (f, s) = happy_var_5;
                 let declr = happy_var_4.withAsmNameAttrs((f, addVecs(s, happy_var_3)))?;
                 p.doDeclIdent(&declspecs, declr.clone());
-                p.withLength(at, partial_1!(CDecl, declspecs,
-                                             prepend((Some(declr.reverse()), happy_var_6, None), dies)))
+                p.withLength(at, |at| CDecl(declspecs, prepend((Some(declr.reverse()), happy_var_6, None), dies), at))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -16845,7 +16823,7 @@ fn happyReduction_98(p: &mut Parser) -> Res<HappyAbsSyn> {
         (HappyAbsSyn94(happy_var_4), HappyAbsSyn35(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => {
             let declr = happy_var_2.withAsmNameAttrs(happy_var_3)?;
             p.doDeclIdent(&happy_var_1, declr.clone());
-            p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(declr.reverse()), happy_var_4, None)]))
+            p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1, vec![(Some(declr.reverse()), happy_var_4, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16861,7 +16839,7 @@ fn happyReduction_99(p: &mut Parser) -> Res<HappyAbsSyn> {
         (HappyAbsSyn94(happy_var_4), HappyAbsSyn35(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => {
             let declr = happy_var_2.withAsmNameAttrs(happy_var_3)?;
             p.doDeclIdent(&happy_var_1, declr.clone());
-            p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(declr.reverse()), happy_var_4, None)]))
+            p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1, vec![(Some(declr.reverse()), happy_var_4, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -17087,7 +17065,7 @@ fn happyReduce_117(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_117(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CTypedef))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CTypedef)
         }.map(HappyAbsSyn41),
         _ => panic!("irrefutable pattern")
     }
@@ -17100,7 +17078,7 @@ fn happyReduce_118(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_118(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CExtern))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CExtern)
         }.map(HappyAbsSyn41),
         _ => panic!("irrefutable pattern")
     }
@@ -17113,7 +17091,7 @@ fn happyReduce_119(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_119(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CStatic))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CStatic)
         }.map(HappyAbsSyn41),
         _ => panic!("irrefutable pattern")
     }
@@ -17126,7 +17104,7 @@ fn happyReduce_120(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_120(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CAuto))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CAuto)
         }.map(HappyAbsSyn41),
         _ => panic!("irrefutable pattern")
     }
@@ -17139,7 +17117,7 @@ fn happyReduce_121(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_121(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CRegister))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CRegister)
         }.map(HappyAbsSyn41),
         _ => panic!("irrefutable pattern")
     }
@@ -17152,7 +17130,7 @@ fn happyReduce_122(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_122(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CThread))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CThread)
         }.map(HappyAbsSyn41),
         _ => panic!("irrefutable pattern")
     }
@@ -17165,7 +17143,7 @@ fn happyReduce_123(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_123(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CInlineQual))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CInlineQual)
         }.map(HappyAbsSyn42),
         _ => panic!("irrefutable pattern")
     }
@@ -17178,7 +17156,7 @@ fn happyReduce_124(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_124(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CNoreturnQual))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CNoreturnQual)
         }.map(HappyAbsSyn42),
         _ => panic!("irrefutable pattern")
     }
@@ -17191,7 +17169,7 @@ fn happyReduce_125(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_125(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn32(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CAlignAsType, happy_var_3))
+        (_, HappyAbsSyn32(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CAlignAsType(happy_var_3, at))
         }.map(HappyAbsSyn43),
         _ => panic!("irrefutable pattern")
     }
@@ -17204,7 +17182,7 @@ fn happyReduce_126(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_126(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CAlignAsExpr, happy_var_3))
+        (_, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CAlignAsExpr(happy_var_3, at))
         }.map(HappyAbsSyn43),
         _ => panic!("irrefutable pattern")
     }
@@ -17253,7 +17231,7 @@ fn happyReduce_130(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_130(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CVoidType))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CVoidType)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17266,7 +17244,7 @@ fn happyReduce_131(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_131(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CCharType))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CCharType)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17279,7 +17257,7 @@ fn happyReduce_132(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_132(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CShortType))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CShortType)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17292,7 +17270,7 @@ fn happyReduce_133(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_133(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CIntType))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CIntType)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17305,7 +17283,7 @@ fn happyReduce_134(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_134(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CLongType))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CLongType)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17318,7 +17296,7 @@ fn happyReduce_135(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_135(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CFloatType))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CFloatType)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17331,7 +17309,7 @@ fn happyReduce_136(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_136(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CDoubleType))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CDoubleType)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17344,7 +17322,7 @@ fn happyReduce_137(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_137(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CSignedType))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CSignedType)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17357,7 +17335,7 @@ fn happyReduce_138(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_138(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CUnsigType))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CUnsigType)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17370,7 +17348,7 @@ fn happyReduce_139(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_139(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CBoolType))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CBoolType)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17383,7 +17361,7 @@ fn happyReduce_140(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_140(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CComplexType))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CComplexType)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17396,7 +17374,7 @@ fn happyReduce_141(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_141(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CInt128Type))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CInt128Type)
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17931,7 +17909,7 @@ fn happyReduce_184(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_184(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyAbsSyn53(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CSUType, happy_var_1))
+        HappyAbsSyn53(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), |at| CSUType(happy_var_1, at))
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17944,7 +17922,7 @@ fn happyReduce_185(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_185(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyAbsSyn61(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CEnumType, happy_var_1))
+        HappyAbsSyn61(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), |at| CEnumType(happy_var_1, at))
         }.map(HappyAbsSyn45),
         _ => panic!("irrefutable pattern")
     }
@@ -17957,7 +17935,7 @@ fn happyReduce_186(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_186(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn33(happy_var_5), _, HappyAbsSyn131(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn54(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CStructureUnion, happy_var_1.into_inner(), Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2))
+        (_, HappyAbsSyn33(happy_var_5), _, HappyAbsSyn131(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn54(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CStructureUnion(happy_var_1.into_inner(), Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2, at))
         }.map(HappyAbsSyn53),
         _ => panic!("irrefutable pattern")
     }
@@ -17970,7 +17948,7 @@ fn happyReduce_187(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_187(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn33(happy_var_4), _, HappyAbsSyn132(happy_var_2), HappyAbsSyn54(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CStructureUnion, happy_var_1.into_inner(), None,     Some(reverse(happy_var_4)), happy_var_2))
+        (_, HappyAbsSyn33(happy_var_4), _, HappyAbsSyn132(happy_var_2), HappyAbsSyn54(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CStructureUnion(happy_var_1.into_inner(), None,     Some(reverse(happy_var_4)), happy_var_2, at))
         }.map(HappyAbsSyn53),
         _ => panic!("irrefutable pattern")
     }
@@ -17983,7 +17961,7 @@ fn happyReduce_188(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_188(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn131(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn54(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CStructureUnion, happy_var_1.into_inner(), Some(happy_var_3), None,              happy_var_2))
+        (HappyAbsSyn131(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn54(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CStructureUnion(happy_var_1.into_inner(), Some(happy_var_3), None,              happy_var_2, at))
         }.map(HappyAbsSyn53),
         _ => panic!("irrefutable pattern")
     }
@@ -18099,7 +18077,7 @@ fn happyReduction_197(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (HappyAbsSyn59(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => {
             p.withNodeInfo(happy_var_1.clone(), match happy_var_3 {
-                (d, s) => partial_1!(CDecl, addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), vec![(d, None, s)])
+                (d, s) => |at| CDecl(addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), vec![(d, None, s)], at)
             })
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
@@ -18115,7 +18093,7 @@ fn happyReduction_198(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (HappyAbsSyn59(happy_var_2), HappyAbsSyn132(happy_var_1)) => {
             p.withNodeInfo(happy_var_1.clone(), match happy_var_2 {
-                (d, s) => partial_1!(CDecl, liftCAttrs(happy_var_1), vec![(d, None, s)]),
+                (d, s) => |at| CDecl(liftCAttrs(happy_var_1), vec![(d, None, s)], at),
             })
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
@@ -18153,14 +18131,14 @@ fn happyReduce_200(p: &mut Parser, i: isize) -> Res<Cont> {
 fn happyReduction_200(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (HappyAbsSyn132(happy_var_3), HappyAbsSyn59(happy_var_2), HappyAbsSyn37(happy_var_1)) => {
-            match happy_var_2 {
+            p.withNodeInfo(happy_var_1.clone(), move |at| match happy_var_2 {
                 (Some(d), s) => {
-                    p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(appendObjAttrs(happy_var_3, d)), None, s)]))
+                    CDecl(happy_var_1, vec![(Some(appendObjAttrs(happy_var_3, d)), None, s)], at)
                 },
                 (None, s) => {
-                    p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(None, None, s)]))
+                    CDecl(happy_var_1, vec![(None, None, s)], at)
                 },
-            }
+            })
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -18197,7 +18175,7 @@ fn happyReduce_202(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_202(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyAbsSyn37(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![]))
+        HappyAbsSyn37(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1, vec![], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -18298,7 +18276,7 @@ fn happyReduce_210(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_210(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn62(happy_var_4), _, HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CEnumeration, None, Some(reverse(happy_var_4)), happy_var_2))
+        (_, HappyAbsSyn62(happy_var_4), _, HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CEnumeration(None, Some(reverse(happy_var_4)), happy_var_2, at))
         }.map(HappyAbsSyn61),
         _ => panic!("irrefutable pattern")
     }
@@ -18311,7 +18289,7 @@ fn happyReduce_211(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_211(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn62(happy_var_4), _, HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CEnumeration, None, Some(reverse(happy_var_4)), happy_var_2))
+        (_, _, HappyAbsSyn62(happy_var_4), _, HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CEnumeration(None, Some(reverse(happy_var_4)), happy_var_2, at))
         }.map(HappyAbsSyn61),
         _ => panic!("irrefutable pattern")
     }
@@ -18324,7 +18302,7 @@ fn happyReduce_212(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_212(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn62(happy_var_5), _, HappyAbsSyn131(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CEnumeration, Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2))
+        (_, HappyAbsSyn62(happy_var_5), _, HappyAbsSyn131(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CEnumeration(Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2, at))
         }.map(HappyAbsSyn61),
         _ => panic!("irrefutable pattern")
     }
@@ -18337,7 +18315,7 @@ fn happyReduce_213(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_213(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn62(happy_var_5), _, HappyAbsSyn131(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CEnumeration, Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2))
+        (_, _, HappyAbsSyn62(happy_var_5), _, HappyAbsSyn131(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CEnumeration(Some(happy_var_3), Some(reverse(happy_var_5)), happy_var_2, at))
         }.map(HappyAbsSyn61),
         _ => panic!("irrefutable pattern")
     }
@@ -18350,7 +18328,7 @@ fn happyReduce_214(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_214(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn131(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CEnumeration, Some(happy_var_3), None, happy_var_2))
+        (HappyAbsSyn131(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CEnumeration(Some(happy_var_3), None, happy_var_2, at))
         }.map(HappyAbsSyn61),
         _ => panic!("irrefutable pattern")
     }
@@ -18435,7 +18413,7 @@ fn happyReduce_221(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_221(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CConstQual))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CConstQual)
         }.map(HappyAbsSyn64),
         _ => panic!("irrefutable pattern")
     }
@@ -18448,7 +18426,7 @@ fn happyReduce_222(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_222(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CVolatQual))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CVolatQual)
         }.map(HappyAbsSyn64),
         _ => panic!("irrefutable pattern")
     }
@@ -18461,7 +18439,7 @@ fn happyReduce_223(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_223(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CRestrQual))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CRestrQual)
         }.map(HappyAbsSyn64),
         _ => panic!("irrefutable pattern")
     }
@@ -18474,7 +18452,7 @@ fn happyReduce_224(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_224(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CNullableQual))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CNullableQual)
         }.map(HappyAbsSyn64),
         _ => panic!("irrefutable pattern")
     }
@@ -18487,7 +18465,7 @@ fn happyReduce_225(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_225(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CNonnullQual))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CNonnullQual)
         }.map(HappyAbsSyn64),
         _ => panic!("irrefutable pattern")
     }
@@ -18500,7 +18478,7 @@ fn happyReduce_226(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_226(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(CAtomicQual))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, CAtomicQual)
         }.map(HappyAbsSyn64),
         _ => panic!("irrefutable pattern")
     }
@@ -18618,7 +18596,7 @@ fn happyReduce_236(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_236(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(CTokTyIdent(_, happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDeclrR::from_var, happy_var_1))
+        HappyTerminal(CTokTyIdent(_, happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDeclrR::from_var(happy_var_1, at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18668,7 +18646,7 @@ fn happyReduce_240(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_240(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![]))
+        (HappyAbsSyn66(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_2, vec![], at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18681,7 +18659,7 @@ fn happyReduce_241(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_241(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, happy_var_3, vec![]))
+        (HappyAbsSyn66(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_2, |at| ptrDeclr(happy_var_3, vec![], at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18694,7 +18672,7 @@ fn happyReduce_242(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_242(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2)))
+        (HappyAbsSyn66(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_3, reverse(happy_var_2), at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18707,7 +18685,7 @@ fn happyReduce_243(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_243(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_4), HappyAbsSyn132(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2)))
+        (HappyAbsSyn66(happy_var_4), HappyAbsSyn132(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_3, |at| ptrDeclr(happy_var_4, reverse(happy_var_2), at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18780,7 +18758,7 @@ fn happyReduce_249(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_249(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn66(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, vec![]))
+        (_, HappyAbsSyn66(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_3, vec![], at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18793,7 +18771,7 @@ fn happyReduce_250(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_250(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn66(happy_var_4), _, HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2)))
+        (_, HappyAbsSyn66(happy_var_4), _, HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_4, reverse(happy_var_2), at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18806,7 +18784,7 @@ fn happyReduce_251(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_251(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn66(happy_var_5), _, HappyAbsSyn132(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_5, reverse(happy_var_2)))
+        (_, HappyAbsSyn66(happy_var_5), _, HappyAbsSyn132(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_3, |at| ptrDeclr(happy_var_5, reverse(happy_var_2), at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18819,7 +18797,7 @@ fn happyReduce_252(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_252(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![]))
+        (HappyAbsSyn66(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_2, vec![], at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18832,7 +18810,7 @@ fn happyReduce_253(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_253(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2)))
+        (HappyAbsSyn66(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_3, reverse(happy_var_2), at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18845,7 +18823,7 @@ fn happyReduce_254(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_254(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_4), HappyAbsSyn132(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2)))
+        (HappyAbsSyn66(happy_var_4), HappyAbsSyn132(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_3, |at| ptrDeclr(happy_var_4, reverse(happy_var_2), at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18894,7 +18872,7 @@ fn happyReduce_258(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_258(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(CTokTyIdent(_, happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDeclrR::from_var, happy_var_1))
+        HappyTerminal(CTokTyIdent(_, happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDeclrR::from_var(happy_var_1, at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18955,7 +18933,7 @@ fn happyReduce_263(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_263(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![]))
+        (HappyAbsSyn66(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_2, vec![], at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18968,7 +18946,7 @@ fn happyReduce_264(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_264(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, happy_var_3, vec![]))
+        (HappyAbsSyn66(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_2, |at| ptrDeclr(happy_var_3, vec![], at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18981,7 +18959,7 @@ fn happyReduce_265(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_265(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2)))
+        (HappyAbsSyn66(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_3, reverse(happy_var_2), at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -18994,7 +18972,7 @@ fn happyReduce_266(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_266(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_4), HappyAbsSyn132(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, happy_var_4, reverse(happy_var_2)))
+        (HappyAbsSyn66(happy_var_4), HappyAbsSyn132(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_3, |at| ptrDeclr(happy_var_4, reverse(happy_var_2), at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -19067,7 +19045,7 @@ fn happyReduce_272(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_272(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(CTokIdent(_, happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDeclrR::from_var, happy_var_1))
+        HappyTerminal(CTokIdent(_, happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDeclrR::from_var(happy_var_1, at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -19128,7 +19106,7 @@ fn happyReduce_277(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_277(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![]))
+        (HappyAbsSyn66(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_2, vec![], at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -19141,7 +19119,7 @@ fn happyReduce_278(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_278(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2)))
+        (HappyAbsSyn66(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_3, reverse(happy_var_2), at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -19248,7 +19226,7 @@ fn happyReduce_287(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_287(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyAbsSyn37(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![]))
+        HappyAbsSyn37(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1, vec![], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19261,7 +19239,7 @@ fn happyReduce_288(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_288(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(happy_var_2.reverse()), None, None)]))
+        (HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1, vec![(Some(happy_var_2.reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19274,8 +19252,7 @@ fn happyReduce_289(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_289(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1,
-                                                 vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)]))
+        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1, vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19288,8 +19265,7 @@ fn happyReduce_290(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_290(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1,
-                                                 vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)]))
+        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1, vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19302,7 +19278,7 @@ fn happyReduce_291(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_291(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyAbsSyn38(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![]))
+        HappyAbsSyn38(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(reverse(happy_var_1), vec![], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19315,7 +19291,7 @@ fn happyReduce_292(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_292(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_2), HappyAbsSyn38(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1), vec![(Some(happy_var_2.reverse()), None, None)]))
+        (HappyAbsSyn66(happy_var_2), HappyAbsSyn38(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(reverse(happy_var_1), vec![(Some(happy_var_2.reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19328,8 +19304,8 @@ fn happyReduce_293(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_293(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn38(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, reverse(happy_var_1),
-                                                 vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)]))
+        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn38(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(reverse(happy_var_1),
+                                                 vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19342,7 +19318,7 @@ fn happyReduce_294(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_294(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyAbsSyn37(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![]))
+        HappyAbsSyn37(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1, vec![], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19355,7 +19331,7 @@ fn happyReduce_295(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_295(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(happy_var_2.reverse()), None, None)]))
+        (HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1, vec![(Some(happy_var_2.reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19368,8 +19344,8 @@ fn happyReduce_296(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_296(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1,
-                                                 vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)]))
+        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1,
+                                                 vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19382,8 +19358,8 @@ fn happyReduce_297(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_297(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1,
-                                                 vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)]))
+        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1,
+                                                 vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19396,7 +19372,7 @@ fn happyReduce_298(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_298(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyAbsSyn65(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, liftTypeQuals(happy_var_1), vec![]))
+        HappyAbsSyn65(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(liftTypeQuals(happy_var_1), vec![], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19409,7 +19385,7 @@ fn happyReduce_299(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_299(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), vec![]))
+        (HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), vec![], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19422,8 +19398,7 @@ fn happyReduce_300(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_300(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, liftTypeQuals(happy_var_1),
-                                                 vec![(Some(happy_var_2.reverse()), None, None)]))
+        (HappyAbsSyn66(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(liftTypeQuals(happy_var_1), vec![(Some(happy_var_2.reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19436,8 +19411,8 @@ fn happyReduce_301(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_301(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, liftTypeQuals(happy_var_1),
-                                                 vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)]))
+        (HappyAbsSyn132(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(liftTypeQuals(happy_var_1),
+                                                 vec![(Some(happy_var_2.appendAttrs(happy_var_3).reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19474,7 +19449,7 @@ fn happyReduce_304(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_304(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyAbsSyn37(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![]))
+        HappyAbsSyn37(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1, vec![], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19487,7 +19462,7 @@ fn happyReduce_305(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_305(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, happy_var_1, vec![(Some(happy_var_2.reverse()), None, None)]))
+        (HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(happy_var_1, vec![(Some(happy_var_2.reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19500,7 +19475,7 @@ fn happyReduce_306(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_306(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), vec![]))
+        (HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(addVecs(liftTypeQuals(happy_var_1), liftCAttrs(happy_var_2)), vec![], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19513,8 +19488,7 @@ fn happyReduce_307(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_307(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CDecl, liftTypeQuals(happy_var_1),
-                                                 vec![(Some(happy_var_2.reverse()), None, None)]))
+        (HappyAbsSyn66(happy_var_2), HappyAbsSyn65(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CDecl(liftTypeQuals(happy_var_1), vec![(Some(happy_var_2.reverse()), None, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -19775,7 +19749,7 @@ fn happyReduce_326(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_326(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, CDeclrR::empty(), vec![]))
+        HappyTerminal(happy_var_1) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(CDeclrR::empty(), vec![], at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -19788,7 +19762,7 @@ fn happyReduce_327(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_327(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn132(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_3, partial_1!(ptrDeclr, CDeclrR::empty(), reverse(happy_var_2)))
+        (HappyAbsSyn132(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_3, |at| ptrDeclr(CDeclrR::empty(), reverse(happy_var_2), at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -19801,7 +19775,7 @@ fn happyReduce_328(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_328(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_2, vec![]))
+        (HappyAbsSyn66(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_2, vec![], at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -19814,7 +19788,7 @@ fn happyReduce_329(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_329(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(ptrDeclr, happy_var_3, reverse(happy_var_2)))
+        (HappyAbsSyn66(happy_var_3), HappyAbsSyn65(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| ptrDeclr(happy_var_3, reverse(happy_var_2), at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -19827,7 +19801,7 @@ fn happyReduce_330(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_330(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, CDeclrR::empty(), vec![]))
+        (HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_2, |at| ptrDeclr(CDeclrR::empty(), vec![], at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -19840,7 +19814,7 @@ fn happyReduce_331(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_331(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn66(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_2, partial_1!(ptrDeclr, happy_var_3, vec![]))
+        (HappyAbsSyn66(happy_var_3), HappyAbsSyn132(happy_var_2), HappyTerminal(happy_var_1)) => { p.withAttribute(happy_var_1, happy_var_2, |at| ptrDeclr(happy_var_3, vec![], at))
         }.map(HappyAbsSyn66),
         _ => panic!("irrefutable pattern")
     }
@@ -19961,7 +19935,7 @@ fn happyReduce_341(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_341(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyAbsSyn100(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CInitExpr, happy_var_1))
+        HappyAbsSyn100(happy_var_1) => { p.withNodeInfo(happy_var_1.clone(), |at| CInitExpr(happy_var_1, at))
         }.map(HappyAbsSyn93),
         _ => panic!("irrefutable pattern")
     }
@@ -19974,7 +19948,7 @@ fn happyReduce_342(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_342(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn95(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CInitList, reverse(happy_var_2)))
+        (_, HappyAbsSyn95(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CInitList(reverse(happy_var_2), at))
         }.map(HappyAbsSyn93),
         _ => panic!("irrefutable pattern")
     }
@@ -19987,7 +19961,7 @@ fn happyReduce_343(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_343(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn95(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CInitList, reverse(happy_var_2)))
+        (_, _, HappyAbsSyn95(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CInitList(reverse(happy_var_2), at))
         }.map(HappyAbsSyn93),
         _ => panic!("irrefutable pattern")
     }
@@ -20139,7 +20113,7 @@ fn happyReduce_356(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_356(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CArrDesig, happy_var_2))
+        (_, HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CArrDesig(happy_var_2, at))
         }.map(HappyAbsSyn98),
         _ => panic!("irrefutable pattern")
     }
@@ -20152,7 +20126,7 @@ fn happyReduce_357(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_357(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn131(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CMemberDesig, happy_var_2))
+        (HappyAbsSyn131(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CMemberDesig(happy_var_2, at))
         }.map(HappyAbsSyn98),
         _ => panic!("irrefutable pattern")
     }
@@ -20177,7 +20151,7 @@ fn happyReduce_359(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_359(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn100(happy_var_4), _, HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CRangeDesig, happy_var_2, happy_var_4))
+        (_, HappyAbsSyn100(happy_var_4), _, HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CRangeDesig(happy_var_2, happy_var_4, at))
         }.map(HappyAbsSyn98),
         _ => panic!("irrefutable pattern")
     }
@@ -20190,7 +20164,7 @@ fn happyReduce_360(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_360(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
-        HappyTerminal(CTokIdent(_, happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CVar, happy_var_1))
+        HappyTerminal(CTokIdent(_, happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CVar(happy_var_1, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20239,7 +20213,7 @@ fn happyReduce_364(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_364(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn101(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CGenericSelection, box happy_var_3, reverse(happy_var_5)))
+        (_, HappyAbsSyn101(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CGenericSelection(box happy_var_3, reverse(happy_var_5), at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20252,7 +20226,7 @@ fn happyReduce_365(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_365(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn12(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CStatExpr, box happy_var_2))
+        (_, HappyAbsSyn12(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CStatExpr(box happy_var_2, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20403,7 +20377,7 @@ fn happyReduce_377(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_377(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CIndex, box happy_var_1, box happy_var_3))
+        (_, HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CIndex(box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20416,7 +20390,7 @@ fn happyReduce_378(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_378(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CCall, box happy_var_1, vec![]))
+        (_, _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CCall(box happy_var_1, vec![], at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20429,7 +20403,7 @@ fn happyReduce_379(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_379(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn105(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CCall, box happy_var_1, reverse(happy_var_3)))
+        (_, HappyAbsSyn105(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CCall(box happy_var_1, reverse(happy_var_3), at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20442,7 +20416,7 @@ fn happyReduce_380(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_380(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn131(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CMember, box happy_var_1, happy_var_3, false))
+        (HappyAbsSyn131(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CMember(box happy_var_1, happy_var_3, false, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20455,7 +20429,7 @@ fn happyReduce_381(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_381(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn131(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CMember, box happy_var_1, happy_var_3, true))
+        (HappyAbsSyn131(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CMember(box happy_var_1, happy_var_3, true, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20468,7 +20442,7 @@ fn happyReduce_382(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_382(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CUnary, CPostIncOp, box happy_var_1))
+        (_, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CUnary(CPostIncOp, box happy_var_1, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20481,7 +20455,7 @@ fn happyReduce_383(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_383(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CUnary, CPostDecOp, box happy_var_1))
+        (_, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CUnary(CPostDecOp, box happy_var_1, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20494,7 +20468,7 @@ fn happyReduce_384(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_384(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn95(happy_var_5), _, _, HappyAbsSyn32(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CCompoundLit, box happy_var_2, reverse(happy_var_5)))
+        (_, HappyAbsSyn95(happy_var_5), _, _, HappyAbsSyn32(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CCompoundLit(box happy_var_2, reverse(happy_var_5), at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20507,7 +20481,7 @@ fn happyReduce_385(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_385(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, _, HappyAbsSyn95(happy_var_5), _, _, HappyAbsSyn32(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CCompoundLit, box happy_var_2, reverse(happy_var_5)))
+        (_, _, HappyAbsSyn95(happy_var_5), _, _, HappyAbsSyn32(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CCompoundLit(box happy_var_2, reverse(happy_var_5), at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20556,7 +20530,7 @@ fn happyReduce_389(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_389(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CUnary, CPreIncOp, box happy_var_2))
+        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CUnary(CPreIncOp, box happy_var_2, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20569,7 +20543,7 @@ fn happyReduce_390(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_390(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CUnary, CPreDecOp, box happy_var_2))
+        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CUnary(CPreDecOp, box happy_var_2, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20594,7 +20568,7 @@ fn happyReduce_392(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_392(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_2), HappyAbsSyn107(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CUnary, happy_var_1.into_inner(), box happy_var_2))
+        (HappyAbsSyn100(happy_var_2), HappyAbsSyn107(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CUnary(happy_var_1.into_inner(), box happy_var_2, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20607,7 +20581,7 @@ fn happyReduce_393(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_393(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CSizeofExpr, box happy_var_2))
+        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CSizeofExpr(box happy_var_2, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20620,7 +20594,7 @@ fn happyReduce_394(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_394(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn32(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CSizeofType, box happy_var_3))
+        (_, HappyAbsSyn32(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CSizeofType(box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20633,7 +20607,7 @@ fn happyReduce_395(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_395(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CAlignofExpr, box happy_var_2))
+        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CAlignofExpr(box happy_var_2, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20646,7 +20620,7 @@ fn happyReduce_396(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_396(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (_, HappyAbsSyn32(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CAlignofType, box happy_var_3))
+        (_, HappyAbsSyn32(happy_var_3), _, HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CAlignofType(box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20659,7 +20633,7 @@ fn happyReduce_397(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_397(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CComplexReal, box happy_var_2))
+        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CComplexReal(box happy_var_2, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20672,7 +20646,7 @@ fn happyReduce_398(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_398(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CComplexImag, box happy_var_2))
+        (HappyAbsSyn100(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CComplexImag(box happy_var_2, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20685,7 +20659,7 @@ fn happyReduce_399(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_399(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn131(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CLabAddrExpr, happy_var_2))
+        (HappyAbsSyn131(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CLabAddrExpr(happy_var_2, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20782,7 +20756,7 @@ fn happyReduce_407(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_407(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_4), _, HappyAbsSyn32(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, partial_1!(CCast, box happy_var_2, box happy_var_4))
+        (HappyAbsSyn100(happy_var_4), _, HappyAbsSyn32(happy_var_2), HappyTerminal(happy_var_1)) => { p.withNodeInfo(happy_var_1, |at| CCast(box happy_var_2, box happy_var_4, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20807,7 +20781,7 @@ fn happyReduce_409(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_409(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CMulOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CMulOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20820,7 +20794,7 @@ fn happyReduce_410(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_410(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CDivOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CDivOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20833,7 +20807,7 @@ fn happyReduce_411(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_411(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CRmdOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CRmdOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20858,7 +20832,7 @@ fn happyReduce_413(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_413(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CAddOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CAddOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20871,7 +20845,7 @@ fn happyReduce_414(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_414(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CSubOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CSubOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20896,7 +20870,7 @@ fn happyReduce_416(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_416(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CShlOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CShlOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20909,7 +20883,7 @@ fn happyReduce_417(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_417(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CShrOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CShrOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20934,7 +20908,7 @@ fn happyReduce_419(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_419(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLeOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CLeOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20947,7 +20921,7 @@ fn happyReduce_420(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_420(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CGrOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CGrOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20960,7 +20934,7 @@ fn happyReduce_421(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_421(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLeqOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CLeqOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20973,7 +20947,7 @@ fn happyReduce_422(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_422(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CGeqOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CGeqOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -20998,7 +20972,7 @@ fn happyReduce_424(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_424(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CEqOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CEqOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -21011,7 +20985,7 @@ fn happyReduce_425(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_425(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CNeqOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CNeqOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -21036,7 +21010,7 @@ fn happyReduce_427(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_427(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CAndOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CAndOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -21061,7 +21035,7 @@ fn happyReduce_429(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_429(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CXorOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CXorOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -21086,7 +21060,7 @@ fn happyReduce_431(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_431(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, COrOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(COrOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -21111,7 +21085,7 @@ fn happyReduce_433(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_433(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLndOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CLndOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -21136,7 +21110,7 @@ fn happyReduce_435(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_435(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CBinary, CLorOp, box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CBinary(CLorOp, box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -21161,7 +21135,7 @@ fn happyReduce_437(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_437(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CCond, box happy_var_1, Some(box happy_var_3), box happy_var_5))
+        (HappyAbsSyn100(happy_var_5), _, HappyAbsSyn100(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CCond(box happy_var_1, Some(box happy_var_3), box happy_var_5, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -21174,7 +21148,7 @@ fn happyReduce_438(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_438(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_4), _, _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CCond, box happy_var_1, None, box happy_var_4))
+        (HappyAbsSyn100(happy_var_4), _, _, HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CCond(box happy_var_1, None, box happy_var_4, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -21199,7 +21173,7 @@ fn happyReduce_440(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_440(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
-        (HappyAbsSyn100(happy_var_3), HappyAbsSyn121(happy_var_2), HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), partial_1!(CAssign, happy_var_2.into_inner(), box happy_var_1, box happy_var_3))
+        (HappyAbsSyn100(happy_var_3), HappyAbsSyn121(happy_var_2), HappyAbsSyn100(happy_var_1)) => { p.withNodeInfo(happy_var_1.clone(), |at| CAssign(happy_var_2.into_inner(), box happy_var_1, box happy_var_3, at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -21358,7 +21332,7 @@ fn happyReduction_453(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (HappyAbsSyn105(happy_var_3), _, HappyAbsSyn100(happy_var_1)) => {
             let es = reverse(happy_var_3);
-            p.withNodeInfo(es.clone(), partial_1!(CComma, prepend(happy_var_1, es)))
+            p.withNodeInfo(es.clone(), |at| CComma(prepend(happy_var_1, es), at))
         }.map(HappyAbsSyn100),
         _ => panic!("irrefutable pattern")
     }
@@ -21450,9 +21424,9 @@ fn happyReduce_461(p: &mut Parser, i: isize) -> Res<Cont> {
 fn happyReduction_461(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
         HappyTerminal(happy_var_1) => {
-                    p.withNodeInfo(happy_var_1.clone(), move |pos| {
+                    p.withNodeInfo(happy_var_1.clone(), move |at| {
                         if let CTokILit(_, i) = happy_var_1 {
-                            CIntConst(i, pos)
+                            CIntConst(i, at)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -21470,9 +21444,9 @@ fn happyReduce_462(p: &mut Parser, i: isize) -> Res<Cont> {
 fn happyReduction_462(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
         HappyTerminal(happy_var_1) => {
-                    p.withNodeInfo(happy_var_1.clone(), move |pos| {
+                    p.withNodeInfo(happy_var_1.clone(), move |at| {
                         if let CTokCLit(_, c) = happy_var_1 {
-                            CCharConst(c, pos)
+                            CCharConst(c, at)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -21490,9 +21464,9 @@ fn happyReduce_463(p: &mut Parser, i: isize) -> Res<Cont> {
 fn happyReduction_463(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
         HappyTerminal(happy_var_1) => {
-                    p.withNodeInfo(happy_var_1.clone(), move |pos| {
+                    p.withNodeInfo(happy_var_1.clone(), move |at| {
                         if let CTokFLit(_, f) = happy_var_1 {
-                            CFloatConst(f, pos)
+                            CFloatConst(f, at)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -21510,9 +21484,9 @@ fn happyReduce_464(p: &mut Parser, i: isize) -> Res<Cont> {
 fn happyReduction_464(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
         HappyTerminal(happy_var_1) => {
-            p.withNodeInfo(happy_var_1.clone(), move |pos| {
+            p.withNodeInfo(happy_var_1.clone(), move |at| {
                 if let CTokSLit(_, s) = happy_var_1 {
-                    CStringLiteral(s, pos)
+                    CStringLiteral(s, at)
                 } else {
                     panic!("irrefutable pattern")
                 }
@@ -21530,9 +21504,9 @@ fn happyReduce_465(p: &mut Parser, i: isize) -> Res<Cont> {
 fn happyReduction_465(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (HappyAbsSyn129(happy_var_2), HappyTerminal(happy_var_1)) => {
-            p.withNodeInfo(happy_var_1.clone(), move |pos| {
+            p.withNodeInfo(happy_var_1.clone(), move |at| {
                 if let CTokSLit(_, s) = happy_var_1 {
-                    CStringLiteral(concatCStrings(prepend(s, reverse(happy_var_2))), pos)
+                    CStringLiteral(concatCStrings(prepend(s, reverse(happy_var_2))), at)
                 } else {
                     panic!("irrefutable pattern")
                 }
