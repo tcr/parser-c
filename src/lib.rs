@@ -40,8 +40,6 @@ pub mod data;
 pub mod parser;
 pub mod syntax;
 
-use std::thread;
-
 use support as corollary_support;
 use corollary_support::FilePath;
 use syntax::preprocess::{Preprocessor, isPreprocessed, runPreprocessor, rawCppArgs};
@@ -76,10 +74,8 @@ pub fn parseCFile<C: Preprocessor>(cpp: C,
 }
 
 pub fn parseCFilePre(file: FilePath) -> Result<CTranslUnit, ParseError> {
-    thread::Builder::new().stack_size(32 * 1024 * 1024).spawn(move || {
-        let input_stream = InputStream::from_file(&file);
-        parseC(input_stream, Position::from_file(file))
-    }).unwrap().join().unwrap()
+    let input_stream = InputStream::from_file(&file);
+    parseC(input_stream, Position::from_file(file))
 }
 
 /// Basic public API. Accepts C source and a filename.
@@ -89,11 +85,6 @@ pub fn parse(input: &str, filename: &str) -> Result<CTranslUnit, ParseError> {
 
     let input = input.to_string();
     let filename = filename.to_string();
-
-    // TODO which stack size is necessary? Can we eliminate this?
-    thread::Builder::new().stack_size(32 * 1024 * 1024).spawn(move || {
-        let input_stream = InputStream::from_string(input);
-
-        parseC(input_stream, Position::from_file(FilePath::from(filename)))
-    }).unwrap().join().unwrap()
+    let input_stream = InputStream::from_string(input);
+    parseC(input_stream, Position::from_file(FilePath::from(filename)))
 }
