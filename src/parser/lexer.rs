@@ -32741,7 +32741,7 @@ const ALEX_DEFLT: [isize; 339] = [
     -1,
 ];
 
-const ALEX_ACCEPT: [AlexAcc<bool>; 339] = [
+const ALEX_ACCEPT: [AlexAcc; 339] = [
     AlexAccNone,
     AlexAccNone,
     AlexAccNone,
@@ -33250,7 +33250,7 @@ label __label__
 */
 // Tokens: _Alignas _Alignof __alignof alignof __alignof__ __asm asm __asm__ _Atomic auto break _Bool case char __const const __const__ continue _Complex __complex__ default do double else enum extern float for _Generic goto if __inline inline __inline__ int __int128 long _Noreturn  _Nullable __nullable _Nonnull __nonnull register __restrict restrict __restrict__ return short __signed signed __signed__ sizeof static _Static_assert struct switch typedef __typeof typeof __typeof__ __thread _Thread_local union unsigned void __volatile volatile __volatile__ while __label__ __attribute __attribute__ __extension__ __real __real__ __imag __imag__ __builtin_va_arg __builtin_offsetof __builtin_types_compatible_p
 
-pub fn idkwtok(p: &mut Parser, id: &str, pos: Position) -> Res<CToken> {
+fn idkwtok(p: &mut Parser, id: &str, pos: Position) -> Res<CToken> {
     match id.as_ref() {
         "_Alignas" => tok(8, CTokAlignas, pos),
         "_Alignof" => tok(8, CTokAlignof, pos),
@@ -33345,20 +33345,7 @@ pub fn idkwtok(p: &mut Parser, id: &str, pos: Position) -> Res<CToken> {
     }
 }
 
-pub fn ignoreAttribute(p: &mut Parser) -> Res<()> {
-    pub fn skipTokens(p: &mut Parser, n: isize) -> Res<()> {
-        let ntok = lexToken_q(p, false)?;
-        match ntok {
-            CTokRParen(_) if n == 1 => Ok(()),
-            CTokRParen(_) => skipTokens(p, n - 1),
-            CTokLParen(_) => skipTokens(p, n + 1),
-            _             => skipTokens(p, n),
-        }
-    }
-    skipTokens(p, 0)
-}
-
-pub fn adjustLineDirective(pragma: &str, pos: Position) -> Position {
+fn adjustLineDirective(pragma: &str, pos: Position) -> Position {
     // note: it is ensured by the lexer that the requisite parts of the line are present
     // so we just use unwrap()
 
@@ -33377,26 +33364,26 @@ pub fn adjustLineDirective(pragma: &str, pos: Position) -> Position {
     Position::new(offs_q, new_fname, row, 1)
 }
 
-pub fn tok<M>(len: isize, mkTok: M, pos: Position) -> Res<CToken>
+fn tok<M>(len: isize, mkTok: M, pos: Position) -> Res<CToken>
     where M: Fn(PosLength) -> CToken
 {
     Ok(mkTok((pos, len)))
 }
 
 /// error token
-pub fn token_fail(errmsg: &str, pos: Position, _: isize, _: InputStream) -> Res<CToken> {
+fn token_fail(errmsg: &str, pos: Position, _: isize, _: InputStream) -> Res<CToken> {
     Err(ParseError::new(pos, vec!["Lexical Error !".to_string(), errmsg.to_string()]))
 }
 
 /// token that uses the string
-pub fn token<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: InputStream) -> Res<CToken>
+fn token<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: InputStream) -> Res<CToken>
     where R: Fn(&str) -> T, M: Fn(PosLength, T) -> CToken
 {
     Ok(mkTok((pos, len), fromStr(inp.take_string(len))))
 }
 
 /// token that may fail
-pub fn token_plus<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: InputStream) -> Res<CToken>
+fn token_plus<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: InputStream) -> Res<CToken>
     where R: Fn(&str) -> Result<T, String>, M: Fn(PosLength, T) -> CToken
 {
     match fromStr(inp.take_string(len)) {
@@ -33408,13 +33395,9 @@ pub fn token_plus<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp:
 // -----------------------------------------------------------------------------
 // The input type
 
-pub type AlexInput = (Position, InputStream);
+type AlexInput = (Position, InputStream);
 
-pub fn alexInputPrevChar(_: AlexInput) -> char {
-    panic!("alexInputPrevChar not used")
-}
-
-pub fn alexGetByte((p, is): AlexInput) -> Option<(u8, AlexInput)> {
+fn alexGetByte((p, is): AlexInput) -> Option<(u8, AlexInput)> {
     if is.is_empty() {
         None
     } else {
@@ -33425,7 +33408,7 @@ pub fn alexGetByte((p, is): AlexInput) -> Option<(u8, AlexInput)> {
     }
 }
 
-pub fn alexMove(pos: Position, ch: char) -> Position {
+fn alexMove(pos: Position, ch: char) -> Position {
     match ch {
         ' '  => pos.inc(1),
         '\n' => pos.retPos(),
@@ -33434,7 +33417,7 @@ pub fn alexMove(pos: Position, ch: char) -> Position {
     }
 }
 
-pub fn lexicalError<T>(p: &mut Parser) -> Res<T> {
+fn lexicalError<T>(p: &mut Parser) -> Res<T> {
     let pos = p.getPos();
     let input = p.getInput();
     let (c, _) = input.take_char();
@@ -33469,7 +33452,7 @@ pub fn lexC(p: &mut Parser) -> Res<CToken> {
     lexToken_q(p, true)
 }
 
-pub fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
+fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
     let pos = p.getPos();
     let inp = p.getInput();
     match alexScan((pos.clone(), inp.clone()), 0) {
@@ -33782,37 +33765,25 @@ fn alex_action_67(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -
 //-----------------------------------------------------------------------------
 // INTERNALS and main scanner engine
 
-pub fn alexIndexInt16OffAddr(arr: &[isize], off: isize) -> isize {
-    arr[off as usize]
-}
-
-pub fn alexIndexInt32OffAddr(arr: &[isize], off: isize) -> isize {
-    arr[off as usize]
-}
-
-pub fn quickIndex<E>(arr: &[E], i: isize) -> &E {
-    &arr[i as usize]
-}
-
 // -----------------------------------------------------------------------------
 // Main lexing routines
 
-pub enum AlexReturn<T> {
+enum AlexReturn<T> {
     AlexEOF,
     AlexError(AlexInput),
     AlexSkip(AlexInput, isize),
     AlexToken(AlexInput, isize, T)
 }
-pub use self::AlexReturn::*;
+use self::AlexReturn::*;
 
-pub fn alexScan(input: (Position, InputStream), sc: isize)
-                -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>> {
+fn alexScan(input: (Position, InputStream), sc: isize)
+            -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>> {
     // TODO first argument should be "undefined"
     alexScanUser(false, input, sc)
 }
 
-pub fn alexScanUser(user: bool, input: AlexInput, sc: isize)
-                    -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>>
+fn alexScanUser(user: bool, input: AlexInput, sc: isize)
+                -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>>
 {
     match alex_scan_tkn(user, input.clone(), (0), input.clone(), sc, AlexNone) {
         (AlexNone, input_q) => {
@@ -33841,10 +33812,10 @@ pub fn alexScanUser(user: bool, input: AlexInput, sc: isize)
 /// Push the input through the DFA, remembering the most recent accepting
 /// state it encountered.
 
-pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, mut input: AlexInput,
-                     mut s: isize, mut last_acc: AlexLastAcc) -> (AlexLastAcc, AlexInput) {
+fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, mut input: AlexInput,
+                 mut s: isize, mut last_acc: AlexLastAcc) -> (AlexLastAcc, AlexInput) {
     fn check_accs<A: Clone>(user: A, orig_input: &AlexInput, len: isize, input: AlexInput,
-                            last_acc: AlexLastAcc, acc: &AlexAcc<A>) -> AlexLastAcc {
+                            last_acc: AlexLastAcc, acc: &AlexAcc) -> AlexLastAcc {
         match *acc {
             AlexAccNone => {
                 last_acc
@@ -33855,7 +33826,6 @@ pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, 
             AlexAccSkip => {
                 AlexLastSkip(input, len)
             },
-            _ => panic!("predicates are not supported")
         }
     };
 
@@ -33871,14 +33841,14 @@ pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, 
 
                 match c as isize {
                     ord_c => {
-                        let base = alexIndexInt32OffAddr(&ALEX_BASE, s);
+                        let base = ALEX_BASE[s as usize];
                         let offset = base + ord_c;
-                        let check = alexIndexInt16OffAddr(&ALEX_CHECK, offset);
+                        let check = ALEX_CHECK[offset as usize];
 
                         let new_s = if offset >= 0 && check == ord_c {
-                            alexIndexInt16OffAddr(&ALEX_TABLE, offset)
+                            ALEX_TABLE[offset as usize]
                         } else {
-                            alexIndexInt16OffAddr(&ALEX_DEFLT, s)
+                            ALEX_DEFLT[s as usize]
                         };
 
                         match new_s {
@@ -33905,48 +33875,16 @@ pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, 
     }
 }
 
-pub enum AlexLastAcc {
+enum AlexLastAcc {
     AlexNone,
     AlexLastAcc(isize, AlexInput, isize),
     AlexLastSkip(AlexInput, isize)
 }
-pub use self::AlexLastAcc::*;
+use self::AlexLastAcc::*;
 
-pub enum AlexAcc<T> {
+enum AlexAcc {
     AlexAccNone,
     AlexAcc(isize),
     AlexAccSkip,
-    AlexAccPred(isize, Box<AlexAccPred<T>>, Box<AlexAcc<T>>),
-    AlexAccSkipPred(Box<AlexAccPred<T>>, Box<AlexAcc<T>>)
 }
-pub use self::AlexAcc::*;
-
-pub type AlexAccPred<T> = Box<Fn(T, AlexInput, isize, AlexInput) -> bool>;
-
-// -----------------------------------------------------------------------------
-// Predicates on a rule
-
-pub fn alexAndPred<T: Clone>(p1: Box<Fn(T, AlexInput, isize, AlexInput) -> bool>,
-                             p2: Box<Fn(T, AlexInput, isize, AlexInput) -> bool>,
-                             user: T, in1: AlexInput, len: isize, in2: AlexInput) -> bool {
-    p1(user.clone(), in1.clone(), len, in2.clone()) && p2(user, in1, len, in2)
-}
-
-pub fn alexPrevCharIs(c: char, _: isize, input: AlexInput, _: isize, _: isize) -> bool {
-    c == alexInputPrevChar(input)
-}
-
-pub fn alexPrevCharMatches(f: Box<Fn(char) -> isize>, _: isize, input: AlexInput, _: isize, _: isize) -> isize {
-    f(alexInputPrevChar(input))
-}
-
-pub fn alexPrevCharIsOneOf(arr: Vec<bool>, _: isize, input: AlexInput, _: isize, _: AlexInput) -> bool {
-    arr[alexInputPrevChar(input) as usize]
-}
-
-pub fn alexRightContext(sc: isize, user: bool, _: AlexInput, _: isize, input: AlexInput) -> bool {
-    match alex_scan_tkn(user, input.clone(), (0), input, sc, AlexNone) {
-        (AlexNone, _) => false,
-        _ => true,
-    }
-}
+use self::AlexAcc::*;
