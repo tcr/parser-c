@@ -54,9 +54,4 @@ pub mod RList {
             (Reversed(xs), x)
         }
     }
-
-    // temporary API
-    pub fn get_mut<T>(_0: &mut Reversed<Vec<T>>, idx: usize) -> Option<&mut T> {
-        _0.0.get_mut(idx)
-    }
 }

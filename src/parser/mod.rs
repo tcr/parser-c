@@ -19,7 +19,6 @@ use parser::tokens::{CToken, CTokEof};
 use syntax::ast::*;
 use data::name::{Name, NameSupply, new_name_supply};
 use data::ident::Ident;
-use data::r_list::{Reversed, RList, snoc};
 use data::node::{NodeInfo, CNode};
 use data::position::{Position, Pos};
 use data::input_stream::InputStream;
@@ -217,7 +216,7 @@ impl Parser {
 #[derive(Clone)]
 pub struct CDeclrR {
     ident: Option<Ident>,
-    inner: Reversed<Vec<CDerivedDeclr>>,
+    inner: Vec<CDerivedDeclr>,
     asmname: Option<CStringLiteral<NodeInfo>>,
     cattrs: Vec<CAttribute<NodeInfo>>,
     at: NodeInfo,
@@ -235,12 +234,12 @@ impl CNode for CDeclrR {
 impl CDeclrR {
 
     pub fn empty() -> CDeclrR {
-        CDeclrR { ident: None, inner: RList::empty(), asmname: None, cattrs: vec![],
+        CDeclrR { ident: None, inner: vec![], asmname: None, cattrs: vec![],
                   at: NodeInfo::undef() }
     }
 
     pub fn from_var(ident: Ident, ni: NodeInfo) -> CDeclrR {
-        CDeclrR { ident: Some(ident), inner: RList::empty(), asmname: None, cattrs: vec![], at: ni }
+        CDeclrR { ident: Some(ident), inner: vec![], asmname: None, cattrs: vec![], at: ni }
     }
 
     pub fn setAsmName(mut self, mAsmName: Option<CStringLiteral<NodeInfo>>) -> Result<CDeclrR, ParseError> {
@@ -267,7 +266,7 @@ impl CDeclrR {
 
     pub fn funDeclr(mut self, params: Either<Vec<Ident>, (Vec<CDecl>, bool)>,
                     cattrs: Vec<CAttribute<NodeInfo>>, at: NodeInfo) -> CDeclrR {
-        self.inner = snoc(self.inner, CFunDeclr(params, cattrs, at));
+        self.inner.push(CFunDeclr(params, cattrs, at));
         self
     }
 
@@ -277,12 +276,17 @@ impl CDeclrR {
             Some(e) => CArrSize(static_size, e),
             None => CNoArrSize(var_sized)
         };
-        self.inner = snoc(self.inner, CArrDeclr(tyquals, arr_sz, at));
+        self.inner.push(CArrDeclr(tyquals, arr_sz, at));
+        self
+    }
+
+    pub fn ptrDeclr(mut self: CDeclrR, tyquals: Vec<CTypeQual>, at: NodeInfo) -> CDeclrR {
+        self.inner.push(CPtrDeclr(tyquals, at));
         self
     }
 
     pub fn appendAttrs(mut self, mut newAttrs: Vec<CAttribute<NodeInfo>>) -> Self {
-        match RList::get_mut(&mut self.inner, 0) {
+        match self.inner.last_mut() {
             None => self.cattrs.append(&mut newAttrs),
             Some(&mut CPtrDeclr(ref mut typeQuals, _)) => {
                 typeQuals.extend(newAttrs.into_iter().map(CAttrQual))
@@ -303,15 +307,9 @@ impl CDeclrR {
     }
 
     pub fn reverse(self) -> CDeclarator<NodeInfo> {
-        let CDeclrR { ident, inner: reversedDDs, asmname, cattrs, at } = self;
-        CDeclarator(ident, RList::reverse(reversedDDs), asmname, cattrs, at)
+        let CDeclrR { ident, inner, asmname, cattrs, at } = self;
+        CDeclarator(ident, inner, asmname, cattrs, at)
     }
-}
-
-// This is a free function since it is used with partial_1!()
-pub fn ptrDeclr(mut slf: CDeclrR, tyquals: Vec<CTypeQual>, at: NodeInfo) -> CDeclrR {
-    slf.inner = snoc(slf.inner, CPtrDeclr(tyquals, at));
-    slf
 }
 
 pub fn parseC(input: InputStream, initialPosition: Position) -> Result<CTranslUnit, ParseError> {
@@ -322,4 +320,9 @@ pub fn execParser_<T, F>(do_parse: F, input: InputStream, pos: Position) -> Resu
     where T: 'static, F: Fn(&mut Parser) -> Result<T, ParseError>
 {
     execParser(input, pos, builtinTypeNames(), new_name_supply(), do_parse).map(|x| x.0)
+}
+
+pub fn ptrDeclr(mut slf: CDeclrR, tyquals: Vec<CTypeQual>, at: NodeInfo) -> CDeclrR {
+    slf.inner.push(CPtrDeclr(tyquals, at));
+    slf
 }

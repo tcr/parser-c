@@ -35,13 +35,11 @@ use std::boxed::FnBox;
 use either::Either::*;
 
 use data::position::Located;
-use data::r_list::RList::*;
-use data::r_list::{Reversed, snoc};
 use data::node::NodeInfo;
 use data::ident::Ident;
 use parser::tokens::*;
 use parser::lexer::{lexC, parseError};
-use parser::{ParseError, PState, CDeclrR, ptrDeclr};
+use parser::{ParseError, PState, CDeclrR};
 use syntax::ops::*;
 use syntax::ast::*;
 use syntax::constants::*;
@@ -253,7 +251,7 @@ clangcversion   { CTokClangC(_, ClangCTok($$)) } -- Clang version literal
 translation_unit :: { CTranslUnit }
 translation_unit
   : ext_decl_list {%
-                      let decls = reverse($1);
+                      let decls = $1;
                       if decls.len() == 0 {
                           let name = p.getNewName();
                           let pos = p.getPosClone();
@@ -271,11 +269,11 @@ translation_unit
 -- * GNU extensions:
 --     allow empty translation_unit
 --     allow redundant ';'
-ext_decl_list :: { Reversed<Vec<CExtDecl>> }
+ext_decl_list :: { Vec<CExtDecl> }
 ext_decl_list
-  : {- empty -}                         { empty() }
+  : {- empty -}                         { vec![] }
   | ext_decl_list ';'                   { $1 }
-  | ext_decl_list external_declaration  { snoc($1, $2) }
+  | ext_decl_list external_declaration  { appended($1, $2) }
 
 
 -- parse external C declaration (C99 6.9)
@@ -322,7 +320,7 @@ function_definition
         {% p.leaveScope(); p.withNodeInfo($1.clone(), |at| CFunctionDef($1, $2, vec![], $3, at)) }
 
   | declaration_qualifier_list function_declarator compound_statement
-        {% p.leaveScope(); p.withNodeInfo($1.clone(), |at| CFunctionDef(reverse($1), $2, vec![], $3, at)) }
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), |at| CFunctionDef($1, $2, vec![], $3, at)) }
 
   | type_qualifier_list        function_declarator compound_statement
         {% p.leaveScope(); p.withNodeInfo($1.clone(), |at| CFunctionDef(liftTypeQuals($1), $2, vec![], $3, at)) }
@@ -333,26 +331,26 @@ function_definition
   -- old function declarators
 
   |                            function_declarator_old declaration_list compound_statement
-        {% p.withNodeInfo($1.clone(), |at| CFunctionDef(vec![], $1, reverse($2), $3, at)) }
+        {% p.withNodeInfo($1.clone(), |at| CFunctionDef(vec![], $1, $2, $3, at)) }
 
   |                      attrs function_declarator_old declaration_list compound_statement
-        {% p.withNodeInfo($2.clone(), |at| CFunctionDef(liftCAttrs($1), $2, reverse($3), $4, at)) }
+        {% p.withNodeInfo($2.clone(), |at| CFunctionDef(liftCAttrs($1), $2, $3, $4, at)) }
 
   | declaration_specifier      function_declarator_old declaration_list compound_statement
-        {% p.withNodeInfo($1.clone(), |at| CFunctionDef($1, $2, reverse($3), $4, at)) }
+        {% p.withNodeInfo($1.clone(), |at| CFunctionDef($1, $2, $3, $4, at)) }
 
   | type_specifier             function_declarator_old declaration_list compound_statement
-        {% p.withNodeInfo($1.clone(), |at| CFunctionDef($1, $2, reverse($3), $4, at)) }
+        {% p.withNodeInfo($1.clone(), |at| CFunctionDef($1, $2, $3, $4, at)) }
 
   | declaration_qualifier_list function_declarator_old declaration_list compound_statement
-        {% p.withNodeInfo($1.clone(), |at| CFunctionDef(reverse($1), $2, reverse($3), $4, at)) }
+        {% p.withNodeInfo($1.clone(), |at| CFunctionDef($1, $2, $3, $4, at)) }
 
   | type_qualifier_list   function_declarator_old declaration_list compound_statement
-        {% p.withNodeInfo($1.clone(), |at| CFunctionDef(liftTypeQuals($1), $2, reverse($3), $4, at)) }
+        {% p.withNodeInfo($1.clone(), |at| CFunctionDef(liftTypeQuals($1), $2, $3, $4, at)) }
 
   | type_qualifier_list attrs  function_declarator_old declaration_list compound_statement
         {% p.withNodeInfo($1.clone(), |at| CFunctionDef(addVecs(liftTypeQuals($1), liftCAttrs($2)),
-                                                        $3, reverse($4), $5, at)) }
+                                                        $3, $4, $5, at)) }
 
 -- Read declarator and put function
 function_declarator :: { CDeclr }
@@ -401,10 +399,10 @@ labeled_statement
 compound_statement :: { CStat }
 compound_statement
   : '{' enter_scope block_item_list leave_scope '}'
-        {% p.withNodeInfo($1, |at| CCompound(vec![], reverse($3), at)) }
+        {% p.withNodeInfo($1, |at| CCompound(vec![], $3, at)) }
 
   | '{' enter_scope label_declarations block_item_list leave_scope '}'
-        {% p.withNodeInfo($1, |at| CCompound(reverse($3), reverse($4), at)) }
+        {% p.withNodeInfo($1, |at| CCompound($3, $4, at)) }
 
 
 -- No syntax for these, just side effecting semantic actions.
@@ -415,10 +413,10 @@ leave_scope :: { () }
 leave_scope : {% Ok(p.leaveScope()) }
 
 
-block_item_list :: { Reversed<Vec<CBlockItem>> }
+block_item_list :: { Vec<CBlockItem> }
 block_item_list
-  : {- empty -}                 { empty() }
-  | block_item_list block_item  { snoc($1, $2) }
+  : {- empty -}                 { vec![] }
+  | block_item_list block_item  { appended($1, $2) }
 
 block_item :: { CBlockItem }
 block_item
@@ -440,7 +438,7 @@ nested_function_definition
         {% p.leaveScope(); p.withNodeInfo($1.clone(), |at| CFunctionDef($1, $2, vec![], $3, at)) }
 
   | declaration_qualifier_list function_declarator compound_statement
-        {% p.leaveScope(); p.withNodeInfo($1.clone(), |at| CFunctionDef(reverse($1), $2, vec![], $3, at)) }
+        {% p.leaveScope(); p.withNodeInfo($1.clone(), |at| CFunctionDef($1, $2, vec![], $3, at)) }
 
   | type_qualifier_list   function_declarator compound_statement
         {% p.leaveScope(); p.withNodeInfo($1.clone(), |at| CFunctionDef(liftTypeQuals($1), $2, vec![], $3, at)) }
@@ -449,10 +447,10 @@ nested_function_definition
         {% p.leaveScope(); p.withNodeInfo($1.clone(), |at| CFunctionDef(addVecs(liftTypeQuals($1), liftCAttrs($2)), $3, vec![], $4, at)) }
 
 
-label_declarations :: { Reversed<Vec<Ident>> }
+label_declarations :: { Vec<Ident> }
 label_declarations
-  : "__label__" identifier_list ';'                     { $2  }
-  | label_declarations "__label__" identifier_list ';'  { rappendr($1, $3) }
+  : "__label__" identifier_list ';'                     { $2 }
+  | label_declarations "__label__" identifier_list ';'  { addVecs($1, $3) }
 
 
 -- parse C expression statement (C99 6.8.3)
@@ -525,7 +523,7 @@ asm_statement
         {% p.withNodeInfo($1, |at| CAssemblyStatement($2, $4, $6, $8, vec![], at)) }
 
   | asm maybe_type_qualifier '(' string_literal ':' asm_operands ':' asm_operands ':' asm_clobbers ')' ';'
-        {% p.withNodeInfo($1, |at| CAssemblyStatement($2, $4, $6, $8, reverse($10), at)) }
+        {% p.withNodeInfo($1, |at| CAssemblyStatement($2, $4, $6, $8, $10, at)) }
 
 
 maybe_type_qualifier :: { Option<CTypeQual> }
@@ -536,12 +534,12 @@ maybe_type_qualifier
 asm_operands :: { Vec<CAsmOperand> }
 asm_operands
   : {- empty -}                         { vec![] }
-  | nonnull_asm_operands                { reverse($1) }
+  | nonnull_asm_operands                { $1 }
 
-nonnull_asm_operands :: { Reversed<Vec<CAsmOperand>> }
+nonnull_asm_operands :: { Vec<CAsmOperand> }
 nonnull_asm_operands
-  : asm_operand                           { singleton($1) }
-  | nonnull_asm_operands ',' asm_operand  { snoc($1, $3) }
+  : asm_operand                           { vec![$1] }
+  | nonnull_asm_operands ',' asm_operand  { appended($1, $3) }
 
 asm_operand :: { CAsmOperand }
 asm_operand
@@ -553,10 +551,10 @@ asm_operand
         {% p.withNodeInfo($1, |at| CAssemblyOperand(Some($2), $4, $6, at)) }
 
 
-asm_clobbers :: { Reversed<Vec<CStrLit>> }
+asm_clobbers :: { Vec<CStrLit> }
 asm_clobbers
-  : string_literal                      { singleton($1) }
-  | asm_clobbers ',' string_literal     { snoc($1, $3) }
+  : string_literal                      { vec![$1] }
+  | asm_clobbers ',' string_literal     { appended($1, $3) }
 
 {-
 ---------------------------------------------------------------------------------------------------------------
@@ -672,10 +670,10 @@ tbc.
 declaration :: { CDecl }
 declaration
   : sue_declaration_specifier ';'
-        {% p.withNodeInfo($1.clone(), |at| CDecl(reverse($1), vec![], at)) }
+        {% p.withNodeInfo($1.clone(), |at| CDecl($1, vec![], at)) }
 
   | sue_type_specifier ';'
-        {% p.withNodeInfo($1.clone(), |at| CDecl(reverse($1), vec![], at)) }
+        {% p.withNodeInfo($1.clone(), |at| CDecl($1, vec![], at)) }
 
   | declaring_list ';'
         {%
@@ -697,10 +695,10 @@ declaration
   | "_Static_assert" '(' constant_expression ',' string_literal ')' ';'
         {% p.withNodeInfo($1, |at| CStaticAssert($3, $5, at)) }
 
-declaration_list :: { Reversed<Vec<CDecl>> }
+declaration_list :: { Vec<CDecl> }
 declaration_list
-  : {- empty -}                       { empty() }
-  | declaration_list declaration      { snoc($1, $2) }
+  : {- empty -}                       { vec![] }
+  | declaration_list declaration      { appended($1, $2) }
 
 
 -- * SUMMARY: default_declaring_list :- qualifier* identifier_declarator asm_attrs initializer?
@@ -715,7 +713,7 @@ default_declaring_list :: { CDecl }
 default_declaring_list
   : declaration_qualifier_list identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
-            let declspecs = reverse($1.clone());
+            let declspecs = $1.clone();
             let declr = $2.withAsmNameAttrs($3)?;
             // TODO: borrow these instead
             p.doDeclIdent(&declspecs, declr.clone());
@@ -808,9 +806,9 @@ declaring_list
 --
 declaration_specifier :: { Vec<CDeclSpec> }
 declaration_specifier
-  : basic_declaration_specifier         { reverse($1) }  -- Arithmetic or void
-  | sue_declaration_specifier           { reverse($1) }  -- Struct/Union/Enum
-  | typedef_declaration_specifier       { reverse($1) }  -- Typedef
+  : basic_declaration_specifier         { $1 }  -- Arithmetic or void
+  | sue_declaration_specifier           { $1 }  -- Struct/Union/Enum
+  | typedef_declaration_specifier       { $1 }  -- Typedef
 
 
 -- A mixture of type qualifiers (const, volatile, restrict, _Atomic, _Nonnull, _Nullable),
@@ -824,22 +822,22 @@ declaration_specifier
 -- GNU extensions
 --   * arbitrary interleaved __attribute__ annotations
 --
-declaration_qualifier_list :: { Reversed<Vec<CDeclSpec>> }
+declaration_qualifier_list :: { Vec<CDeclSpec> }
 declaration_qualifier_list
   : declaration_qualifier_without_types
-        { singleton($1) }
+        { vec![$1] }
 
   | attrs declaration_qualifier_without_types
-        { snoc(reverseList(liftCAttrs($1)), $2) }
+        { appended(liftCAttrs($1), $2) }
 
   | type_qualifier_list declaration_qualifier_without_types
-        { snoc(rmap(CTypeQual, $1), $2) }
+        { appended(map(CTypeQual, $1), $2) }
 
   | type_qualifier_list attrs declaration_qualifier_without_types
-        { snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)), $3) }
+        { appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)), $3) }
 
   | declaration_qualifier_list declaration_qualifier
-        { snoc($1, $2) }
+        { appended($1, $2) }
 
   | declaration_qualifier_list attr
         { addTrailingAttrs($1, $2) }
@@ -896,9 +894,9 @@ alignment_specifier
 -- Type specifier _Atomic(type) is not yet supported because of conflicts with type qualifier _Atomic
 type_specifier :: { Vec<CDeclSpec> }
 type_specifier
-  : basic_type_specifier                { reverse($1) }  -- Arithmetic or void
-  | sue_type_specifier                  { reverse($1) }  -- Struct/Union/Enum
-  | typedef_type_specifier              { reverse($1) }  -- Typedef
+  : basic_type_specifier                { $1 }  -- Arithmetic or void
+  | sue_type_specifier                  { $1 }  -- Struct/Union/Enum
+  | typedef_type_specifier              { $1 }  -- Typedef
 --  | "_Atomic" '(' type_name ')'                         -- _Atomic(type)
 --        {% withNodeInfo $1 $ \at -> [CTypeSpec (CAtomicType $3 at)] }
 
@@ -927,19 +925,19 @@ basic_type_name
 --   GNU extensions
 --     arbitrary interleaved __attribute__ annotations
 --
-basic_declaration_specifier :: { Reversed<Vec<CDeclSpec>> }
+basic_declaration_specifier :: { Vec<CDeclSpec> }
 basic_declaration_specifier
   : declaration_qualifier_list basic_type_name
-        { snoc($1, CTypeSpec($2)) }
+        { appended($1, CTypeSpec($2)) }
 
   | basic_type_specifier storage_class
-        { snoc($1, CStorageSpec($2)) }
+        { appended($1, CStorageSpec($2)) }
 
   | basic_declaration_specifier declaration_qualifier
-        { snoc($1, $2) }
+        { appended($1, $2) }
 
   | basic_declaration_specifier basic_type_name
-        { snoc($1, CTypeSpec($2)) }
+        { appended($1, CTypeSpec($2)) }
 
   | basic_declaration_specifier attr
         { addTrailingAttrs($1, $2) }
@@ -953,26 +951,26 @@ basic_declaration_specifier
 --   GNU extensions
 --     arbitrary interleaved __attribute__ annotations
 --
-basic_type_specifier :: { Reversed<Vec<CDeclSpec>> }
+basic_type_specifier :: { Vec<CDeclSpec> }
 basic_type_specifier
   -- Arithmetic or void
   : basic_type_name
-        { singleton(CTypeSpec($1)) }
+        { vec![CTypeSpec($1)] }
 
   | attrs basic_type_name
-        { snoc(reverseList(liftCAttrs($1)), CTypeSpec($2)) }
+        { appended(liftCAttrs($1), CTypeSpec($2)) }
 
   | type_qualifier_list basic_type_name
-        { snoc(rmap(CTypeQual, $1), CTypeSpec($2)) }
+        { appended(map(CTypeQual, $1), CTypeSpec($2)) }
 
   | type_qualifier_list attrs basic_type_name
-        { snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)), CTypeSpec($3)) }
+        { appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)), CTypeSpec($3)) }
 
   | basic_type_specifier type_qualifier
-        { snoc($1, CTypeQual($2)) }
+        { appended($1, CTypeQual($2)) }
 
   | basic_type_specifier basic_type_name
-        { snoc($1, CTypeSpec($2)) }
+        { appended($1, CTypeSpec($2)) }
 
   | basic_type_specifier attr
         { addTrailingAttrs($1, $2) }
@@ -984,16 +982,16 @@ basic_type_specifier
 -- * Summary:
 --   sue_declaration_specifier :- <permute> type_qualifier* storage_class+ elaborated_type_name
 --
-sue_declaration_specifier :: { Reversed<Vec<CDeclSpec>> }
+sue_declaration_specifier :: { Vec<CDeclSpec> }
 sue_declaration_specifier
   : declaration_qualifier_list elaborated_type_name
-        { snoc($1, CTypeSpec($2)) }
+        { appended($1, CTypeSpec($2)) }
 
   | sue_type_specifier storage_class
-        { snoc($1, CStorageSpec($2)) }
+        { appended($1, CStorageSpec($2)) }
 
   | sue_declaration_specifier declaration_qualifier
-        { snoc($1, $2) }
+        { appended($1, $2) }
 
   | sue_declaration_specifier attr
         { addTrailingAttrs($1, $2) }
@@ -1007,23 +1005,23 @@ sue_declaration_specifier
 --
 -- * GNU Extensions: records __attribute__ annotations
 --
-sue_type_specifier :: { Reversed<Vec<CDeclSpec>> }
+sue_type_specifier :: { Vec<CDeclSpec> }
 sue_type_specifier
   -- struct/union/enum
   : elaborated_type_name
-        { singleton(CTypeSpec($1)) }
+        { vec![CTypeSpec($1)] }
 
   | attrs elaborated_type_name
-        { snoc(reverseList(liftCAttrs($1)), CTypeSpec($2)) }
+        { appended(liftCAttrs($1), CTypeSpec($2)) }
 
   | type_qualifier_list elaborated_type_name
-        { snoc(rmap(CTypeQual, $1), CTypeSpec($2)) }
+        { appended(map(CTypeQual, $1), CTypeSpec($2)) }
 
   | type_qualifier_list attrs elaborated_type_name
-        { snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)), CTypeSpec($3)) }
+        { appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)), CTypeSpec($3)) }
 
   | sue_type_specifier type_qualifier
-        { snoc($1, CTypeQual($2)) }
+        { appended($1, CTypeQual($2)) }
 
   | sue_type_specifier attr
         { addTrailingAttrs($1, $2) }
@@ -1037,22 +1035,22 @@ sue_type_specifier
 -- * Note:
 --   the tyident can also be a: typeof '(' ... ')'
 --
-typedef_declaration_specifier :: { Reversed<Vec<CDeclSpec>> }
+typedef_declaration_specifier :: { Vec<CDeclSpec> }
 typedef_declaration_specifier
   : typedef_type_specifier storage_class
-        { snoc($1, CStorageSpec($2)) }
+        { appended($1, CStorageSpec($2)) }
 
   | declaration_qualifier_list tyident
-        {% p.withNodeInfo($2.clone(), |at| snoc($1, CTypeSpec(CTypeDef($2, at)))) }
+        {% p.withNodeInfo($2.clone(), |at| appended($1, CTypeSpec(CTypeDef($2, at)))) }
 
   | declaration_qualifier_list typeof '(' expression ')'
-        {% p.withNodeInfo($2, |at| snoc($1, CTypeSpec(CTypeOfExpr($4, at)))) }
+        {% p.withNodeInfo($2, |at| appended($1, CTypeSpec(CTypeOfExpr($4, at)))) }
 
   | declaration_qualifier_list typeof '(' type_name ')'
-        {% p.withNodeInfo($2, |at| snoc($1, CTypeSpec(CTypeOfType($4, at)))) }
+        {% p.withNodeInfo($2, |at| appended($1, CTypeSpec(CTypeOfType($4, at)))) }
 
   | typedef_declaration_specifier declaration_qualifier
-        { snoc($1, $2) }
+        { appended($1, $2) }
 
   | typedef_declaration_specifier attr
         { addTrailingAttrs($1, $2) }
@@ -1063,50 +1061,50 @@ typedef_declaration_specifier
 -- * Summary:
 --   type_qualifier* ( tyident | typeof '('...')' ) type_qualifier*
 --
-typedef_type_specifier :: { Reversed<Vec<CDeclSpec>> }
+typedef_type_specifier :: { Vec<CDeclSpec> }
 typedef_type_specifier
   : tyident
-        {% p.withNodeInfo($1.clone(), |at| singleton(CTypeSpec(CTypeDef($1, at)))) }
+        {% p.withNodeInfo($1.clone(), |at| vec![CTypeSpec(CTypeDef($1, at))]) }
 
   | typeof '(' expression ')'
-        {% p.withNodeInfo($1, |at| singleton(CTypeSpec(CTypeOfExpr($3, at)))) }
+        {% p.withNodeInfo($1, |at| vec![CTypeSpec(CTypeOfExpr($3, at))]) }
 
   | typeof '(' type_name ')'
-        {% p.withNodeInfo($1, |at| singleton(CTypeSpec(CTypeOfType($3, at)))) }
+        {% p.withNodeInfo($1, |at| vec![CTypeSpec(CTypeOfType($3, at))]) }
 
   | type_qualifier_list tyident
-        {% p.withNodeInfo($2.clone(), |at| snoc(rmap(CTypeQual, $1), CTypeSpec(CTypeDef($2, at)))) }
+        {% p.withNodeInfo($2.clone(), |at| appended(map(CTypeQual, $1), CTypeSpec(CTypeDef($2, at)))) }
 
   | type_qualifier_list typeof '(' expression ')'
-        {% p.withNodeInfo($2, |at| snoc(rmap(CTypeQual, $1), CTypeSpec(CTypeOfExpr($4, at)))) }
+        {% p.withNodeInfo($2, |at| appended(map(CTypeQual, $1), CTypeSpec(CTypeOfExpr($4, at)))) }
 
   | type_qualifier_list typeof '(' type_name ')'
-        {% p.withNodeInfo($2, |at| snoc(rmap(CTypeQual, $1), CTypeSpec(CTypeOfType($4, at)))) }
+        {% p.withNodeInfo($2, |at| appended(map(CTypeQual, $1), CTypeSpec(CTypeOfType($4, at)))) }
 
   -- repeat with attrs (this could be easier if type qualifier list wouldn't allow leading attributes)
   | attrs tyident
-        {% p.withNodeInfo($2.clone(), |at| snoc(reverseList(liftCAttrs($1)), CTypeSpec(CTypeDef($2, at)))) }
+        {% p.withNodeInfo($2.clone(), |at| appended(liftCAttrs($1), CTypeSpec(CTypeDef($2, at)))) }
 
   | attrs typeof '(' expression ')'
-        {% p.withNodeInfo($1.clone(), |at| snoc(reverseList(liftCAttrs($1)), CTypeSpec(CTypeOfExpr($4, at)))) }
+        {% p.withNodeInfo($1.clone(), |at| appended(liftCAttrs($1), CTypeSpec(CTypeOfExpr($4, at)))) }
 
   | attrs typeof '(' type_name ')'
-        {% p.withNodeInfo($2, |at| snoc(reverseList(liftCAttrs($1)), CTypeSpec(CTypeOfType($4, at)))) }
+        {% p.withNodeInfo($2, |at| appended(liftCAttrs($1), CTypeSpec(CTypeOfType($4, at)))) }
 
   | type_qualifier_list attrs tyident
-        {% p.withNodeInfo($3.clone(), |at| snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)),
-                                                CTypeSpec(CTypeDef($3, at)))) }
+        {% p.withNodeInfo($3.clone(), |at| appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)),
+                                                    CTypeSpec(CTypeDef($3, at)))) }
 
   | type_qualifier_list attrs typeof '(' expression ')'
-        {% p.withNodeInfo($3, |at| snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)),
-                                        CTypeSpec(CTypeOfExpr($5, at)))) }
+        {% p.withNodeInfo($3, |at| appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)),
+                                            CTypeSpec(CTypeOfExpr($5, at)))) }
 
   | type_qualifier_list attrs typeof '(' type_name ')'
-        {% p.withNodeInfo($3, |at| snoc(rappend(rmap(CTypeQual, $1), liftCAttrs($2)),
-                                        CTypeSpec(CTypeOfType($5, at)))) }
+        {% p.withNodeInfo($3, |at| appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)),
+                                            CTypeSpec(CTypeOfType($5, at)))) }
 
   | typedef_type_specifier type_qualifier
-        { snoc($1, CTypeQual($2)) }
+        { appended($1, CTypeQual($2)) }
 
   | typedef_type_specifier attr
         { addTrailingAttrs($1, $2) }
@@ -1131,13 +1129,13 @@ elaborated_type_name
 struct_or_union_specifier :: { CStructUnion }
 struct_or_union_specifier
   : struct_or_union attrs_opt identifier '{' struct_declaration_list  '}'
-        {% p.withNodeInfo($1.clone(), |at| CStructureUnion($1.into_inner(), Some($3), Some(reverse($5)), $2, at)) }
+        {% p.withNodeInfo($1.clone(), |at| CStructureUnion($1.into_inner(), Some($3), Some($5), $2, at)) }
 
   | struct_or_union attrs_opt '{' struct_declaration_list  '}'
-        {% p.withNodeInfo($1.clone(), |at| CStructureUnion($1.into_inner(), None,     Some(reverse($4)), $2, at)) }
+        {% p.withNodeInfo($1.clone(), |at| CStructureUnion($1.into_inner(), None,     Some($4), $2, at)) }
 
   | struct_or_union attrs_opt identifier
-        {% p.withNodeInfo($1.clone(), |at| CStructureUnion($1.into_inner(), Some($3), None,              $2, at)) }
+        {% p.withNodeInfo($1.clone(), |at| CStructureUnion($1.into_inner(), Some($3), None,     $2, at)) }
 
 
 struct_or_union :: { Located<CStructTag> }
@@ -1146,11 +1144,11 @@ struct_or_union
   | union                       { Located::new(CUnionTag, $1) }
 
 
-struct_declaration_list :: { Reversed<Vec<CDecl>> }
+struct_declaration_list :: { Vec<CDecl> }
 struct_declaration_list
-  : {- empty -}                                         { empty() }
+  : {- empty -}                                         { vec![] }
   | struct_declaration_list ';'                         { $1 }
-  | struct_declaration_list struct_declaration          { snoc($1, $2) }
+  | struct_declaration_list struct_declaration          { appended($1, $2) }
 
 
 -- parse C structure declaration (C99 6.7.2.1)
@@ -1293,24 +1291,24 @@ struct_identifier_declarator
 enum_specifier :: { CEnum }
 enum_specifier
   : enum attrs_opt '{' enumerator_list '}'
-        {% p.withNodeInfo($1, |at| CEnumeration(None, Some(reverse($4)), $2, at)) }
+        {% p.withNodeInfo($1, |at| CEnumeration(None, Some($4), $2, at)) }
 
   | enum attrs_opt '{' enumerator_list ',' '}'
-        {% p.withNodeInfo($1, |at| CEnumeration(None, Some(reverse($4)), $2, at)) }
+        {% p.withNodeInfo($1, |at| CEnumeration(None, Some($4), $2, at)) }
 
   | enum attrs_opt identifier '{' enumerator_list '}'
-        {% p.withNodeInfo($1, |at| CEnumeration(Some($3), Some(reverse($5)), $2, at)) }
+        {% p.withNodeInfo($1, |at| CEnumeration(Some($3), Some($5), $2, at)) }
 
   | enum attrs_opt identifier '{' enumerator_list ',' '}'
-        {% p.withNodeInfo($1, |at| CEnumeration(Some($3), Some(reverse($5)), $2, at)) }
+        {% p.withNodeInfo($1, |at| CEnumeration(Some($3), Some($5), $2, at)) }
 
   | enum attrs_opt identifier
         {% p.withNodeInfo($1, |at| CEnumeration(Some($3), None, $2, at)) }
 
-enumerator_list :: { Reversed<Vec<(Ident, Option<CExpr>)>> }
+enumerator_list :: { Vec<(Ident, Option<CExpr>)> }
 enumerator_list
-  : enumerator                                  { singleton($1) }
-  | enumerator_list ',' enumerator              { snoc($1, $3) }
+  : enumerator                                  { vec![$1] }
+  | enumerator_list ',' enumerator              { appended($1, $3) }
 
 
 enumerator :: { (Ident, Option<CExpr>) }
@@ -1336,11 +1334,11 @@ type_qualifier
 
 -- a list containing at least one type_qualifier (const, volatile, restrict, inline, _Noreturn)
 --    and additionally CAttrs
-type_qualifier_list :: { Reversed<Vec<CTypeQual>> }
+type_qualifier_list :: { Vec<CTypeQual> }
 type_qualifier_list
-  : attrs_opt type_qualifier                 { snoc(reverseList(__map!(CAttrQual, $1)), $2) }
-  | type_qualifier_list type_qualifier       { snoc($1, $2) }
-  | type_qualifier_list attrs type_qualifier { snoc(rappend($1, __map!(CAttrQual, $2)), $3) }
+  : attrs_opt type_qualifier                 { appended(map(CAttrQual, $1), $2) }
+  | type_qualifier_list type_qualifier       { appended($1, $2) }
+  | type_qualifier_list attrs type_qualifier { appended(addVecs($1, map(CAttrQual, $2)), $3) }
 
 -- parse C declarator (C99 6.7.5)
 --
@@ -1398,16 +1396,16 @@ clean_typedef_declarator
         { $1 }
 
   | '*' parameter_typedef_declarator
-        {% p.withNodeInfo($1, |at| ptrDeclr($2, vec![], at)) }
+        {% p.withNodeInfo($1, |at| $2.ptrDeclr(vec![], at)) }
 
   | '*' attrs parameter_typedef_declarator
-        {% p.withAttribute($1, $2, |at| ptrDeclr($3, vec![], at)) }
+        {% p.withAttribute($1, $2, |at| $3.ptrDeclr(vec![], at)) }
 
   | '*' type_qualifier_list  parameter_typedef_declarator
-        {% p.withNodeInfo($1, |at| ptrDeclr($3, reverse($2), at)) }
+        {% p.withNodeInfo($1, |at| $3.ptrDeclr($2, at)) }
 
   | '*' type_qualifier_list attrs parameter_typedef_declarator
-        {% p.withAttribute($1, $3, |at| ptrDeclr($4, reverse($2), at)) }
+        {% p.withAttribute($1, $3, |at| $4.ptrDeclr($2, at)) }
 
 -- clean_postfix_typedef_declarator :- ( attrs? clean_typedef_declarator ) declarator_postfix?
 --
@@ -1429,20 +1427,20 @@ paren_typedef_declarator
 
   -- redundant paren
   | '*' '(' simple_paren_typedef_declarator ')'
-        {% p.withNodeInfo($1, |at| ptrDeclr($3, vec![], at)) }
+        {% p.withNodeInfo($1, |at| $3.ptrDeclr(vec![], at)) }
 
   | '*' type_qualifier_list '(' simple_paren_typedef_declarator ')'
-        {% p.withNodeInfo($1, |at| ptrDeclr($4, reverse($2), at)) }
+        {% p.withNodeInfo($1, |at| $4.ptrDeclr($2, at)) }
   | '*' type_qualifier_list attrs '(' simple_paren_typedef_declarator ')'
-        {% p.withAttribute($1, $3, |at| ptrDeclr($5, reverse($2), at))  }
+        {% p.withAttribute($1, $3, |at| $5.ptrDeclr($2, at))  }
 
   | '*' paren_typedef_declarator
-        {% p.withNodeInfo($1, |at| ptrDeclr($2, vec![], at)) }
+        {% p.withNodeInfo($1, |at| $2.ptrDeclr(vec![], at)) }
 
   | '*' type_qualifier_list paren_typedef_declarator
-        {% p.withNodeInfo($1, |at| ptrDeclr($3, reverse($2), at)) }
+        {% p.withNodeInfo($1, |at| $3.ptrDeclr($2, at)) }
   | '*' type_qualifier_list attrs paren_typedef_declarator
-        {% p.withAttribute($1, $3, |at| ptrDeclr($4, reverse($2), at)) }
+        {% p.withAttribute($1, $3, |at| $4.ptrDeclr($2, at)) }
 
 -- redundant paren to left of tname
 paren_postfix_typedef_declarator :: { CDeclrR }
@@ -1486,16 +1484,16 @@ unary_identifier_declarator
         { $1 }
 
   | '*' identifier_declarator
-        {% p.withNodeInfo($1, |at| ptrDeclr($2, vec![], at)) }
+        {% p.withNodeInfo($1, |at| $2.ptrDeclr(vec![], at)) }
 
   | '*' attrs identifier_declarator
-        {% p.withAttribute($1, $2, |at| ptrDeclr($3, vec![], at)) }
+        {% p.withAttribute($1, $2, |at| $3.ptrDeclr(vec![], at)) }
 
   | '*' type_qualifier_list identifier_declarator
-        {% p.withNodeInfo($1, |at| ptrDeclr($3, reverse($2), at)) }
+        {% p.withNodeInfo($1, |at| $3.ptrDeclr($2, at)) }
 
   | '*' type_qualifier_list attrs identifier_declarator
-        {% p.withAttribute($1, $3, |at| ptrDeclr($4, reverse($2), at)) }
+        {% p.withAttribute($1, $3, |at| $4.ptrDeclr($2, at)) }
 
 postfix_identifier_declarator :: { CDeclrR }
 postfix_identifier_declarator
@@ -1538,15 +1536,15 @@ old_function_declarator
         { $1 }
 
   | '*' old_function_declarator
-        {% p.withNodeInfo($1, |at| ptrDeclr($2, vec![], at)) } -- FIXME: no attr possible here ???
+        {% p.withNodeInfo($1, |at| $2.ptrDeclr(vec![], at)) } -- FIXME: no attr possible here ???
 
   | '*' type_qualifier_list old_function_declarator
-        {% p.withNodeInfo($1, |at| ptrDeclr($3, reverse($2), at)) }
+        {% p.withNodeInfo($1, |at| $3.ptrDeclr($2, at)) }
 
 postfix_old_function_declarator :: { CDeclrR }
 postfix_old_function_declarator
   : paren_identifier_declarator '(' identifier_list ')'
-        {% p.withNodeInfo($1.clone(), |_0| $1.funDeclr(Left(reverse($3)), vec![], _0)) }
+        {% p.withNodeInfo($1.clone(), |_0| $1.funDeclr(Left($3), vec![], _0)) }
 
   | '(' old_function_declarator ')'
         { $2 }
@@ -1560,13 +1558,13 @@ postfix_old_function_declarator
 parameter_type_list :: { (Vec<CDecl>, bool) }
 parameter_type_list
   : {- empty -}                         { (vec![], false) }
-  | parameter_list                      { (reverse($1), false) }
-  | parameter_list ',' "..."            { (reverse($1), true) }
+  | parameter_list                      { ($1, false) }
+  | parameter_list ',' "..."            { ($1, true) }
 
-parameter_list :: { Reversed<Vec<CDecl>> }
+parameter_list :: { Vec<CDecl> }
 parameter_list
-  : parameter_declaration                       { singleton($1) }
-  | parameter_list ',' parameter_declaration    { snoc($1, $3) }
+  : parameter_declaration                       { vec![$1] }
+  | parameter_list ',' parameter_declaration    { appended($1, $3) }
 
 parameter_declaration :: { CDecl }
 parameter_declaration
@@ -1583,13 +1581,13 @@ parameter_declaration
         {% p.withNodeInfo($1.clone(), |at| CDecl($1, vec![(Some($2.appendAttrs($3).reverse()), None, None)], at)) }
 
   | declaration_qualifier_list
-        {% p.withNodeInfo($1.clone(), |at| CDecl(reverse($1), vec![], at)) }
+        {% p.withNodeInfo($1.clone(), |at| CDecl($1, vec![], at)) }
 
   | declaration_qualifier_list abstract_declarator
-        {% p.withNodeInfo($1.clone(), |at| CDecl(reverse($1), vec![(Some($2.reverse()), None, None)], at)) }
+        {% p.withNodeInfo($1.clone(), |at| CDecl($1, vec![(Some($2.reverse()), None, None)], at)) }
 
   | declaration_qualifier_list identifier_declarator attrs_opt
-        {% p.withNodeInfo($1.clone(), |at| CDecl(reverse($1),
+        {% p.withNodeInfo($1.clone(), |at| CDecl($1,
                                                  vec![(Some($2.appendAttrs($3).reverse()), None, None)], at)) }
 
   | type_specifier
@@ -1619,10 +1617,10 @@ parameter_declaration
                                                  vec![(Some($2.appendAttrs($3).reverse()), None, None)], at)) }
 
 
-identifier_list :: { Reversed<Vec<Ident>> }
+identifier_list :: { Vec<Ident> }
 identifier_list
-  : ident                               { singleton($1) }
-  | identifier_list ',' ident           { snoc($1, $3) }
+  : ident                               { vec![$1] }
+  | identifier_list ',' ident           { appended($1, $3) }
 
 
 -- parse C type name (C99 6.7.6)
@@ -1708,53 +1706,52 @@ postfix_array_abstract_declarator
         {%
             p.withNodeInfo($1.clone(), |at| {
                 let a: Box<FnBox(CDeclrR) -> CDeclrR> =
-                    box |declr: CDeclrR| declr.arrDeclr(reverse($2), false, false, $3, at);
+                    box |declr: CDeclrR| declr.arrDeclr($2, false, false, $3, at);
                 a
             })
         }
 
   | '[' type_qualifier_list attrs assignment_expression_opt ']'
-        {% p.withAttributePF($1, $3, |at, declr| declr.arrDeclr(reverse($2), false, false, $4, at)) }
+        {% p.withAttributePF($1, $3, |at, declr| declr.arrDeclr($2, false, false, $4, at)) }
 
   | '[' static attrs_opt assignment_expression ']'
         {% p.withAttributePF($1, $3, |at, declr| declr.arrDeclr(vec![], false, true, Some($4), at)) }
 
   | '[' static type_qualifier_list attrs_opt assignment_expression ']'
-        {% p.withAttributePF($1, $4, |at, declr| declr.arrDeclr(reverse($3), false, true, Some($5), at)) }
+        {% p.withAttributePF($1, $4, |at, declr| declr.arrDeclr($3, false, true, Some($5), at)) }
 
   | '[' type_qualifier_list attrs_opt static attrs_opt assignment_expression ']'
-        {% p.withAttributePF($1, addVecs($3, $5), |at, declr| declr.arrDeclr(reverse($2), false, true, Some($6), at)) }
+        {% p.withAttributePF($1, addVecs($3, $5), |at, declr| declr.arrDeclr($2, false, true, Some($6), at)) }
 
   | '[' '*' attrs_opt ']'
-        {% p.withAttributePF($1, $3, |at, declr|
-                           declr.arrDeclr(vec![], true, false, None, at)) }
+        {% p.withAttributePF($1, $3, |at, declr| declr.arrDeclr(vec![], true, false, None, at)) }
   | '[' attrs '*' attrs_opt ']'
         {% p.withAttributePF($1, addVecs($2, $4), |at, declr|
-                           declr.arrDeclr(vec![], true, false, None, at)) }
+                             declr.arrDeclr(vec![], true, false, None, at)) }
 
   | '[' type_qualifier_list '*' attrs_opt ']'
-        {% p.withAttributePF($1, $4, |at, declr| declr.arrDeclr(reverse($2), true, false, None, at)) }
+        {% p.withAttributePF($1, $4, |at, declr| declr.arrDeclr($2, true, false, None, at)) }
   | '[' type_qualifier_list attrs '*' attrs_opt ']'
-        {% p.withAttributePF($1, addVecs($3, $5), |at, declr| declr.arrDeclr(reverse($2), true, false, None, at)) }
+        {% p.withAttributePF($1, addVecs($3, $5), |at, declr| declr.arrDeclr($2, true, false, None, at)) }
 
 unary_abstract_declarator :: { CDeclrR }
 unary_abstract_declarator
   : '*'
-        {% p.withNodeInfo($1, |at| ptrDeclr(CDeclrR::empty(), vec![], at)) }
+        {% p.withNodeInfo($1, |at| CDeclrR::empty().ptrDeclr(vec![], at)) }
 
   | '*' type_qualifier_list attrs_opt
-        {% p.withAttribute($1, $3, |at| ptrDeclr(CDeclrR::empty(), reverse($2), at)) }
+        {% p.withAttribute($1, $3, |at| CDeclrR::empty().ptrDeclr($2, at)) }
 
   | '*' abstract_declarator
-        {% p.withNodeInfo($1, |at| ptrDeclr($2, vec![], at)) }
+        {% p.withNodeInfo($1, |at| $2.ptrDeclr(vec![], at)) }
 
   | '*' type_qualifier_list abstract_declarator
-        {% p.withNodeInfo($1, |at| ptrDeclr($3, reverse($2), at)) }
+        {% p.withNodeInfo($1, |at| $3.ptrDeclr($2, at)) }
 
   | '*' attrs
-        {% p.withAttribute($1, $2, |at| ptrDeclr(CDeclrR::empty(), vec![], at)) }
+        {% p.withAttribute($1, $2, |at| CDeclrR::empty().ptrDeclr(vec![], at)) }
   | '*' attrs abstract_declarator
-        {% p.withAttribute($1, $2, |at| ptrDeclr($3, vec![], at)) }
+        {% p.withAttribute($1, $2, |at| $3.ptrDeclr(vec![], at)) }
 
 -- postfix_ad starts with '(', postfixing with '(' or '[', unary_abstract starts with '*'
 postfix_abstract_declarator :: { CDeclrR }
@@ -1777,8 +1774,8 @@ postfix_abstract_declarator
 initializer :: { CInit }
 initializer
   : assignment_expression               {% p.withNodeInfo($1.clone(), |at| CInitExpr($1, at)) }
-  | '{' initializer_list '}'            {% p.withNodeInfo($1, |at| CInitList(reverse($2), at)) }
-  | '{' initializer_list ',' '}'        {% p.withNodeInfo($1, |at| CInitList(reverse($2), at)) }
+  | '{' initializer_list '}'            {% p.withNodeInfo($1, |at| CInitList($2, at)) }
+  | '{' initializer_list ',' '}'        {% p.withNodeInfo($1, |at| CInitList($2, at)) }
 
 
 initializer_opt :: { Option<CInit> }
@@ -1787,13 +1784,13 @@ initializer_opt
   | '=' initializer             { Some($2) }
 
 
-initializer_list :: { Reversed<CInitList> }
+initializer_list :: { CInitList }
 initializer_list
-  : {- empty -}                                         { empty() }
-  | initializer                                         { singleton((vec![], $1)) }
-  | designation initializer                             { singleton(($1, $2)) }
-  | initializer_list ',' initializer                    { snoc($1, (vec![], $3)) }
-  | initializer_list ',' designation initializer        { snoc($1, ($3, $4)) }
+  : {- empty -}                                         { vec![] }
+  | initializer                                         { vec![(vec![], $1)] }
+  | designation initializer                             { vec![($1, $2)] }
+  | initializer_list ',' initializer                    { appended($1, (vec![], $3)) }
+  | initializer_list ',' designation initializer        { appended($1, ($3, $4)) }
 
 
 -- designation
@@ -1804,15 +1801,15 @@ initializer_list
 --
 designation :: { Vec<CDesignator> }
 designation
-  : designator_list '='         { reverse($1) }
+  : designator_list '='         { $1 }
   | identifier ':'              {% p.withNodeInfo($1.clone(), |_0| vec![CMemberDesig($1, _0)]) }
   | array_designator            { vec![$1] }
 
 
-designator_list :: { Reversed<Vec<CDesignator>> }
+designator_list :: { Vec<CDesignator> }
 designator_list
- : designator                           { singleton($1) }
- | designator_list designator           { snoc($1, $2) }
+ : designator                           { vec![$1] }
+ | designator_list designator           { appended($1, $2) }
 
 
 designator :: { CDesignator }
@@ -1845,7 +1842,7 @@ primary_expression
   | string_literal       { CConst(liftStrLit($1)) }
   | '(' expression ')'   { $2 }
   | "_Generic" '(' assignment_expression ',' generic_assoc_list ')'
-        {% p.withNodeInfo($1, |at| CGenericSelection(box $3, reverse($5), at)) }
+        {% p.withNodeInfo($1, |at| CGenericSelection(box $3, $5, at)) }
   -- GNU extensions
   | '(' compound_statement ')'
         {% p.withNodeInfo($1, |at| CStatExpr(box $2, at)) }
@@ -1854,7 +1851,7 @@ primary_expression
         {% p.withNodeInfo($1, |_0| CBuiltinExpr(box CBuiltinVaArg($3, $5, _0))) }
 
   | "__builtin_offsetof" '(' type_name ',' offsetof_member_designator ')'
-        {% p.withNodeInfo($1, |_0| CBuiltinExpr(box CBuiltinOffsetOf($3, reverse($5), _0))) }
+        {% p.withNodeInfo($1, |_0| CBuiltinExpr(box CBuiltinOffsetOf($3, $5, _0))) }
 
   | "__builtin_types_compatible_p" '(' type_name ',' type_name ')'
         {% p.withNodeInfo($1, |_0| CBuiltinExpr(box CBuiltinTypesCompatible($3, $5, _0))) }
@@ -1862,22 +1859,22 @@ primary_expression
 -- Generic Selection association list (C11 6.5.1.1)
 --
 -- TODO: introduce AST type for generic association
-generic_assoc_list :: { Reversed<Vec<(Option<CDecl>, CExpr)>> }
-  : generic_assoc_list ',' generic_assoc { snoc($1, $3) }
-  | generic_assoc                        { singleton($1) }
+generic_assoc_list :: { Vec<(Option<CDecl>, CExpr)> }
+  : generic_assoc_list ',' generic_assoc { appended($1, $3) }
+  | generic_assoc                        { vec![$1] }
 generic_assoc :: { (Option<CDecl>, CExpr) }
 generic_assoc
   : type_name ':' assignment_expression { (Some($1), $3) }
   | default   ':' assignment_expression { (None, $3) }
 
-offsetof_member_designator :: { Reversed<Vec<CDesignator>> }
+offsetof_member_designator :: { Vec<CDesignator> }
 offsetof_member_designator
   : identifier
-        {% p.withNodeInfo($1.clone(), |_0| singleton(CMemberDesig($1, _0))) }
+        {% p.withNodeInfo($1.clone(), |_0| vec![CMemberDesig($1, _0)]) }
   | offsetof_member_designator '.' identifier
-        {% p.withNodeInfo($3.clone(), |_0| snoc($1, CMemberDesig($3, _0))) }
+        {% p.withNodeInfo($3.clone(), |_0| appended($1, CMemberDesig($3, _0))) }
   | offsetof_member_designator '[' expression ']'
-        {% p.withNodeInfo($3.clone(), |_0| snoc($1, CArrDesig($3, _0))) }
+        {% p.withNodeInfo($3.clone(), |_0| appended($1, CArrDesig($3, _0))) }
 
 
 -- parse C postfix expression (C99 6.5.2)
@@ -1894,7 +1891,7 @@ postfix_expression
         {% p.withNodeInfo($1.clone(), |at| CCall(box $1, vec![], at)) }
 
   | postfix_expression '(' argument_expression_list ')'
-        {% p.withNodeInfo($1.clone(), |at| CCall(box $1, reverse($3), at)) }
+        {% p.withNodeInfo($1.clone(), |at| CCall(box $1, $3, at)) }
 
   | postfix_expression '.' identifier
         {% p.withNodeInfo($1.clone(), |at| CMember(box $1, $3, false, at)) }
@@ -1909,16 +1906,16 @@ postfix_expression
         {% p.withNodeInfo($1.clone(), |at| CUnary(CPostDecOp, box $1, at)) }
 
   | '(' type_name ')' '{' initializer_list '}'
-        {% p.withNodeInfo($1, |at| CCompoundLit(box $2, reverse($5), at)) }
+        {% p.withNodeInfo($1, |at| CCompoundLit(box $2, $5, at)) }
 
   | '(' type_name ')' '{' initializer_list ',' '}'
-        {% p.withNodeInfo($1, |at| CCompoundLit(box $2, reverse($5), at)) }
+        {% p.withNodeInfo($1, |at| CCompoundLit(box $2, $5, at)) }
 
 
-argument_expression_list :: { Reversed<Vec<CExpr>> }
+argument_expression_list :: { Vec<CExpr> }
 argument_expression_list
-  : assignment_expression                               { singleton($1) }
-  | argument_expression_list ',' assignment_expression  { snoc($1, $3) }
+  : assignment_expression                               { vec![$1] }
+  | argument_expression_list ',' assignment_expression  { appended($1, $3) }
 
 
 -- parse C unary expression (C99 6.5.3)
@@ -2151,15 +2148,12 @@ expression
         { $1 }
 
   | assignment_expression ',' comma_expression
-        {%
-            let es = reverse($3);
-            p.withNodeInfo(es.clone(), |at| CComma(prepend($1, es), at))
-        }
+        {% p.withNodeInfo($3.clone(), |at| CComma(prepend($1, $3), at)) }
 
-comma_expression :: { Reversed<Vec<CExpr>> }
+comma_expression :: { Vec<CExpr> }
 comma_expression
-  : assignment_expression                       { singleton($1) }
-  | comma_expression ',' assignment_expression  { snoc($1, $3) }
+  : assignment_expression                       { vec![$1] }
+  | comma_expression ',' assignment_expression  { appended($1, $3) }
 
 
 -- The following was used for clarity
@@ -2233,7 +2227,7 @@ string_literal
         {%
             p.withNodeInfo($1.clone(), move |at| {
                 if let CTokSLit(_, s) = $1 {
-                    CStringLiteral(concatCStrings(prepend(s, reverse($2))), at)
+                    CStringLiteral(concatCStrings(prepend(s, $2)), at)
                 } else {
                     panic!("irrefutable pattern")
                 }
@@ -2241,18 +2235,18 @@ string_literal
         }
 
 
-string_literal_list :: { Reversed<Vec<CString>> }
+string_literal_list :: { Vec<CString> }
 string_literal_list
   : cstr                        {
                                     if let CTokSLit(_, s) = $1 {
-                                        singleton(s)
+                                        vec![s]
                                     } else {
                                         panic!("irrefutable pattern")
                                     }
                                 }
   | string_literal_list cstr    {
                                     if let CTokSLit(_, s) = $2 {
-                                        snoc($1, s)
+                                        appended($1, s)
                                     } else {
                                         panic!("irrefutable pattern")
                                     }
@@ -2281,18 +2275,18 @@ attrs
 
 attr :: { Vec<CAttr> }
 attr
-  : "__attribute__" '(' '(' attribute_list ')' ')'      { reverse($4) }
+  : "__attribute__" '(' '(' attribute_list ')' ')'      { $4 }
 
-attribute_list :: { Reversed<Vec<CAttr>> }
+attribute_list :: { Vec<CAttr> }
   : attribute                      {
                                        match $1 {
-                                           None => empty(),
-                                           Some(attr) => singleton(attr),
+                                           None => vec![],
+                                           Some(attr) => vec![attr],
                                        }
                                    }
   | attribute_list ',' attribute   {
                                        match $3 {
-                                           Some(inner) => snoc($1, inner),
+                                           Some(inner) => appended($1, inner),
                                            None => $1,
                                        }
                                    }
@@ -2302,47 +2296,66 @@ attribute :: { Option<CAttr> }
 attribute
   : {- empty -}                         { None }
   | ident
-        {% p.withNodeInfo($1.clone(), |_0| Some(CAttribute($1, vec![], _0))) }
+        {% p.withNodeInfo($1.clone(), |at| Some(CAttribute($1, vec![], at))) }
   | const
-        {% p.withNodeInfo($1, |_0| Some(CAttribute(Ident::internal("const".into()), vec![], _0))) }
+        {% p.withNodeInfo($1, |at| Some(CAttribute(Ident::internal("const".into()), vec![], at))) }
   | ident '(' attribute_params ')'
-        {% p.withNodeInfo($1.clone(), |_0| Some(CAttribute($1, reverse($3), _0))) }
+        {% p.withNodeInfo($1.clone(), |at| Some(CAttribute($1, $3, at))) }
   | ident '(' ')'
-        {% p.withNodeInfo($1.clone(), |_0| Some(CAttribute($1, vec![], _0))) }
+        {% p.withNodeInfo($1.clone(), |at| Some(CAttribute($1, vec![], at))) }
 
 -- OS X 10.9 (Mavericks) makes use of more liberal attribute syntax
 -- that includes assignment-like expressions referencing version
 -- numbers.
 
-attribute_params :: { Reversed<Vec<CExpr>> }
+attribute_params :: { Vec<CExpr> }
 attribute_params
-  : constant_expression                                        { singleton($1) }
-  | unary_expression assignment_operator clang_version_literal { Reversed(vec![]) }
-  | unary_expression assignment_operator unary_expression      { Reversed(vec![]) }
-  | attribute_params ',' constant_expression                   { snoc($1, $3) }
+  : constant_expression                                        { vec![$1] }
+  | unary_expression assignment_operator clang_version_literal { vec![] }
+  | unary_expression assignment_operator unary_expression      { vec![] }
+  | attribute_params ',' constant_expression                   { appended($1, $3) }
   | attribute_params ',' unary_expression assignment_operator unary_expression      { $1 }
   | attribute_params ',' unary_expression assignment_operator clang_version_literal { $1 }
 
 {
 
-/// sometimes it is neccessary to reverse an unreversed list
-fn reverseList<T>(l: Vec<T>) -> Reversed<Vec<T>> {
-    Reversed(revVec(l))
-}
-
+#[inline]
 fn revVec<T>(mut a: Vec<T>) -> Vec<T> {
     a.reverse();
     a
 }
 
+#[inline]
 fn prepend<T>(t: T, mut a: Vec<T>) -> Vec<T> {
     a.insert(0, t);
     a
 }
 
+#[inline]
 fn addVecs<T>(mut a: Vec<T>, mut b: Vec<T>) -> Vec<T> {
     a.append(&mut b);
     a
+}
+
+#[inline]
+fn appended<T>(mut a: Vec<T>, b: T) -> Vec<T> {
+    a.push(b);
+    a
+}
+
+#[inline]
+fn map<T, U, F: Fn(T) -> U>(f: F, a: Vec<T>) -> Vec<U> {
+    a.into_iter().map(f).collect()
+}
+
+#[inline]
+fn liftTypeQuals(quals: Vec<CTypeQual>) -> Vec<CDeclSpec> {
+    map(CTypeQual, quals)
+}
+
+#[inline]
+fn liftCAttrs(attrs: Vec<CAttribute<NodeInfo>>) -> Vec<CDeclSpec> {
+    map(|attr| CTypeQual(CAttrQual(attr)), attrs)
 }
 
 fn appendObjAttrs(newAttrs: Vec<CAttribute<NodeInfo>>,
@@ -2351,29 +2364,22 @@ fn appendObjAttrs(newAttrs: Vec<CAttribute<NodeInfo>>,
     CDeclarator(ident, indirections, asmname, addVecs(cAttrs, newAttrs), at)
 }
 
-fn liftTypeQuals(_curry_0: Reversed<Vec<CTypeQual>>) -> Vec<CDeclSpec> {
-    __map!(CTypeQual, reverse(_curry_0))
-}
-
-fn liftCAttrs(_curry_0: Vec<CAttribute<NodeInfo>>) -> Vec<CDeclSpec> {
-    __map!(|_0| CTypeQual(CAttrQual(_0)), _curry_0)
-}
-
-fn addTrailingAttrs(declspecs: Reversed<Vec<CDeclSpec>>,
-                    new_attrs: Vec<CAttribute<NodeInfo>>) -> Reversed<Vec<CDeclSpec>> {
-    match viewr(declspecs.clone()) {
-        (specs_init, CTypeSpec(CSUType(CStructureUnion(tag, name, Some(def), def_attrs, su_node), node))) => {
-            snoc(specs_init, CTypeSpec(CSUType(
-                CStructureUnion(tag, name, Some(def), addVecs(def_attrs, new_attrs), su_node), node)))
-        },
-        (specs_init, CTypeSpec(CEnumType(CEnumeration(name, Some(def), def_attrs, e_node), node))) => {
-            snoc(specs_init, CTypeSpec(CEnumType(
-                CEnumeration(name, Some(def), addVecs(def_attrs, new_attrs), e_node), node)))
-        },
-        _ => {
-            rappend(declspecs, liftCAttrs(new_attrs))
-        },
+fn addTrailingAttrs(mut declspecs: Vec<CDeclSpec>, mut new_attrs: Vec<CAttr>) -> Vec<CDeclSpec> {
+    let is_new = match declspecs.last_mut() {
+        Some(&mut CTypeSpec(CSUType(CStructureUnion(_, _, _, ref mut def_attrs, _), _))) => {
+            def_attrs.append(&mut new_attrs);
+            false
+        }
+        Some(&mut CTypeSpec(CEnumType(CEnumeration(_, _, ref mut def_attrs, _), _))) => {
+            def_attrs.append(&mut new_attrs);
+            false
+        }
+        _ => true
+    };
+    if is_new {
+        declspecs.append(&mut liftCAttrs(new_attrs));
     }
+    declspecs
 }
 
 fn happyError<T>(p: &mut Parser) -> Res<T> {
