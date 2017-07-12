@@ -7,7 +7,6 @@ pub mod parser;
 pub mod tokens;
 
 use std::mem;
-use std::rc::Rc;
 use std::boxed::FnBox;
 use std::iter::FromIterator;
 use std::collections::HashSet;
@@ -164,8 +163,9 @@ impl Parser {
         }
     }
 
-    pub fn withNodeInfo<T: 'static, N: Pos>(&mut self, node: N, mkAttrNode: Box<FnBox(NodeInfo) -> T>)
-                                            -> Result<T, ParseError> {
+    pub fn withNodeInfo<T, N: Pos, F>(&mut self, node: N, mkAttrNode: F) -> Result<T, ParseError>
+        where F: FnOnce(NodeInfo) -> T
+    {
         let name = self.getNewName();
         let lastTok = self.getSavedToken();
         let firstPos = node.into_pos();
@@ -173,8 +173,9 @@ impl Parser {
         Ok(mkAttrNode(attrs))
     }
 
-    pub fn withLength<T: Clone + 'static>(&mut self, nodeinfo: NodeInfo,
-                                          mkAttrNode: Box<FnBox(NodeInfo) -> T>) -> Result<T, ParseError> {
+    pub fn withLength<T, F>(&mut self, nodeinfo: NodeInfo, mkAttrNode: F) -> Result<T, ParseError>
+        where F: FnOnce(NodeInfo) -> T
+    {
         let lastTok = self.getSavedToken();
         let firstPos = nodeinfo.pos().clone();
         let attrs = NodeInfo::new(firstPos, lastTok.into_pos_len(),
@@ -182,24 +183,25 @@ impl Parser {
         Ok(mkAttrNode(attrs))
     }
 
-    pub fn withAttribute<N: Pos>(&mut self, node: N, cattrs: Vec<CAttribute<NodeInfo>>,
-                                 mkDeclrNode: Box<FnBox(NodeInfo) -> CDeclrR>) -> Result<CDeclrR, ParseError> {
+    pub fn withAttribute<N: Pos, F>(&mut self, node: N, cattrs: Vec<CAttribute<NodeInfo>>,
+                                    mkDeclrNode: F) -> Result<CDeclrR, ParseError>
+        where F: FnOnce(NodeInfo) -> CDeclrR
+    {
         let name = self.getNewName();
         let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
         let newDeclr = mkDeclrNode(attrs).appendAttrs(cattrs);
         Ok(newDeclr)
     }
 
-    pub fn withAttributePF<N: Pos + 'static>(&mut self, node: N, cattrs: Vec<CAttribute<NodeInfo>>,
-                                             mkDeclrCtor: Box<Fn(NodeInfo, CDeclrR) -> CDeclrR>)
-                                             -> Result<Rc<Box<Fn(CDeclrR) -> CDeclrR>>, ParseError>
+    pub fn withAttributePF<N: Pos, F>(&mut self, node: N, cattrs: Vec<CAttribute<NodeInfo>>,
+                                      mkDeclrCtor: F) -> Result<Box<FnBox(CDeclrR) -> CDeclrR>, ParseError>
+        where F: FnOnce(NodeInfo, CDeclrR) -> CDeclrR + 'static
     {
-        let mkDeclrCtor = Rc::new(mkDeclrCtor);
         let name = self.getNewName();
         let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
-        let newDeclr: Rc<Box<Fn(CDeclrR) -> CDeclrR>> = Rc::new(box move |_0| {
+        let newDeclr: Box<FnBox(CDeclrR) -> CDeclrR> = box move |_0| {
             mkDeclrCtor(attrs.clone(), _0).appendAttrs(cattrs.clone())
-        });
+        };
         Ok(newDeclr)
     }
 }
