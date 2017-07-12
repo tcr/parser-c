@@ -170,16 +170,6 @@ impl Parser {
         }
     }
 
-    pub fn withNodeInfo<T, N: Pos, F>(&mut self, node: N, mkAttrNode: F) -> Result<T, ParseError>
-        where F: FnOnce(NodeInfo) -> T
-    {
-        let name = self.getNewName();
-        let lastTok = self.getSavedToken();
-        let firstPos = node.into_pos();
-        let attrs = NodeInfo::new(firstPos, lastTok.into_pos_len(), name);
-        Ok(mkAttrNode(attrs))
-    }
-
     pub fn withLength<T, F>(&mut self, nodeinfo: NodeInfo, mkAttrNode: F) -> Result<T, ParseError>
         where F: FnOnce(NodeInfo) -> T
     {
