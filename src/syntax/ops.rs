@@ -17,8 +17,8 @@ pub enum CAssignOp {
 }
 pub use self::CAssignOp::*;
 
-pub fn assignBinop(_0: CAssignOp) -> CBinaryOp {
-    match (_0) {
+pub fn assignBinop(op: CAssignOp) -> CBinaryOp {
+    match op {
         CAssignOp => panic!("direct assignment has no binary operator"),
         CMulAssOp => CMulOp,
         CDivAssOp => CDivOp,

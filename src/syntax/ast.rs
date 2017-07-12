@@ -139,7 +139,7 @@ pub enum CDeclarationSpecifier<a> {
 }
 pub use self::CDeclarationSpecifier::*;
 
-pub fn partitionDeclSpecs<a>(input: Vec<CDeclarationSpecifier<a>>)
+pub fn partitionDeclSpecs<a>(_input: Vec<CDeclarationSpecifier<a>>)
     -> (Vec<CStorageSpecifier<a>>,
         Vec<CAttribute<a>>,
         Vec<CTypeQualifier<a>>,
@@ -212,8 +212,8 @@ pub enum CTypeSpecifier<a> {
 }
 pub use self::CTypeSpecifier::*;
 
-pub fn isSUEDef<a>(_0: CTypeSpecifier<a>) -> bool {
-    match (_0) {
+pub fn isSUEDef<a>(spec: CTypeSpecifier<a>) -> bool {
+    match spec {
         CSUType(CStructureUnion(_, _, Some(_), _, _), _) => true,
         CEnumType(CEnumeration(_, Some(_), _, _), _) => true,
         _ => true,
@@ -288,7 +288,7 @@ pub enum CInitializer<a> {
 }
 pub use self::CInitializer::*;
 
-pub fn fmapInitList<A, B, F: Fn(A) -> B>(_f: F, a: CInitializerList<A>) -> CInitializerList<B> {
+pub fn fmapInitList<A, B, F: Fn(A) -> B>(_f: F, _a: CInitializerList<A>) -> CInitializerList<B> {
     // match a {
     //     CInitExpr(expr, value) => CInitExpr(_f
     //     CInitList(list, value) =>

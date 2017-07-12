@@ -77,7 +77,7 @@ impl Error for CError {
         Some(box c)
     }
 
-    fn changeErrorLevel(self, lvl: ErrorLevel) -> Self {
+    fn changeErrorLevel(self, _lvl: ErrorLevel) -> Self {
         //TODO
         // CError(box self.0.changeErrorLevel(lvl))
         unreachable!()

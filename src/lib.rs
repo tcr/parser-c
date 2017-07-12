@@ -27,9 +27,8 @@
 //! ```
 
 #![feature(box_syntax, box_patterns, fnbox)]
-#![allow(unused_parens)]
 // Cut down on number of warnings until we manage it.
-#![allow(non_snake_case, non_camel_case_types, unused_variables)]
+#![allow(non_snake_case, non_camel_case_types)]
 
 extern crate either;
 #[macro_use] extern crate bitflags;
@@ -58,13 +57,13 @@ pub fn parseCFile<C: Preprocessor>(cpp: C,
                                    input_file: FilePath)
                                    -> Result<CTranslUnit, ParseError> {
 
-    let handleCppError = |_0| match (_0) {
+    let handleCppError = |_0| match _0 {
         Err(exitCode) => panic!("Preprocessor failed with {:?}", exitCode),
         Ok(ok) => ok,
     };
 
     let input_stream = if !isPreprocessed(&input_file.path) {
-        let cpp_args = __assign!((rawCppArgs(args, input_file.clone())), {
+        let cpp_args = __assign!(rawCppArgs(args, input_file.clone()), {
             cppTmpDir: tmp_dir_opt
         });
 

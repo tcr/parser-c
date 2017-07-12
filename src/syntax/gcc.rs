@@ -38,7 +38,7 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), Stri
         Define(key, (if val.is_empty() { "".to_string() } else { tail_str(val) }))
     }
 
-    fn getArgOpt (cpp_opt: String, rest: Vec<String>) -> Option<(CppOption, Vec<String>)> {
+    fn getArgOpt (_cpp_opt: String, _rest: Vec<String>) -> Option<(CppOption, Vec<String>)> {
         unreachable!()
         // TODO
         // if isPrefixOf("-I".to_string(), cpp_opt) {
@@ -104,7 +104,7 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), Stri
         if a.len() > 0 {
             let cpp_opt = a[0].clone();
             let rest = a[1..].to_vec();
-            if (getArgOpt(cpp_opt.clone(), rest.to_vec()).is_some()) {
+            if getArgOpt(cpp_opt.clone(), rest.to_vec()).is_some() {
                 let (opt, rest_q) = getArgOpt(cpp_opt.clone(), rest.to_vec()).unwrap();
                 return mungeArgs(((inp, out, snoc(cpp_opts, opt)), unparsed), rest_q);
             }
@@ -139,7 +139,7 @@ pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), Stri
         Err(err) => Err(err),
         Ok(((None, _, _), _)) => Err("No .c / .hc / .h source file given".to_string()),
         Ok(((Some(input_file), output_file_opt, cpp_opts), (extra_args, other_args))) => {
-            Ok((__assign!((rawCppArgs((RList::reverse(extra_args)), input_file)),
+            Ok((__assign!(rawCppArgs((RList::reverse(extra_args)), input_file),
                           {
                               outputFile: output_file_opt,
                               cppOptions: RList::reverse(cpp_opts),
@@ -161,7 +161,7 @@ pub fn buildCppArgs(CppArgs {
 }: CppArgs)
                     -> Vec<String> {
 
-    let tOption = |_0| match (_0) {
+    let tOption = |_0| match _0 {
         IncludeDir(incl) => vec!["-I".to_string(), incl.to_string()],
         Define(key, value) => {
             vec![format!("-D{}{}{}", key, if value.is_empty() { "" } else { "=" }, value)]
