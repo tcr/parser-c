@@ -15598,7 +15598,7 @@ fn happyReduction_4(p: &mut Parser) -> Res<HappyAbsSyn> {
                       let decls = reverse(happy_var_1);
                       if decls.len() == 0 {
                           let name = p.getNewName();
-                          let pos = p.getPos();
+                          let pos = p.getPosClone();
                           let nodeinfo = NodeInfo::new(pos.clone(), (pos, 0), name);
                           Ok(CTranslationUnit(decls, nodeinfo))
                       } else {

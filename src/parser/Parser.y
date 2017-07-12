@@ -256,7 +256,7 @@ translation_unit
                       let decls = reverse($1);
                       if decls.len() == 0 {
                           let name = p.getNewName();
-                          let pos = p.getPos();
+                          let pos = p.getPosClone();
                           let nodeinfo = NodeInfo::new(pos.clone(), (pos, 0), name);
                           Ok(CTranslationUnit(decls, nodeinfo))
                       } else {

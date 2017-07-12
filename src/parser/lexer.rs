@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 
-// Original location: ../../src/parser/Lexer.x, line 49
+// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 49
 
 
 
@@ -33083,7 +33083,7 @@ const ALEX_ACCEPT: [AlexAcc; 339] = [
     AlexAcc(0),
 ];
 
-const ALEX_ACTIONS: [fn(&mut Parser, Position, isize, InputStream) -> Res<Token>; 124] = [
+const ALEX_ACTIONS: [AlexAction; 124] = [
     alex_action_67,
     alex_action_66,
     alex_action_65,
@@ -33210,7 +33210,7 @@ const ALEX_ACTIONS: [fn(&mut Parser, Position, isize, InputStream) -> Res<Token>
     alex_action_1,
 ];
 
-// Original location: ../../src/parser/Lexer.x, line 268
+// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 269
 
 
 
@@ -33250,8 +33250,8 @@ label __label__
 */
 // Tokens: _Alignas _Alignof __alignof alignof __alignof__ __asm asm __asm__ _Atomic auto break _Bool case char __const const __const__ continue _Complex __complex__ default do double else enum extern float for _Generic goto if __inline inline __inline__ int __int128 long _Noreturn  _Nullable __nullable _Nonnull __nonnull register __restrict restrict __restrict__ return short __signed signed __signed__ sizeof static _Static_assert struct switch typedef __typeof typeof __typeof__ __thread _Thread_local union unsigned void __volatile volatile __volatile__ while __label__ __attribute __attribute__ __extension__ __real __real__ __imag __imag__ __builtin_va_arg __builtin_offsetof __builtin_types_compatible_p
 
-fn idkwtok(p: &mut Parser, id: &str, pos: Position) -> Res<CToken> {
-    match id.as_ref() {
+fn idkwtok(p: &mut Parser, pos: Position, len: isize) -> Res<CToken> {
+    match p.getTokString() {
         "_Alignas" => tok(8, CTokAlignas, pos),
         "_Alignof" => tok(8, CTokAlignof, pos),
         "_Atomic" => tok(7, CTokAtomic, pos),
@@ -33334,8 +33334,7 @@ fn idkwtok(p: &mut Parser, id: &str, pos: Position) -> Res<CToken> {
         "while" => tok(5, CTokWhile, pos),
         _ => {
             let name = p.getNewName();
-            let len = id.len() as isize;
-            let ident = Ident::new(pos.clone(), id.to_string(), name);
+            let ident = Ident::new(pos.clone(), p.getTokString().to_string(), name);
             if p.isTypeIdent(&ident) {
                 Ok(CTokTyIdent((pos, len), ident))
             } else {
@@ -33364,6 +33363,7 @@ fn adjustLineDirective(pragma: &str, pos: Position) -> Position {
     Position::new(offs_q, new_fname, row, 1)
 }
 
+#[inline]
 fn tok<M>(len: isize, mkTok: M, pos: Position) -> Res<CToken>
     where M: Fn(PosLength) -> CToken
 {
@@ -33371,22 +33371,25 @@ fn tok<M>(len: isize, mkTok: M, pos: Position) -> Res<CToken>
 }
 
 /// error token
-fn token_fail(errmsg: &str, pos: Position, _: isize, _: InputStream) -> Res<CToken> {
+#[inline]
+fn token_fail(errmsg: &str, pos: Position, _: isize) -> Res<CToken> {
     Err(ParseError::new(pos, vec!["Lexical Error !".to_string(), errmsg.to_string()]))
 }
 
 /// token that uses the string
-fn token<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: InputStream) -> Res<CToken>
+#[inline]
+fn token<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: isize) -> Res<CToken>
     where R: Fn(&str) -> T, M: Fn(PosLength, T) -> CToken
 {
-    Ok(mkTok((pos, len), fromStr(inp.take_string(len))))
+    Ok(mkTok((pos, len), fromStr(p.getTokString())))
 }
 
 /// token that may fail
-fn token_plus<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: InputStream) -> Res<CToken>
+#[inline]
+fn token_plus<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: isize) -> Res<CToken>
     where R: Fn(&str) -> Result<T, String>, M: Fn(PosLength, T) -> CToken
 {
-    match fromStr(inp.take_string(len)) {
+    match fromStr(p.getTokString()) {
         Err(err) => Err(ParseError::new(pos, vec!["Lexical error ! ".to_string(), err])),
         Ok(ok)   => Ok(mkTok((pos, len), ok)),
     }
@@ -33397,31 +33400,29 @@ fn token_plus<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: Inp
 
 type AlexInput = (Position, InputStream);
 
-fn alexGetByte((p, is): AlexInput) -> Option<(u8, AlexInput)> {
-    if is.is_empty() {
+fn alexGetByte(input: &mut AlexInput) -> Option<u8> {
+    if input.1.is_done() {
         None
     } else {
-        let (b, s) = is.take_byte();
         // TODO this is safe for latin-1, but ugly
-        let p_q = alexMove(p, b as char);
-        Some((b, (p_q, s)))
+        let ch = input.1.read_byte();
+        alexMove(input, ch as char);
+        Some(ch)
     }
 }
 
-fn alexMove(pos: Position, ch: char) -> Position {
+fn alexMove(input: &mut AlexInput, ch: char) {
     match ch {
-        ' '  => pos.inc(1),
-        '\n' => pos.retPos(),
-        '\r' => pos.incOffset(1),
-        _    => pos.inc(1),
+        '\n' => input.0.inc_newline(),
+        '\r' => input.0.inc_offset(1),
+        _    => input.0.inc_chars(1),
     }
 }
 
 fn lexicalError<T>(p: &mut Parser) -> Res<T> {
-    let pos = p.getPos();
     let input = p.getInput();
-    let (c, _) = input.take_char();
-    Err(ParseError::new(pos, vec![
+    let c = input.1.read_char();
+    Err(ParseError::new(input.0.clone(), vec![
         "Lexical error !".to_string(),
         format!("The character {} does not fit here.", c),
     ]))
@@ -33453,25 +33454,21 @@ pub fn lexC(p: &mut Parser) -> Res<CToken> {
 }
 
 fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
-    let pos = p.getPos();
-    let inp = p.getInput();
-    match alexScan((pos.clone(), inp.clone()), 0) {
+    match alexScan(p.getInput()) {
         AlexEOF => {
             p.handleEofToken();
             Ok(CTokEof)
         },
-        AlexError(_inp) => {
+        AlexError => {
             lexicalError(p)
         },
-        AlexSkip((pos_q, inp_q), _len) => {
-            p.setPos(pos_q);
-            p.setInput(inp_q);
+        AlexSkip(_len) => {
             lexToken_q(p, modifyCache)
         },
-        AlexToken((pos_q, inp_q), len, action) => {
-            p.setPos(pos_q);
-            p.setInput(inp_q);
-            let nextTok = action(p, pos, len, inp)?;
+        AlexToken(len, action) => {
+            let pos = p.getPosClone();
+            p.setLastTokLen(len as usize);
+            let nextTok = action(p, pos, len)?;
             if modifyCache {
                 p.setLastToken(nextTok.clone());
                 Ok(nextTok)
@@ -33483,274 +33480,275 @@ fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
 }
 
 
-fn alex_action_1(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_1(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
 
-     p.setPos(adjustLineDirective(inp.take_string(len), pos));
+     let new_pos = adjustLineDirective(p.getTokString(), pos);
+     p.setPos(new_pos);
      lexToken_q(p, false)
   
 }
 
-fn alex_action_4(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- idkwtok(p, inp.take_string(len), pos) 
+fn alex_action_4(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ idkwtok(p, pos, len) 
 }
 
-fn alex_action_5(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token_plus(CTokILit, readCOctal, pos, len, inp) 
+fn alex_action_5(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token_plus(p, CTokILit, readCOctal, pos, len) 
 }
 
-fn alex_action_6(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token_plus(CTokILit, |lit| readCInteger(DecRepr, lit), pos, len, inp) 
+fn alex_action_6(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token_plus(p, CTokILit, |lit| readCInteger(DecRepr, lit), pos, len) 
 }
 
-fn alex_action_7(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token_plus(CTokILit, |lit| readCInteger(HexRepr, &lit[2..]), pos, len, inp) 
+fn alex_action_7(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token_plus(p, CTokILit, |lit| readCInteger(HexRepr, &lit[2..]), pos, len) 
 }
 
-fn alex_action_8(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token_fail("Invalid integer constant suffix", pos, len, inp) 
+fn alex_action_8(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token_fail("Invalid integer constant suffix", pos, len) 
 }
 
-fn alex_action_9(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token(CTokCLit, |lit| cChar(unescapeChar(&lit[1..]).0), pos, len, inp) 
+fn alex_action_9(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token(p, CTokCLit, |lit| cChar(unescapeChar(&lit[1..]).0), pos, len) 
 }
 
-fn alex_action_10(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token(CTokCLit, |lit| cChar_w(unescapeChar(&lit[2..]).0), pos, len, inp) 
+fn alex_action_10(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token(p, CTokCLit, |lit| cChar_w(unescapeChar(&lit[2..]).0), pos, len) 
 }
 
-fn alex_action_11(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token(CTokCLit, |lit| cChars(false, unescapeMultiChars(&lit[1..lit.len()-1])),
-                                    pos, len, inp) 
+fn alex_action_11(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token(p, CTokCLit, |lit| cChars(false, unescapeMultiChars(&lit[1..lit.len()-1])),
+                                    pos, len) 
 }
 
-fn alex_action_12(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token(CTokCLit, |lit| cChars(true, unescapeMultiChars(&lit[2..lit.len()-1])),
-                                    pos, len, inp) 
+fn alex_action_12(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token(p, CTokCLit, |lit| cChars(true, unescapeMultiChars(&lit[2..lit.len()-1])),
+                                    pos, len) 
 }
 
-fn alex_action_13(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token(|pos, vers| CTokClangC(pos, ClangCTok(vers)),
-                                    readClangCVersion, pos, len, inp) 
+fn alex_action_13(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token(p, |pos, vers| CTokClangC(pos, ClangCTok(vers)),
+                                    readClangCVersion, pos, len) 
 }
 
-fn alex_action_14(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token(CTokFLit, readCFloat, pos, len, inp) 
+fn alex_action_14(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token(p, CTokFLit, readCFloat, pos, len) 
 }
 
-fn alex_action_15(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token(CTokFLit, readCFloat, pos, len, inp) 
+fn alex_action_15(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token(p, CTokFLit, readCFloat, pos, len) 
 }
 
-fn alex_action_16(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_16(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  token_fail("Hexadecimal floating constant requires an exponent",
-                                                                    pos, len, inp) 
+                                                                    pos, len) 
 }
 
-fn alex_action_17(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token(CTokSLit, |lit| cString(unescapeString(&lit[1..lit.len()-1])),
-                                    pos, len, inp) 
+fn alex_action_17(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token(p, CTokSLit, |lit| cString(unescapeString(&lit[1..lit.len()-1])),
+                                    pos, len) 
 }
 
-fn alex_action_18(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token(CTokSLit, |lit| cString_w(unescapeString(&lit[2..lit.len()-1])),
-                                    pos, len, inp) 
+fn alex_action_18(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token(p, CTokSLit, |lit| cString_w(unescapeString(&lit[2..lit.len()-1])),
+                                    pos, len) 
 }
 
-fn alex_action_19(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token_fail("Universal character names are unsupported", pos, len, inp) 
+fn alex_action_19(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token_fail("Universal character names are unsupported", pos, len) 
 }
 
-fn alex_action_20(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
- token_fail("Invalid escape sequence", pos, len, inp) 
+fn alex_action_20(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
+ token_fail("Invalid escape sequence", pos, len) 
 }
 
-fn alex_action_21(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_21(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
 
-    token_fail("Universal character names in string literals are unsupported", pos, len, inp)
+    token_fail("Universal character names in string literals are unsupported", pos, len)
   
 }
 
-fn alex_action_22(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_22(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokLParen, pos) 
 }
 
-fn alex_action_23(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_23(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokRParen, pos)  
 }
 
-fn alex_action_24(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_24(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokLBracket, pos) 
 }
 
-fn alex_action_25(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_25(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokRBracket, pos) 
 }
 
-fn alex_action_26(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_26(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokArrow, pos) 
 }
 
-fn alex_action_27(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_27(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokDot, pos) 
 }
 
-fn alex_action_28(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_28(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokExclam, pos) 
 }
 
-fn alex_action_29(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_29(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokTilde, pos) 
 }
 
-fn alex_action_30(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_30(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokInc, pos) 
 }
 
-fn alex_action_31(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_31(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokDec, pos) 
 }
 
-fn alex_action_32(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_32(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokPlus, pos) 
 }
 
-fn alex_action_33(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_33(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokMinus, pos) 
 }
 
-fn alex_action_34(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_34(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokStar, pos) 
 }
 
-fn alex_action_35(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_35(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokSlash, pos) 
 }
 
-fn alex_action_36(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_36(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokPercent, pos) 
 }
 
-fn alex_action_37(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_37(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokAmper, pos) 
 }
 
-fn alex_action_38(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_38(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokShiftL, pos) 
 }
 
-fn alex_action_39(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_39(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokShiftR, pos) 
 }
 
-fn alex_action_40(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_40(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokLess, pos) 
 }
 
-fn alex_action_41(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_41(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokLessEq, pos) 
 }
 
-fn alex_action_42(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_42(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokHigh, pos) 
 }
 
-fn alex_action_43(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_43(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokHighEq, pos) 
 }
 
-fn alex_action_44(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_44(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokEqual, pos) 
 }
 
-fn alex_action_45(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_45(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokUnequal, pos) 
 }
 
-fn alex_action_46(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_46(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokHat, pos) 
 }
 
-fn alex_action_47(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_47(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokBar, pos) 
 }
 
-fn alex_action_48(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_48(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokAnd, pos) 
 }
 
-fn alex_action_49(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_49(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokOr, pos) 
 }
 
-fn alex_action_50(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_50(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokQuest, pos) 
 }
 
-fn alex_action_51(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_51(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokColon, pos) 
 }
 
-fn alex_action_52(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_52(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokAssign, pos) 
 }
 
-fn alex_action_53(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_53(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokPlusAss, pos) 
 }
 
-fn alex_action_54(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_54(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokMinusAss, pos) 
 }
 
-fn alex_action_55(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_55(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokStarAss, pos) 
 }
 
-fn alex_action_56(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_56(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokSlashAss, pos) 
 }
 
-fn alex_action_57(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_57(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokPercAss, pos) 
 }
 
-fn alex_action_58(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_58(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokAmpAss, pos) 
 }
 
-fn alex_action_59(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_59(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokHatAss, pos) 
 }
 
-fn alex_action_60(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_60(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(2, CTokBarAss, pos) 
 }
 
-fn alex_action_61(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_61(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(3, CTokSLAss, pos) 
 }
 
-fn alex_action_62(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_62(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(3, CTokSRAss, pos) 
 }
 
-fn alex_action_63(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_63(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokComma, pos) 
 }
 
-fn alex_action_64(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_64(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokSemic, pos) 
 }
 
-fn alex_action_65(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_65(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokLBrace, pos) 
 }
 
-fn alex_action_66(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_66(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(1, CTokRBrace, pos) 
 }
 
-fn alex_action_67(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -> Res<Token> {
+fn alex_action_67(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
  tok(3, CTokEllipsis, pos) 
 }
 
@@ -33770,115 +33768,16 @@ fn alex_action_67(p: &mut Parser, pos: Position, len: isize, inp: InputStream) -
 
 enum AlexReturn<T> {
     AlexEOF,
-    AlexError(AlexInput),
-    AlexSkip(AlexInput, isize),
-    AlexToken(AlexInput, isize, T)
+    AlexError,
+    AlexSkip(isize),
+    AlexToken(isize, T)
 }
 use self::AlexReturn::*;
 
-fn alexScan(input: (Position, InputStream), sc: isize)
-            -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>> {
-    // TODO first argument should be "undefined"
-    alexScanUser(false, input, sc)
-}
-
-fn alexScanUser(user: bool, input: AlexInput, sc: isize)
-                -> AlexReturn<Box<Fn(&mut Parser, Position, isize, InputStream) -> Res<Token>>>
-{
-    match alex_scan_tkn(user, input.clone(), (0), input.clone(), sc, AlexNone) {
-        (AlexNone, input_q) => {
-            match alexGetByte(input) {
-                None => {
-
-                    AlexEOF
-                },
-                Some(_) => {
-
-                    AlexError(input_q)
-                },
-            }
-        },
-        (AlexLastSkip(input_q_q, len), _) => {
-
-            AlexSkip(input_q_q, len)
-        },
-        (AlexLastAcc(k, input_q_q_q, len), _) => {
-
-            AlexToken(input_q_q_q, len, box ALEX_ACTIONS[k as usize])
-        },
-    }
-}
-
-/// Push the input through the DFA, remembering the most recent accepting
-/// state it encountered.
-
-fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, mut input: AlexInput,
-                 mut s: isize, mut last_acc: AlexLastAcc) -> (AlexLastAcc, AlexInput) {
-    fn check_accs<A: Clone>(user: A, orig_input: &AlexInput, len: isize, input: AlexInput,
-                            last_acc: AlexLastAcc, acc: &AlexAcc) -> AlexLastAcc {
-        match *acc {
-            AlexAccNone => {
-                last_acc
-            },
-            AlexAcc(a) => {
-                AlexLastAcc(a, input, len)
-            },
-            AlexAccSkip => {
-                AlexLastSkip(input, len)
-            },
-        }
-    };
-
-    loop {
-        let right = &ALEX_ACCEPT[s as usize];
-        let new_acc = check_accs(user, &orig_input, len, input.clone(), last_acc, right);
-
-        match alexGetByte(input.clone()) {
-            None => {
-                return (new_acc, input)
-            },
-            Some((c, new_input)) => {
-
-                match c as isize {
-                    ord_c => {
-                        let base = ALEX_BASE[s as usize];
-                        let offset = base + ord_c;
-                        let check = ALEX_CHECK[offset as usize];
-
-                        let new_s = if offset >= 0 && check == ord_c {
-                            ALEX_TABLE[offset as usize]
-                        } else {
-                            ALEX_DEFLT[s as usize]
-                        };
-
-                        match new_s {
-                            -1 => {
-                                return (new_acc, input)
-                            },
-                            _ => {
-                                user = user;
-                                orig_input = orig_input;
-                                len = if c < 128 || c >= 192 {
-                                    len + 1
-                                } else {
-                                    len
-                                };
-                                input = new_input;
-                                s = new_s;
-                                last_acc = new_acc;
-                            },
-                        }
-                    },
-                }
-            },
-        }
-    }
-}
-
 enum AlexLastAcc {
     AlexNone,
-    AlexLastAcc(isize, AlexInput, isize),
-    AlexLastSkip(AlexInput, isize)
+    AlexLastAcc(isize, isize),
+    AlexLastSkip(isize)
 }
 use self::AlexLastAcc::*;
 
@@ -33888,3 +33787,76 @@ enum AlexAcc {
     AlexAccSkip,
 }
 use self::AlexAcc::*;
+
+type AlexAction = fn(&mut Parser, Position, isize) -> Res<Token>;
+
+fn alexScan(input: &mut AlexInput) -> AlexReturn<AlexAction> {
+    match alex_scan_tkn(input) {
+        AlexNone => {
+            if alexGetByte(input).is_some() {
+
+                AlexError
+            } else {
+
+                AlexEOF
+            }
+        },
+        AlexLastSkip(len) => {
+
+            input.1.mark_read(len as usize);
+            AlexSkip(len)
+        },
+        AlexLastAcc(k, len) => {
+
+            input.1.mark_read(len as usize);
+            AlexToken(len, ALEX_ACTIONS[k as usize])
+        },
+    }
+}
+
+/// Push the input through the DFA, remembering the most recent accepting
+/// state it encountered.
+
+fn alex_scan_tkn(input: &mut AlexInput) -> AlexLastAcc {
+    let mut last_acc = AlexNone;
+    let mut len = 0;
+    let mut s = 0;
+    loop {
+        let right = &ALEX_ACCEPT[s as usize];
+        let new_acc = match *right {
+            AlexAccNone => last_acc,
+            AlexAcc(a)  => AlexLastAcc(a, len),
+            AlexAccSkip => AlexLastSkip(len),
+        };
+
+        match alexGetByte(input) {
+            None => return new_acc,
+            Some(c) => {
+                let c = c as isize;
+
+                let base = ALEX_BASE[s as usize];
+                let offset = base + c;
+                let check = ALEX_CHECK[offset as usize];
+
+                let new_s = if offset >= 0 && check == c {
+                    ALEX_TABLE[offset as usize]
+                } else {
+                    ALEX_DEFLT[s as usize]
+                };
+
+                match new_s {
+                    -1 => return new_acc,
+                    _ => {
+                        len = if c < 128 || c >= 192 {
+                            len + 1
+                        } else {
+                            len
+                        };
+                        s = new_s;
+                        last_acc = new_acc;
+                    }
+                }
+            }
+        }
+    }
+}

@@ -101,19 +101,24 @@ impl Position {
         self == &InternalPosition
     }
 
-    pub fn inc(self, by: isize) -> Position {
-        match self {
-            Position::Position { offset, file, row, column } =>
-                Self::new(offset + by, file, row, column + by),
-            p => p,
+    pub fn inc_chars(&mut self, by: isize) {
+        if let Position::Position { ref mut offset, ref mut column, .. } = *self {
+            *offset += by;
+            *column += by;
         }
     }
 
-    pub fn retPos(self) -> Position {
-        match self {
-            Position::Position { offset, file, row, .. } =>
-                Self::new(offset + 1, file, row + 1, 1),
-            p => p,
+    pub fn inc_offset(&mut self, by: isize) {
+        if let Position::Position { ref mut offset, .. } = *self {
+            *offset += by;
+        }
+    }
+
+    pub fn inc_newline(&mut self) {
+        if let Position::Position { ref mut offset, ref mut row, ref mut column, .. } = *self {
+            *offset += 1;
+            *row += 1;
+            *column = 1;
         }
     }
 
@@ -121,14 +126,6 @@ impl Position {
         match self {
             Position::Position { offset, .. } =>
                 Self::new(offset, Arc::new(new_file.into()), row, 1),
-            p => p,
-        }
-    }
-
-    pub fn incOffset(self, by: isize) -> Position {
-        match self {
-            Position::Position { offset, file, row, column } =>
-                Self::new(offset + by, file, row, column),
             p => p,
         }
     }

@@ -4,14 +4,14 @@
 use corollary_support::FilePath;
 
 use std::str;
-use std::rc::Rc;
 use std::fs::File;
 use std::io::Read;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct InputStream {
-    src: Rc<Vec<u8>>,
-    pos: usize,
+    src: Vec<u8>,
+    rpos: usize,
+    tpos: usize,
 }
 
 impl InputStream {
@@ -19,39 +19,42 @@ impl InputStream {
     pub fn from_file(f: &FilePath) -> InputStream {
         let mut src = vec![];
         File::open(&f.path).unwrap().read_to_end(&mut src).unwrap();
-        InputStream { src: Rc::new(src), pos: 0 }
+        InputStream { src: src, rpos: 0, tpos: 0 }
     }
 
     pub fn from_string(src: String) -> InputStream {
-        InputStream { src: Rc::new(src.into_bytes()), pos: 0 }
+        InputStream { src: src.into_bytes(), rpos: 0, tpos: 0 }
     }
 
     pub fn to_string(self) -> String {
-        String::from_utf8_lossy(&self.src[self.pos..]).into_owned()
+        String::from_utf8_lossy(&self.src[self.tpos..]).into_owned()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.pos == self.src.len()
-    }
-
-    pub fn take_byte(mut self) -> (u8, InputStream) {
-        let pos = self.pos;
-        let byte = self.src[pos];
-        self.pos += 1;
-        (byte, self)
+    pub fn is_done(&self) -> bool {
+        self.rpos == self.src.len()
     }
 
     // TODO correct unicode char handling
 
-    pub fn take_char(mut self) -> (char, InputStream) {
-        let pos = self.pos;
-        let ch = self.src[pos] as char;
-        self.pos += 1;
-        (ch, self)
+    pub fn read_byte(&mut self) -> u8 {
+        let byte = self.src[self.rpos];
+        self.rpos += 1;
+        byte
     }
 
-    pub fn take_string(&self, n: isize) -> &str {
-        str::from_utf8(&self.src[self.pos..self.pos + n as usize]).unwrap() // TODO UNICODE
+    pub fn read_char(&mut self) -> char {
+        let ch = self.src[self.rpos] as char;
+        self.rpos += 1;
+        ch
+    }
+
+    pub fn mark_read(&mut self, len: usize) {
+        self.tpos += len;
+        self.rpos = self.tpos;
+    }
+
+    pub fn last_string(&self, len: usize) -> &str {
+        str::from_utf8(&self.src[self.tpos-len..self.tpos]).unwrap() // TODO UNICODE
     }
 
     pub fn count_lines(self) -> isize {
