@@ -1,7 +1,6 @@
 // Original file: "Error.hs"
 // File auto-generated using Corollary.
 
-use std::iter;
 use std::fmt::Write;
 
 use data::node::NodeInfo;

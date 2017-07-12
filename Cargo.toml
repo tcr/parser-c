@@ -11,11 +11,8 @@ homepage = "http://github.com/tcr/parser-c"
 license = "MIT"
 
 [dependencies]
-num = "0.1"
-num-derive = "0.1"
 bitflags = "0.9.1"
 either = "1.1.0"
-lazy_static = "0.2"
 parser-c-macro = { path = "parser-c-macro", version = "0.3" }
 
 [dev-dependencies]

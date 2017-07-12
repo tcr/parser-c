@@ -5,7 +5,6 @@ use either::Either;
 
 use data::node::{NodeInfo, CNode};
 use data::ident::Ident;
-use data::position::{Position, Pos};
 use syntax::ops::*;
 use syntax::constants::*;
 
