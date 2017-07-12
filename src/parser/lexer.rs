@@ -16,8 +16,7 @@ use data::input_stream::*;
 use data::ident::*;
 use data::position::*;
 use syntax::constants::*;
-use parser::parser::Parser;
-use parser::parser_utils::ParseError;
+use parser::{Parser, ParseError};
 use parser::tokens::*;
 
 // fn(A, B) -> fn(C) -> {eval fn(A, B, C)}
@@ -33218,7 +33217,7 @@ const ALEX_ACTIONS: [fn(&mut Parser, Position, isize, InputStream) -> Res<Token>
     alex_action_1,
 ];
 
-// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 285
+// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 284
 
 
 
@@ -33920,7 +33919,7 @@ pub fn alex_scan_tkn(mut user: bool, mut orig_input: AlexInput, mut len: isize, 
             },
             Some((c, new_input)) => {
 
-                match fromIntegral(c as isize) {
+                match c as isize {
                     ord_c => {
                         let base = alexIndexInt32OffAddr(&ALEX_BASE, s);
                         let offset = base + ord_c;

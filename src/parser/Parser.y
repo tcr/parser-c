@@ -46,7 +46,7 @@ use data::name::Name;
 use parser::tokens::*;
 use parser::builtin::builtinTypeNames;
 use parser::lexer::{lexC, parseError};
-use parser::parser_utils::{ParseError, PState, CDeclrR, ptrDeclr};
+use parser::{ParseError, PState, CDeclrR, ptrDeclr};
 use syntax::ops::*;
 use syntax::ast::*;
 use syntax::constants::*;

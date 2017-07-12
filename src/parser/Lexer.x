@@ -61,8 +61,7 @@ use data::input_stream::*;
 use data::ident::*;
 use data::position::*;
 use syntax::constants::*;
-use parser::parser::Parser;
-use parser::parser_utils::ParseError;
+use parser::{Parser, ParseError};
 use parser::tokens::*;
 
 // fn(A, B) -> fn(C) -> {eval fn(A, B, C)}
