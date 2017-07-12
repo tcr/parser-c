@@ -142,7 +142,8 @@ $white+         ;
 --
 \#$space*@int$space*(\"($infname|@charesc)*\"$space*)?(@int$space*)*\r?$eol
   {
-     p.setPos(adjustLineDirective(inp.take_string(len), pos));
+     let new_pos = adjustLineDirective(p.getTokString(), pos);
+     p.setPos(new_pos);
      lexToken_q(p, false)
   }
 
@@ -162,7 +163,7 @@ $white+         ;
 
 -- identifiers and keywords (follows K&R A2.3 and A2.4)
 --
-$identletter($identletter|$digit)*   { idkwtok(p, inp.take_string(len), pos) }
+$identletter($identletter|$digit)*   { idkwtok(p, pos, len) }
 
 -- constants (follows K&R A2.5)
 --
@@ -172,47 +173,47 @@ $identletter($identletter|$digit)*   { idkwtok(p, inp.take_string(len), pos) }
 
 -- integer constants (follows K&R A2.5.1, C99 6.4.4.1)
 -- NOTE: 0 is lexed as octal integer constant, and readCOctal takes care of this
-0$octdigit*@intgnusuffix?       { token_plus(CTokILit, readCOctal, pos, len, inp) }
-$digitNZ$digit*@intgnusuffix?   { token_plus(CTokILit, |lit| readCInteger(DecRepr, lit), pos, len, inp) }
-0[xX]$hexdigit+@intgnusuffix?   { token_plus(CTokILit, |lit| readCInteger(HexRepr, &lit[2..]), pos, len, inp) }
+0$octdigit*@intgnusuffix?       { token_plus(p, CTokILit, readCOctal, pos, len) }
+$digitNZ$digit*@intgnusuffix?   { token_plus(p, CTokILit, |lit| readCInteger(DecRepr, lit), pos, len) }
+0[xX]$hexdigit+@intgnusuffix?   { token_plus(p, CTokILit, |lit| readCInteger(HexRepr, &lit[2..]), pos, len) }
 
-(0$octdigit*|$digitNZ$digit*|0[xX]$hexdigit+)[uUlL]+ { token_fail("Invalid integer constant suffix", pos, len, inp) }
+(0$octdigit*|$digitNZ$digit*|0[xX]$hexdigit+)[uUlL]+ { token_fail("Invalid integer constant suffix", pos, len) }
 
 -- character constants (follows K&R A2.5.2, C99 6.4.4.4)
 --
 -- * Universal Character Names are unsupported and cause an error.
-\'($inchar|@charesc)\'      { token(CTokCLit, |lit| cChar(unescapeChar(&lit[1..]).0), pos, len, inp) }
-L\'($inchar|@charesc)\'     { token(CTokCLit, |lit| cChar_w(unescapeChar(&lit[2..]).0), pos, len, inp) }
-\'($inchar|@charesc){2,}\'  { token(CTokCLit, |lit| cChars(false, unescapeMultiChars(&lit[1..lit.len()-1])),
-                                    pos, len, inp) }
-L\'($inchar|@charesc){2,}\' { token(CTokCLit, |lit| cChars(true, unescapeMultiChars(&lit[2..lit.len()-1])),
-                                    pos, len, inp) }
+\'($inchar|@charesc)\'      { token(p, CTokCLit, |lit| cChar(unescapeChar(&lit[1..]).0), pos, len) }
+L\'($inchar|@charesc)\'     { token(p, CTokCLit, |lit| cChar_w(unescapeChar(&lit[2..]).0), pos, len) }
+\'($inchar|@charesc){2,}\'  { token(p, CTokCLit, |lit| cChars(false, unescapeMultiChars(&lit[1..lit.len()-1])),
+                                    pos, len) }
+L\'($inchar|@charesc){2,}\' { token(p, CTokCLit, |lit| cChars(true, unescapeMultiChars(&lit[2..lit.len()-1])),
+                                    pos, len) }
 
 -- Clang version literals
-@clangversion               { token(|pos, vers| CTokClangC(pos, ClangCTok(vers)),
-                                    readClangCVersion, pos, len, inp) }
+@clangversion               { token(p, |pos, vers| CTokClangC(pos, ClangCTok(vers)),
+                                    readClangCVersion, pos, len) }
 
 -- float constants (follows K&R A2.5.3. C99 6.4.4.2)
 --
 -- * NOTE: Hexadecimal floating constants without binary exponents are forbidden.
 --         They generate a lexer error, because they are hard to recognize in the parser.
-(@mantpart@exppart?|@intpart@exppart)@floatgnusuffix?  { token(CTokFLit, readCFloat, pos, len, inp) }
-@hexprefix(@hexmant|@hexdigits)@binexp@floatgnusuffix? { token(CTokFLit, readCFloat, pos, len, inp) }
+(@mantpart@exppart?|@intpart@exppart)@floatgnusuffix?  { token(p, CTokFLit, readCFloat, pos, len) }
+@hexprefix(@hexmant|@hexdigits)@binexp@floatgnusuffix? { token(p, CTokFLit, readCFloat, pos, len) }
 @hexprefix@hexmant                                     { token_fail("Hexadecimal floating constant requires an exponent",
-                                                                    pos, len, inp) }
+                                                                    pos, len) }
 
 -- string literal (follows K&R A2.6)
 -- C99: 6.4.5.
-\"($instr|@charesc)*\"      { token(CTokSLit, |lit| cString(unescapeString(&lit[1..lit.len()-1])),
-                                    pos, len, inp) }
-L\"($instr|@charesc)*\"     { token(CTokSLit, |lit| cString_w(unescapeString(&lit[2..lit.len()-1])),
-                                    pos, len, inp) }
+\"($instr|@charesc)*\"      { token(p, CTokSLit, |lit| cString(unescapeString(&lit[1..lit.len()-1])),
+                                    pos, len) }
+L\"($instr|@charesc)*\"     { token(p, CTokSLit, |lit| cString_w(unescapeString(&lit[2..lit.len()-1])),
+                                    pos, len) }
 
-L?\'@ucn\'                        { token_fail("Universal character names are unsupported", pos, len, inp) }
-L?\'\\[^0-7'\"\?\\abfnrtvuUx]\'   { token_fail("Invalid escape sequence", pos, len, inp) }
+L?\'@ucn\'                        { token_fail("Universal character names are unsupported", pos, len) }
+L?\'\\[^0-7'\"\?\\abfnrtvuUx]\'   { token_fail("Invalid escape sequence", pos, len) }
 L?\"($inchar|@charesc)*@ucn($inchar|@charesc|@ucn)*\"
   {
-    token_fail("Universal character names in string literals are unsupported", pos, len, inp)
+    token_fail("Universal character names in string literals are unsupported", pos, len)
   }
 
 -- operators and separators
@@ -303,8 +304,8 @@ label __label__
 */
 // Tokens: _Alignas _Alignof __alignof alignof __alignof__ __asm asm __asm__ _Atomic auto break _Bool case char __const const __const__ continue _Complex __complex__ default do double else enum extern float for _Generic goto if __inline inline __inline__ int __int128 long _Noreturn  _Nullable __nullable _Nonnull __nonnull register __restrict restrict __restrict__ return short __signed signed __signed__ sizeof static _Static_assert struct switch typedef __typeof typeof __typeof__ __thread _Thread_local union unsigned void __volatile volatile __volatile__ while __label__ __attribute __attribute__ __extension__ __real __real__ __imag __imag__ __builtin_va_arg __builtin_offsetof __builtin_types_compatible_p
 
-fn idkwtok(p: &mut Parser, id: &str, pos: Position) -> Res<CToken> {
-    match id.as_ref() {
+fn idkwtok(p: &mut Parser, pos: Position, len: isize) -> Res<CToken> {
+    match p.getTokString() {
         "_Alignas" => tok(8, CTokAlignas, pos),
         "_Alignof" => tok(8, CTokAlignof, pos),
         "_Atomic" => tok(7, CTokAtomic, pos),
@@ -387,8 +388,7 @@ fn idkwtok(p: &mut Parser, id: &str, pos: Position) -> Res<CToken> {
         "while" => tok(5, CTokWhile, pos),
         _ => {
             let name = p.getNewName();
-            let len = id.len() as isize;
-            let ident = Ident::new(pos.clone(), id.to_string(), name);
+            let ident = Ident::new(pos.clone(), p.getTokString().to_string(), name);
             if p.isTypeIdent(&ident) {
                 Ok(CTokTyIdent((pos, len), ident))
             } else {
@@ -417,6 +417,7 @@ fn adjustLineDirective(pragma: &str, pos: Position) -> Position {
     Position::new(offs_q, new_fname, row, 1)
 }
 
+#[inline]
 fn tok<M>(len: isize, mkTok: M, pos: Position) -> Res<CToken>
     where M: Fn(PosLength) -> CToken
 {
@@ -424,22 +425,25 @@ fn tok<M>(len: isize, mkTok: M, pos: Position) -> Res<CToken>
 }
 
 /// error token
-fn token_fail(errmsg: &str, pos: Position, _: isize, _: InputStream) -> Res<CToken> {
+#[inline]
+fn token_fail(errmsg: &str, pos: Position, _: isize) -> Res<CToken> {
     Err(ParseError::new(pos, vec!["Lexical Error !".to_string(), errmsg.to_string()]))
 }
 
 /// token that uses the string
-fn token<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: InputStream) -> Res<CToken>
+#[inline]
+fn token<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: isize) -> Res<CToken>
     where R: Fn(&str) -> T, M: Fn(PosLength, T) -> CToken
 {
-    Ok(mkTok((pos, len), fromStr(inp.take_string(len))))
+    Ok(mkTok((pos, len), fromStr(p.getTokString())))
 }
 
 /// token that may fail
-fn token_plus<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: InputStream) -> Res<CToken>
+#[inline]
+fn token_plus<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: isize) -> Res<CToken>
     where R: Fn(&str) -> Result<T, String>, M: Fn(PosLength, T) -> CToken
 {
-    match fromStr(inp.take_string(len)) {
+    match fromStr(p.getTokString()) {
         Err(err) => Err(ParseError::new(pos, vec!["Lexical error ! ".to_string(), err])),
         Ok(ok)   => Ok(mkTok((pos, len), ok)),
     }
@@ -450,31 +454,29 @@ fn token_plus<T, R, M>(mkTok: M, fromStr: R, pos: Position, len: isize, inp: Inp
 
 type AlexInput = (Position, InputStream);
 
-fn alexGetByte((p, is): AlexInput) -> Option<(u8, AlexInput)> {
-    if is.is_empty() {
+fn alexGetByte(input: &mut AlexInput) -> Option<u8> {
+    if input.1.is_done() {
         None
     } else {
-        let (b, s) = is.take_byte();
         // TODO this is safe for latin-1, but ugly
-        let p_q = alexMove(p, b as char);
-        Some((b, (p_q, s)))
+        let ch = input.1.read_byte();
+        alexMove(input, ch as char);
+        Some(ch)
     }
 }
 
-fn alexMove(pos: Position, ch: char) -> Position {
+fn alexMove(input: &mut AlexInput, ch: char) {
     match ch {
-        ' '  => pos.inc(1),
-        '\n' => pos.retPos(),
-        '\r' => pos.incOffset(1),
-        _    => pos.inc(1),
+        '\n' => input.0.inc_newline(),
+        '\r' => input.0.inc_offset(1),
+        _    => input.0.inc_chars(1),
     }
 }
 
 fn lexicalError<T>(p: &mut Parser) -> Res<T> {
-    let pos = p.getPos();
     let input = p.getInput();
-    let (c, _) = input.take_char();
-    Err(ParseError::new(pos, vec![
+    let c = input.1.read_char();
+    Err(ParseError::new(input.0.clone(), vec![
         "Lexical error !".to_string(),
         format!("The character {} does not fit here.", c),
     ]))
@@ -506,25 +508,21 @@ pub fn lexC(p: &mut Parser) -> Res<CToken> {
 }
 
 fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
-    let pos = p.getPos();
-    let inp = p.getInput();
-    match alexScan((pos.clone(), inp.clone()), 0) {
+    match alexScan(p.getInput()) {
         AlexEOF => {
             p.handleEofToken();
             Ok(CTokEof)
         },
-        AlexError(_inp) => {
+        AlexError => {
             lexicalError(p)
         },
-        AlexSkip((pos_q, inp_q), _len) => {
-            p.setPos(pos_q);
-            p.setInput(inp_q);
+        AlexSkip(_len) => {
             lexToken_q(p, modifyCache)
         },
-        AlexToken((pos_q, inp_q), len, action) => {
-            p.setPos(pos_q);
-            p.setInput(inp_q);
-            let nextTok = action(p, pos, len, inp)?;
+        AlexToken(len, action) => {
+            let pos = p.getPosClone();
+            p.setLastTokLen(len as usize);
+            let nextTok = action(p, pos, len)?;
             if modifyCache {
                 p.setLastToken(nextTok.clone());
                 Ok(nextTok)

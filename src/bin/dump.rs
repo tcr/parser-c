@@ -9,5 +9,7 @@ fn main() {
     let mut args = env::args();
     let input_file = FilePath { path: args.nth(1).unwrap() };
     let out = parseCFilePre(input_file);
-    println!("{:#?}", out);
+    if args.nth(0).as_ref().map(|x| &**x) == Some("-p") {
+        println!("{:#?}", out);
+    }
 }

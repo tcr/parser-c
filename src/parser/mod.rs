@@ -34,8 +34,8 @@ impl ParseError {
 }
 
 pub struct PState {
-    curPos: Position,
-    curInput: InputStream,
+    curInput: (Position, InputStream),
+    tokLen: usize,
     prevToken: Option<CToken>,
     savedToken: Option<CToken>,
     nameSupply: NameSupply,
@@ -48,8 +48,8 @@ pub fn execParser<F, T>(input: InputStream, pos: Position, builtins: Vec<Ident>,
     where F: FnOnce(&mut Parser) -> Result<T, ParseError>
 {
     let initial_state = PState {
-        curPos: pos,
-        curInput: input,
+        curInput: (pos, input),
+        tokLen: 0,
         prevToken: None,
         savedToken: None,
         nameSupply: names,
@@ -65,13 +65,29 @@ impl Parser {
         self.user.nameSupply.next().unwrap()
     }
 
-    pub fn setPos(&mut self, pos: Position) {
-        self.user.curPos = pos;
+    // lexer related API
+
+    pub fn getInput(&mut self) -> &mut (Position, InputStream) {
+        &mut self.user.curInput
     }
 
-    pub fn getPos(&self) -> Position {  // TODO borrow
-        self.user.curPos.clone()
+    pub fn setPos(&mut self, pos: Position) {
+        self.user.curInput.0 = pos;
     }
+
+    pub fn getPosClone(&self) -> Position {
+        self.user.curInput.0.clone()
+    }
+
+    pub fn setLastTokLen(&mut self, len: usize) {
+        self.user.tokLen = len;
+    }
+
+    pub fn getTokString(&self) -> &str {
+        self.user.curInput.1.last_string(self.user.tokLen)
+    }
+
+    // parser related API
 
     pub fn addTypedef(&mut self, ident: Ident) {
         self.user.tyidents.insert(ident);
@@ -92,14 +108,6 @@ impl Parser {
     pub fn leaveScope(&mut self) {
         assert!(!self.user.scopes.is_empty(), "leaveScope: already in global scope");
         self.user.tyidents = self.user.scopes.remove(0);
-    }
-
-    pub fn getInput(&self) -> InputStream {   // TODO borrow
-        self.user.curInput.clone()
-    }
-
-    pub fn setInput(&mut self, i: InputStream) {
-        self.user.curInput = i;
     }
 
     pub fn getLastToken(&self) -> CToken {   // TODO borrow
