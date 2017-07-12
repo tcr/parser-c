@@ -1,5 +1,5 @@
 // put #![allow(...)] here
-// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 49
+// Original location: ../../src/parser/Lexer.x, line 49
 
 
 
@@ -33217,7 +33217,7 @@ const ALEX_ACTIONS: [fn(&mut Parser, Position, isize, InputStream) -> Res<Token>
     alex_action_1,
 ];
 
-// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 284
+// Original location: ../../src/parser/Lexer.x, line 284
 
 
 
