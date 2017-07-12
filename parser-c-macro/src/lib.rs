@@ -25,6 +25,10 @@ pub fn cnodeable(input: TokenStream) -> TokenStream {
 }
 
 fn impl_cnodeable(ast: &syn::MacroInput) -> quote::Tokens {
+    if ast.generics.ty_params.len() != 1 {
+        panic!("Expected type with 1 type parameter.");
+    }
+    let ty_param = ast.generics.ty_params[0].ident.to_string();
     match ast.body {
         Body::Enum(ref variants) => {
             let mut arms = Vec::new();
@@ -39,7 +43,7 @@ fn impl_cnodeable(ast: &syn::MacroInput) -> quote::Tokens {
                         let mut tokens = Tokens::new();
                         item.to_tokens(&mut tokens);
                         let arg = tokens.to_string();
-                        if arg == "a" {
+                        if arg == ty_param {
                             has_node = true;
                             args.push(quote!(node));
                             args_ref.push(quote!(ref node));
@@ -84,7 +88,7 @@ fn impl_cnodeable(ast: &syn::MacroInput) -> quote::Tokens {
                     let mut tokens = Tokens::new();
                     item.to_tokens(&mut tokens);
                     let arg = tokens.to_string();
-                    arg == "a" || arg == "pub a"
+                    arg == ty_param || arg == format!("pub {}", ty_param)
                 })
             } else {
                 unreachable!("Expected struct tuple.");

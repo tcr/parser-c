@@ -28,7 +28,7 @@
 
 #![feature(box_syntax, box_patterns, fnbox)]
 // Cut down on number of warnings until we manage it.
-#![allow(non_snake_case, non_camel_case_types)]
+#![allow(non_snake_case)]
 
 extern crate either;
 #[macro_use] extern crate bitflags;

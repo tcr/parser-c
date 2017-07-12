@@ -318,19 +318,3 @@ pub fn unescapeMultiChars(mut cs: &str) -> Vec<char> {
     }
     new_vec
 }
-
-pub fn head_q<a>(msg: &str, mut _1: Vec<a>) -> a {
-    if _1.is_empty() {
-        panic!("{}", msg);
-    } else {
-        _1.remove(0)
-    }
-}
-
-pub fn head_q_str(msg: &str, _1: String) -> char {
-    if let Some(c) = _1.chars().next() {
-       c
-    } else {
-        panic!("{}", msg);
-    }
-}

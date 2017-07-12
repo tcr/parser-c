@@ -11,141 +11,141 @@ use syntax::constants::*;
 pub type CTranslUnit = CTranslationUnit<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub struct CTranslationUnit<a>(pub Vec<CExternalDeclaration<a>>, pub a);
+pub struct CTranslationUnit<I>(pub Vec<CExternalDeclaration<I>>, pub I);
 
 pub type CExtDecl = CExternalDeclaration<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CExternalDeclaration<a> {
-    CDeclExt(CDeclaration<a>),
-    CFDefExt(CFunctionDef<a>),
-    CAsmExt(CStringLiteral<a>, a),
+pub enum CExternalDeclaration<I> {
+    CDeclExt(CDeclaration<I>),
+    CFDefExt(CFunctionDef<I>),
+    CAsmExt(CStringLiteral<I>, I),
 }
 pub use self::CExternalDeclaration::*;
 
 pub type CFunDef = CFunctionDef<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub struct CFunctionDef<a>(pub Vec<CDeclarationSpecifier<a>>,
-                           pub CDeclarator<a>,
-                           pub Vec<CDeclaration<a>>,
-                           pub CStatement<a>,
-                           pub a);
+pub struct CFunctionDef<I>(pub Vec<CDeclarationSpecifier<I>>,
+                           pub CDeclarator<I>,
+                           pub Vec<CDeclaration<I>>,
+                           pub CStatement<I>,
+                           pub I);
 
 
 pub type CDecl = CDeclaration<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CDeclaration<a> {
-    CDecl(Vec<CDeclarationSpecifier<a>>,
-          Vec<(Option<CDeclarator<a>>, Option<CInitializer<a>>, Option<CExpression<a>>)>,
-          a),
-    CStaticAssert(CExpression<a>, CStringLiteral<a>, a),
+pub enum CDeclaration<I> {
+    CDecl(Vec<CDeclarationSpecifier<I>>,
+          Vec<(Option<CDeclarator<I>>, Option<CInitializer<I>>, Option<CExpression<I>>)>,
+          I),
+    CStaticAssert(CExpression<I>, CStringLiteral<I>, I),
 }
 pub use self::CDeclaration::*;
 
 pub type CDeclr = CDeclarator<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub struct CDeclarator<a>(pub Option<Ident>,
-                          pub Vec<CDerivedDeclarator<a>>,
-                          pub Option<CStringLiteral<a>>,
-                          pub Vec<CAttribute<a>>,
-                          pub a);
+pub struct CDeclarator<I>(pub Option<Ident>,
+                          pub Vec<CDerivedDeclarator<I>>,
+                          pub Option<CStringLiteral<I>>,
+                          pub Vec<CAttribute<I>>,
+                          pub I);
 
 
 pub type CDerivedDeclr = CDerivedDeclarator<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CDerivedDeclarator<a> {
-    CPtrDeclr(Vec<CTypeQualifier<a>>, a),
-    CArrDeclr(Vec<CTypeQualifier<a>>, CArraySize<a>, a),
-    CFunDeclr(Either<Vec<Ident>, (Vec<CDeclaration<a>>, bool)>, Vec<CAttribute<a>>, a),
+pub enum CDerivedDeclarator<I> {
+    CPtrDeclr(Vec<CTypeQualifier<I>>, I),
+    CArrDeclr(Vec<CTypeQualifier<I>>, CArraySize<I>, I),
+    CFunDeclr(Either<Vec<Ident>, (Vec<CDeclaration<I>>, bool)>, Vec<CAttribute<I>>, I),
 }
 pub use self::CDerivedDeclarator::*;
 
 pub type CArrSize = CArraySize<NodeInfo>;
 
 #[derive(Clone, Debug)]
-pub enum CArraySize<a> {
+pub enum CArraySize<I> {
     CNoArrSize(bool),
-    CArrSize(bool, CExpression<a>),
+    CArrSize(bool, CExpression<I>),
 }
 pub use self::CArraySize::*;
 
 pub type CStat = CStatement<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CStatement<a> {
-    CLabel(Ident, Box<CStatement<a>>, Vec<CAttribute<a>>, a),
-    CCase(CExpression<a>, Box<CStatement<a>>, a),
-    CCases(CExpression<a>, CExpression<a>, Box<CStatement<a>>, a),
-    CDefault(Box<CStatement<a>>, a),
-    CExpr(Option<CExpression<a>>, a),
-    CCompound(Vec<Ident>, Vec<CCompoundBlockItem<a>>, a),
-    CIf(CExpression<a>, Box<CStatement<a>>, Option<Box<CStatement<a>>>, a),
-    CSwitch(CExpression<a>, Box<CStatement<a>>, a),
-    CWhile(CExpression<a>, Box<CStatement<a>>, bool, a),
-    CFor(Either<Option<CExpression<a>>, CDeclaration<a>>,
-         Option<CExpression<a>>,
-         Option<CExpression<a>>,
-         Box<CStatement<a>>,
-         a),
-    CGoto(Ident, a),
-    CGotoPtr(CExpression<a>, a),
-    CCont(a),
-    CBreak(a),
-    CReturn(Option<CExpression<a>>, a),
-    CAsm(CAssemblyStatement<a>, a),
+pub enum CStatement<I> {
+    CLabel(Ident, Box<CStatement<I>>, Vec<CAttribute<I>>, I),
+    CCase(CExpression<I>, Box<CStatement<I>>, I),
+    CCases(CExpression<I>, CExpression<I>, Box<CStatement<I>>, I),
+    CDefault(Box<CStatement<I>>, I),
+    CExpr(Option<CExpression<I>>, I),
+    CCompound(Vec<Ident>, Vec<CCompoundBlockItem<I>>, I),
+    CIf(CExpression<I>, Box<CStatement<I>>, Option<Box<CStatement<I>>>, I),
+    CSwitch(CExpression<I>, Box<CStatement<I>>, I),
+    CWhile(CExpression<I>, Box<CStatement<I>>, bool, I),
+    CFor(Either<Option<CExpression<I>>, CDeclaration<I>>,
+         Option<CExpression<I>>,
+         Option<CExpression<I>>,
+         Box<CStatement<I>>,
+         I),
+    CGoto(Ident, I),
+    CGotoPtr(CExpression<I>, I),
+    CCont(I),
+    CBreak(I),
+    CReturn(Option<CExpression<I>>, I),
+    CAsm(CAssemblyStatement<I>, I),
 }
 pub use self::CStatement::*;
 
 pub type CAsmStmt = CAssemblyStatement<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub struct CAssemblyStatement<a>(pub Option<CTypeQualifier<a>>,
-                                 pub CStringLiteral<a>,
-                                 pub Vec<CAssemblyOperand<a>>,
-                                 pub Vec<CAssemblyOperand<a>>,
-                                 pub Vec<CStringLiteral<a>>,
-                                 pub a);
+pub struct CAssemblyStatement<I>(pub Option<CTypeQualifier<I>>,
+                                 pub CStringLiteral<I>,
+                                 pub Vec<CAssemblyOperand<I>>,
+                                 pub Vec<CAssemblyOperand<I>>,
+                                 pub Vec<CStringLiteral<I>>,
+                                 pub I);
 
 
 pub type CAsmOperand = CAssemblyOperand<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub struct CAssemblyOperand<a>(pub Option<Ident>, pub CStringLiteral<a>, pub CExpression<a>, pub a);
+pub struct CAssemblyOperand<I>(pub Option<Ident>, pub CStringLiteral<I>, pub CExpression<I>, pub I);
 
 
 pub type CBlockItem = CCompoundBlockItem<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CCompoundBlockItem<a> {
-    CBlockStmt(CStatement<a>),
-    CBlockDecl(CDeclaration<a>),
-    CNestedFunDef(CFunctionDef<a>),
+pub enum CCompoundBlockItem<I> {
+    CBlockStmt(CStatement<I>),
+    CBlockDecl(CDeclaration<I>),
+    CNestedFunDef(CFunctionDef<I>),
 }
 pub use self::CCompoundBlockItem::*;
 
 pub type CDeclSpec = CDeclarationSpecifier<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CDeclarationSpecifier<a> {
-    CStorageSpec(CStorageSpecifier<a>),
-    CTypeSpec(CTypeSpecifier<a>),
-    CTypeQual(CTypeQualifier<a>),
-    CFunSpec(CFunctionSpecifier<a>),
-    CAlignSpec(CAlignmentSpecifier<a>),
+pub enum CDeclarationSpecifier<I> {
+    CStorageSpec(CStorageSpecifier<I>),
+    CTypeSpec(CTypeSpecifier<I>),
+    CTypeQual(CTypeQualifier<I>),
+    CFunSpec(CFunctionSpecifier<I>),
+    CAlignSpec(CAlignmentSpecifier<I>),
 }
 pub use self::CDeclarationSpecifier::*;
 
-pub fn partitionDeclSpecs<a>(_input: Vec<CDeclarationSpecifier<a>>)
-    -> (Vec<CStorageSpecifier<a>>,
-        Vec<CAttribute<a>>,
-        Vec<CTypeQualifier<a>>,
-        Vec<CTypeSpecifier<a>>,
-        Vec<CFunctionSpecifier<a>>,
-        Vec<CAlignmentSpecifier<a>>)
+pub fn partitionDeclSpecs<I>(_input: Vec<CDeclarationSpecifier<I>>)
+    -> (Vec<CStorageSpecifier<I>>,
+        Vec<CAttribute<I>>,
+        Vec<CTypeQualifier<I>>,
+        Vec<CTypeSpecifier<I>>,
+        Vec<CFunctionSpecifier<I>>,
+        Vec<CAlignmentSpecifier<I>>)
 {
 
     // let deals = |_0, _1| match (_0, _1) {
@@ -177,42 +177,42 @@ pub fn partitionDeclSpecs<a>(_input: Vec<CDeclarationSpecifier<a>>)
 pub type CStorageSpec = CStorageSpecifier<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable, Eq, Ord, PartialEq, PartialOrd)]
-pub enum CStorageSpecifier<a> {
-    CAuto(a),
-    CRegister(a),
-    CStatic(a),
-    CExtern(a),
-    CTypedef(a),
-    CThread(a),
+pub enum CStorageSpecifier<I> {
+    CAuto(I),
+    CRegister(I),
+    CStatic(I),
+    CExtern(I),
+    CTypedef(I),
+    CThread(I),
 }
 pub use self::CStorageSpecifier::*;
 
 pub type CTypeSpec = CTypeSpecifier<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CTypeSpecifier<a> {
-    CVoidType(a),
-    CCharType(a),
-    CShortType(a),
-    CIntType(a),
-    CLongType(a),
-    CFloatType(a),
-    CDoubleType(a),
-    CSignedType(a),
-    CUnsigType(a),
-    CBoolType(a),
-    CComplexType(a),
-    CInt128Type(a),
-    CSUType(CStructureUnion<a>, a),
-    CEnumType(CEnumeration<a>, a),
-    CTypeDef(Ident, a),
-    CTypeOfExpr(CExpression<a>, a),
-    CTypeOfType(CDeclaration<a>, a),
-    CAtomicType(CDeclaration<a>, a),
+pub enum CTypeSpecifier<I> {
+    CVoidType(I),
+    CCharType(I),
+    CShortType(I),
+    CIntType(I),
+    CLongType(I),
+    CFloatType(I),
+    CDoubleType(I),
+    CSignedType(I),
+    CUnsigType(I),
+    CBoolType(I),
+    CComplexType(I),
+    CInt128Type(I),
+    CSUType(CStructureUnion<I>, I),
+    CEnumType(CEnumeration<I>, I),
+    CTypeDef(Ident, I),
+    CTypeOfExpr(CExpression<I>, I),
+    CTypeOfType(CDeclaration<I>, I),
+    CAtomicType(CDeclaration<I>, I),
 }
 pub use self::CTypeSpecifier::*;
 
-pub fn isSUEDef<a>(spec: CTypeSpecifier<a>) -> bool {
+pub fn isSUEDef<I>(spec: CTypeSpecifier<I>) -> bool {
     match spec {
         CSUType(CStructureUnion(_, _, Some(_), _, _), _) => true,
         CEnumType(CEnumeration(_, Some(_), _, _), _) => true,
@@ -223,43 +223,43 @@ pub fn isSUEDef<a>(spec: CTypeSpecifier<a>) -> bool {
 pub type CTypeQual = CTypeQualifier<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CTypeQualifier<a> {
-    CConstQual(a),
-    CVolatQual(a),
-    CRestrQual(a),
-    CAtomicQual(a),
-    CAttrQual(CAttribute<a>),
-    CNullableQual(a),
-    CNonnullQual(a),
+pub enum CTypeQualifier<I> {
+    CConstQual(I),
+    CVolatQual(I),
+    CRestrQual(I),
+    CAtomicQual(I),
+    CAttrQual(CAttribute<I>),
+    CNullableQual(I),
+    CNonnullQual(I),
 }
 pub use self::CTypeQualifier::*;
 
 pub type CFunSpec = CFunctionSpecifier<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CFunctionSpecifier<a> {
-    CInlineQual(a),
-    CNoreturnQual(a),
+pub enum CFunctionSpecifier<I> {
+    CInlineQual(I),
+    CNoreturnQual(I),
 }
 pub use self::CFunctionSpecifier::*;
 
 pub type CAlignSpec = CAlignmentSpecifier<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CAlignmentSpecifier<a> {
-    CAlignAsType(CDeclaration<a>, a),
-    CAlignAsExpr(CExpression<a>, a),
+pub enum CAlignmentSpecifier<I> {
+    CAlignAsType(CDeclaration<I>, I),
+    CAlignAsExpr(CExpression<I>, I),
 }
 pub use self::CAlignmentSpecifier::*;
 
 pub type CStructUnion = CStructureUnion<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub struct CStructureUnion<a>(pub CStructTag,
+pub struct CStructureUnion<I>(pub CStructTag,
                               pub Option<Ident>,
-                              pub Option<Vec<CDeclaration<a>>>,
-                              pub Vec<CAttribute<a>>,
-                              pub a);
+                              pub Option<Vec<CDeclaration<I>>>,
+                              pub Vec<CAttribute<I>>,
+                              pub I);
 pub type CStruct = CStructureUnion<NodeInfo>;
 
 
@@ -273,18 +273,18 @@ pub use self::CStructTag::*;
 pub type CEnum = CEnumeration<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub struct CEnumeration<a>(pub Option<Ident>,
-                           pub Option<Vec<(Ident, Option<CExpression<a>>)>>,
-                           pub Vec<CAttribute<a>>,
-                           pub a);
+pub struct CEnumeration<I>(pub Option<Ident>,
+                           pub Option<Vec<(Ident, Option<CExpression<I>>)>>,
+                           pub Vec<CAttribute<I>>,
+                           pub I);
 
 
 pub type CInit = CInitializer<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CInitializer<a> {
-    CInitExpr(CExpression<a>, a),
-    CInitList(CInitializerList<a>, a),
+pub enum CInitializer<I> {
+    CInitExpr(CExpression<I>, I),
+    CInitList(CInitializerList<I>, I),
 }
 pub use self::CInitializer::*;
 
@@ -300,84 +300,84 @@ pub fn fmapInitList<A, B, F: Fn(A) -> B>(_f: F, _a: CInitializerList<A>) -> CIni
 
 pub type CInitList = CInitializerList<NodeInfo>;
 
-pub type CInitializerList<a> = Vec<(Vec<CPartDesignator<a>>, CInitializer<a>)>;
+pub type CInitializerList<I> = Vec<(Vec<CPartDesignator<I>>, CInitializer<I>)>;
 
 pub type CDesignator = CPartDesignator<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CPartDesignator<a> {
-    CArrDesig(CExpression<a>, a),
-    CMemberDesig(Ident, a),
-    CRangeDesig(CExpression<a>, CExpression<a>, a),
+pub enum CPartDesignator<I> {
+    CArrDesig(CExpression<I>, I),
+    CMemberDesig(Ident, I),
+    CRangeDesig(CExpression<I>, CExpression<I>, I),
 }
 pub use self::CPartDesignator::*;
 
 pub type CAttr = CAttribute<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub struct CAttribute<a>(pub Ident, pub Vec<CExpression<a>>, pub a);
+pub struct CAttribute<I>(pub Ident, pub Vec<CExpression<I>>, pub I);
 
 
 pub type CExpr = CExpression<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CExpression<a> {
-    CComma(Vec<CExpression<a>>, a),
-    CAssign(CAssignOp, Box<CExpression<a>>, Box<CExpression<a>>, a),
-    CCond(Box<CExpression<a>>, Option<Box<CExpression<a>>>, Box<CExpression<a>>, a),
-    CBinary(CBinaryOp, Box<CExpression<a>>, Box<CExpression<a>>, a),
-    CCast(Box<CDeclaration<a>>, Box<CExpression<a>>, a),
-    CUnary(CUnaryOp, Box<CExpression<a>>, a),
-    CSizeofExpr(Box<CExpression<a>>, a),
-    CSizeofType(Box<CDeclaration<a>>, a),
-    CAlignofExpr(Box<CExpression<a>>, a),
-    CAlignofType(Box<CDeclaration<a>>, a),
-    CComplexReal(Box<CExpression<a>>, a),
-    CComplexImag(Box<CExpression<a>>, a),
-    CIndex(Box<CExpression<a>>, Box<CExpression<a>>, a),
-    CCall(Box<CExpression<a>>, Vec<CExpression<a>>, a),
-    CMember(Box<CExpression<a>>, Ident, bool, a),
-    CVar(Ident, a),
-    CConst(CConstant<a>),
-    CCompoundLit(Box<CDeclaration<a>>, CInitializerList<a>, a),
-    CGenericSelection(Box<CExpression<a>>, Vec<(Option<CDeclaration<a>>, CExpression<a>)>, a),
-    CStatExpr(Box<CStatement<a>>, a),
-    CLabAddrExpr(Ident, a),
-    CBuiltinExpr(Box<CBuiltinThing<a>>),
+pub enum CExpression<I> {
+    CComma(Vec<CExpression<I>>, I),
+    CAssign(CAssignOp, Box<CExpression<I>>, Box<CExpression<I>>, I),
+    CCond(Box<CExpression<I>>, Option<Box<CExpression<I>>>, Box<CExpression<I>>, I),
+    CBinary(CBinaryOp, Box<CExpression<I>>, Box<CExpression<I>>, I),
+    CCast(Box<CDeclaration<I>>, Box<CExpression<I>>, I),
+    CUnary(CUnaryOp, Box<CExpression<I>>, I),
+    CSizeofExpr(Box<CExpression<I>>, I),
+    CSizeofType(Box<CDeclaration<I>>, I),
+    CAlignofExpr(Box<CExpression<I>>, I),
+    CAlignofType(Box<CDeclaration<I>>, I),
+    CComplexReal(Box<CExpression<I>>, I),
+    CComplexImag(Box<CExpression<I>>, I),
+    CIndex(Box<CExpression<I>>, Box<CExpression<I>>, I),
+    CCall(Box<CExpression<I>>, Vec<CExpression<I>>, I),
+    CMember(Box<CExpression<I>>, Ident, bool, I),
+    CVar(Ident, I),
+    CConst(CConstant<I>),
+    CCompoundLit(Box<CDeclaration<I>>, CInitializerList<I>, I),
+    CGenericSelection(Box<CExpression<I>>, Vec<(Option<CDeclaration<I>>, CExpression<I>)>, I),
+    CStatExpr(Box<CStatement<I>>, I),
+    CLabAddrExpr(Ident, I),
+    CBuiltinExpr(Box<CBuiltinThing<I>>),
 }
 pub use self::CExpression::*;
 
 pub type CBuiltin = CBuiltinThing<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CBuiltinThing<a> {
-    CBuiltinVaArg(CExpression<a>, CDeclaration<a>, a),
-    CBuiltinOffsetOf(CDeclaration<a>, Vec<CPartDesignator<a>>, a),
-    CBuiltinTypesCompatible(CDeclaration<a>, CDeclaration<a>, a),
+pub enum CBuiltinThing<I> {
+    CBuiltinVaArg(CExpression<I>, CDeclaration<I>, I),
+    CBuiltinOffsetOf(CDeclaration<I>, Vec<CPartDesignator<I>>, I),
+    CBuiltinTypesCompatible(CDeclaration<I>, CDeclaration<I>, I),
 }
 pub use self::CBuiltinThing::*;
 
 pub type CConst = CConstant<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub enum CConstant<a> {
-    CIntConst(CInteger, a),
-    CCharConst(CChar, a),
-    CFloatConst(CFloat, a),
-    CStrConst(CString, a),
+pub enum CConstant<I> {
+    CIntConst(CInteger, I),
+    CCharConst(CChar, I),
+    CFloatConst(CFloat, I),
+    CStrConst(CString, I),
 }
 pub use self::CConstant::*;
 
 pub type CStrLit = CStringLiteral<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-pub struct CStringLiteral<a>(pub CString, pub a);
+pub struct CStringLiteral<I>(pub CString, pub I);
 
 
-pub fn cstringOfLit<a>(CStringLiteral(cstr, _): CStringLiteral<a>) -> CString {
+pub fn cstringOfLit<I>(CStringLiteral(cstr, _): CStringLiteral<I>) -> CString {
     cstr
 }
 
-pub fn liftStrLit<a>(CStringLiteral(__str, at): CStringLiteral<a>) -> CConstant<a> {
+pub fn liftStrLit<I>(CStringLiteral(__str, at): CStringLiteral<I>) -> CConstant<I> {
     CStrConst(__str, at)
 }

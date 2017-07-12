@@ -33797,11 +33797,11 @@ pub fn quickIndex<E>(arr: &[E], i: isize) -> &E {
 // -----------------------------------------------------------------------------
 // Main lexing routines
 
-pub enum AlexReturn<a> {
+pub enum AlexReturn<T> {
     AlexEOF,
     AlexError(AlexInput),
     AlexSkip(AlexInput, isize),
-    AlexToken(AlexInput, isize, a)
+    AlexToken(AlexInput, isize, T)
 }
 pub use self::AlexReturn::*;
 
@@ -33912,23 +33912,23 @@ pub enum AlexLastAcc {
 }
 pub use self::AlexLastAcc::*;
 
-pub enum AlexAcc<user> {
+pub enum AlexAcc<T> {
     AlexAccNone,
     AlexAcc(isize),
     AlexAccSkip,
-    AlexAccPred(isize, Box<AlexAccPred<user>>, Box<AlexAcc<user>>),
-    AlexAccSkipPred(Box<AlexAccPred<user>>, Box<AlexAcc<user>>)
+    AlexAccPred(isize, Box<AlexAccPred<T>>, Box<AlexAcc<T>>),
+    AlexAccSkipPred(Box<AlexAccPred<T>>, Box<AlexAcc<T>>)
 }
 pub use self::AlexAcc::*;
 
-pub type AlexAccPred<user> = Box<Fn(user, AlexInput, isize, AlexInput) -> bool>;
+pub type AlexAccPred<T> = Box<Fn(T, AlexInput, isize, AlexInput) -> bool>;
 
 // -----------------------------------------------------------------------------
 // Predicates on a rule
 
-pub fn alexAndPred<a: Clone>(p1: Box<Fn(a, AlexInput, isize, AlexInput) -> bool>,
-                             p2: Box<Fn(a, AlexInput, isize, AlexInput) -> bool>,
-                             user: a, in1: AlexInput, len: isize, in2: AlexInput) -> bool {
+pub fn alexAndPred<T: Clone>(p1: Box<Fn(T, AlexInput, isize, AlexInput) -> bool>,
+                             p2: Box<Fn(T, AlexInput, isize, AlexInput) -> bool>,
+                             user: T, in1: AlexInput, len: isize, in2: AlexInput) -> bool {
     p1(user.clone(), in1.clone(), len, in2.clone()) && p2(user, in1, len, in2)
 }
 
