@@ -5,9 +5,6 @@ use corollary_support::FilePath;
 
 use std::sync::Arc;
 
-// TODO use a deque
-use data::r_list::Reversed;
-
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum Position {
     Position {
@@ -148,15 +145,6 @@ impl<A: Pos> Pos for Vec<A> {
     }
     fn into_pos(mut self) -> Position {
         self.remove(0).into_pos()
-    }
-}
-
-impl<A: Pos> Pos for Reversed<A> {
-    fn pos(&self) -> &Position {
-        (self.0).pos()
-    }
-    fn into_pos(self) -> Position {
-        (self.0).into_pos()
     }
 }
 
