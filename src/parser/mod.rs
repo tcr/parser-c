@@ -16,7 +16,7 @@ use either::Either;
 pub use parser::parser::Parser;
 use parser::parser::translUnitP;
 use parser::builtin::*;
-use parser::tokens::{CToken, CTokEof, movePosLenOfTok};
+use parser::tokens::{CToken, CTokEof};
 use syntax::ast::*;
 use data::name::{Name, NameSupply, new_name_supply};
 use data::ident::Ident;
@@ -169,7 +169,7 @@ impl Parser {
         let name = self.getNewName();
         let lastTok = self.getSavedToken();
         let firstPos = node.into_pos();
-        let attrs = NodeInfo::new(firstPos, movePosLenOfTok(lastTok), name);
+        let attrs = NodeInfo::new(firstPos, lastTok.into_pos_len(), name);
         Ok(mkAttrNode(attrs))
     }
 
@@ -177,7 +177,7 @@ impl Parser {
                                           mkAttrNode: Box<FnBox(NodeInfo) -> T>) -> Result<T, ParseError> {
         let lastTok = self.getSavedToken();
         let firstPos = nodeinfo.pos().clone();
-        let attrs = NodeInfo::new(firstPos, movePosLenOfTok(lastTok),
+        let attrs = NodeInfo::new(firstPos, lastTok.into_pos_len(),
                                   nodeinfo.name().unwrap_or_else(|| panic!("nameOfNode")));
         Ok(mkAttrNode(attrs))
     }

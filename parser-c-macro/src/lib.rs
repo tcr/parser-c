@@ -1,15 +1,14 @@
 #![feature(proc_macro)]
-#![allow(unused_imports)]
 
 extern crate proc_macro;
 extern crate syn;
 #[macro_use] extern crate quote;
 
-use syn::{Body, VariantData};
+use syn::Body;
 use proc_macro::TokenStream;
 use quote::{ToTokens, Tokens};
 
-#[proc_macro_derive(CNodeable)]
+#[proc_macro_derive(CNode)]
 pub fn cnodeable(input: TokenStream) -> TokenStream {
     // Construct a string representation of the type definition
     let s = input.to_string();
@@ -119,4 +118,43 @@ fn impl_cnodeable(ast: &syn::MacroInput) -> quote::Tokens {
             }
         }
     }
+}
+
+#[proc_macro_derive(Pos)]
+pub fn impl_pos(input: TokenStream) -> TokenStream {
+    let s = input.to_string();
+    let ast = syn::parse_macro_input(&s).unwrap();
+    let name = &ast.ident;
+
+    let gen = match ast.body {
+        Body::Struct(..) => panic!("Expected an enum."),
+        Body::Enum(ref variants) => {
+            let mut arms = Vec::new();
+            let mut arms_ref = Vec::new();
+            for var in variants {
+                let name = &var.ident;
+                if name != "CTokEof" {
+                    arms.push(quote! { #name ((pos, _), ..) => pos, });
+                    arms_ref.push(quote! { #name ((ref pos, _), ..) => pos, });
+                }
+            }
+            quote! {
+                impl Pos for #name {
+                    fn pos(&self) -> &Position {
+                        match *self {
+                            #(#arms_ref)*
+                            _ => panic!("tokenPos: EOF"),
+                        }
+                    }
+                    fn into_pos(self) -> Position {
+                        match self {
+                            #(#arms)*
+                            _ => panic!("tokenPos: EOF"),
+                        }
+                    }
+                }
+            }
+        }
+    };
+    gen.parse().unwrap()
 }
