@@ -1,9 +1,6 @@
 // Original file: "Parser.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
-
 pub mod builtin;
 pub mod lexer;
 pub mod parser;

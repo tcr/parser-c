@@ -24,7 +24,6 @@ type Token = CToken;
 type Res<T> = Result<T, ParseError>;
 
 
-#[macro_use] use corollary_support::*;
 
 
 const ALEX_TAB_SIZE: isize = 8;
@@ -33942,7 +33941,7 @@ pub fn alexPrevCharMatches(f: Box<Fn(char) -> isize>, _: isize, input: AlexInput
 }
 
 pub fn alexPrevCharIsOneOf(arr: Vec<bool>, _: isize, input: AlexInput, _: isize, _: AlexInput) -> bool {
-    __op_array_index(arr, alexInputPrevChar(input) as isize)
+    arr[alexInputPrevChar(input) as usize]
 }
 
 pub fn alexRightContext(sc: isize, user: bool, _: AlexInput, _: isize, input: AlexInput) -> bool {

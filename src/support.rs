@@ -40,12 +40,6 @@ impl<A> OpConcatable for Vec<A> {
 }
 
 
-pub mod List {
-    pub fn reverse<A>(mut input: Vec<A>) -> Vec<A> {
-        input.reverse();
-        input
-    }
-}
 #[macro_export]
 macro_rules! __assign {
     ($left: expr, {
