@@ -1,8 +1,7 @@
 // Original file: "Position.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
+use corollary_support::FilePath;
 
 use std::sync::Arc;
 

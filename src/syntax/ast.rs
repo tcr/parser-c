@@ -1,33 +1,17 @@
 // Original file: "AST.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
-#[macro_use]
-use parser_c_macro;
-
 use either::Either;
 
-use data::node::*;
-use data::ident::*;
+use data::node::{NodeInfo, CNode};
+use data::ident::Ident;
+use data::position::{Position, Pos};
 use syntax::ops::*;
 use syntax::constants::*;
-use data::position::{Position, Pos};
-
-use parser_c_macro::CNodeable;
-
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Language::C::Syntax::Constants;
-// use Language::C::Syntax::Ops;
-// use Language::C::Data::Ident;
-// use Language::C::Data::Node;
-// use Language::C::Data::Position;
-// use Data::Generics;
 
 pub type CTranslUnit = CTranslationUnit<NodeInfo>;
 
 #[derive(Clone, Debug, CNodeable)]
-//TODO derive CNode ,Functor, Annotated 
 pub struct CTranslationUnit<a>(pub Vec<CExternalDeclaration<a>>, pub a);
 
 pub type CExtDecl = CExternalDeclaration<NodeInfo>;

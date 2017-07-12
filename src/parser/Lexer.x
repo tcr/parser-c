@@ -56,14 +56,13 @@ actions have to be translated.
 */
 
 use std::sync::Arc;
-use std::str::FromStr;
 
-use data::input_stream::*;
-use data::ident::*;
-use data::position::*;
-use syntax::constants::*;
+use data::input_stream::InputStream;
+use data::ident::Ident;
+use data::position::{Position, PosLength, Pos};
 use parser::{Parser, ParseError};
 use parser::tokens::*;
+use syntax::constants::*;
 
 type Token = CToken;
 type Res<T> = Result<T, ParseError>;

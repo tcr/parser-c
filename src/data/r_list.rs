@@ -1,18 +1,11 @@
 // Original file: "RList.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
-
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Prelude;
-// use Data::List;
-
 #[derive(Clone)]
-pub struct Reversed<a>(pub a);
+pub struct Reversed<T>(pub T);
 
-pub fn snoc<a>(Reversed(xs): Reversed<Vec<a>>, x: a) -> Reversed<Vec<a>> {
-    Reversed(__op_concat(x, xs))
+pub fn snoc<T>(Reversed(mut xs): Reversed<Vec<T>>, x: T) -> Reversed<Vec<T>> {
+    Reversed({ xs.insert(0, x); xs })
 }
 
 pub mod RList {

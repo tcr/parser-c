@@ -1,20 +1,11 @@
 // Original file: "Error.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
-
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Data::Typeable;
-// use Language::C::Data::Node;
-// use Language::C::Data::Position;
-
 use std::iter;
 use std::fmt::Write;
 
-use data::position::*;
-use data::node::*;
-use data::position::Pos;
+use data::node::NodeInfo;
+use data::position::{Position, Pos};
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Debug)]
 pub enum ErrorLevel {
@@ -39,7 +30,8 @@ pub struct ErrorInfo(pub ErrorLevel, pub Position, pub Vec<String>);
 
 
 pub fn mkErrorInfo(lvl: ErrorLevel, msg: String, node: NodeInfo) -> ErrorInfo {
-    ErrorInfo(lvl, node.into_pos(), lines(msg))
+    ErrorInfo(lvl, node.into_pos(),
+              msg.lines().map(Into::into).collect())
 }
 
 #[derive(Debug)]
@@ -130,7 +122,8 @@ pub struct UserError(pub ErrorInfo);
 
 
 pub fn userErr(msg: String) -> UserError {
-    UserError(ErrorInfo(LevelError, Position::internal(), lines(msg)))
+    UserError(ErrorInfo(LevelError, Position::internal(),
+                        msg.lines().map(Into::into).collect()))
 }
 
 pub fn showError<E: Error>(short_msg: String, e: E) -> String {

@@ -1,5 +1,4 @@
-// put #![allow(...)] here
-// Original location: ../../src/parser/Lexer.x, line 49
+// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 49
 
 
 
@@ -11,14 +10,13 @@ actions have to be translated.
 */
 
 use std::sync::Arc;
-use std::str::FromStr;
 
-use data::input_stream::*;
-use data::ident::*;
-use data::position::*;
-use syntax::constants::*;
+use data::input_stream::InputStream;
+use data::ident::Ident;
+use data::position::{Position, PosLength, Pos};
 use parser::{Parser, ParseError};
 use parser::tokens::*;
+use syntax::constants::*;
 
 type Token = CToken;
 type Res<T> = Result<T, ParseError>;
@@ -26,7 +24,7 @@ type Res<T> = Result<T, ParseError>;
 
 
 
-const ALEX_TAB_SIZE: isize = 8;
+#[allow(dead_code)] const ALEX_TAB_SIZE: isize = 8;
 const ALEX_BASE: [isize; 339] = [
     -8,
     109,
@@ -33210,7 +33208,7 @@ const ALEX_ACTIONS: [fn(&mut Parser, Position, isize, InputStream) -> Res<Token>
     alex_action_1,
 ];
 
-// Original location: ../../src/parser/Lexer.x, line 269
+// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 268
 
 
 

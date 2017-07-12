@@ -2413,10 +2413,6 @@ fn addTrailingAttrs(declspecs: Reversed<Vec<CDeclSpec>>,
     }
 }
 
-fn getCDeclrIdent(CDeclarator(mIdent, _, _, _, _): CDeclarator<NodeInfo>) -> Option<Ident> {
-    mIdent
-}
-
 fn happyError<T>(p: &mut Parser) -> Res<T> {
     parseError(p)
 }

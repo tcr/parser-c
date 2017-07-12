@@ -1,21 +1,10 @@
 // Original file: "Ident.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
-
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Data::Char;
-// use Language::C::Data::Position;
-// use Language::C::Data::Node;
-// use Language::C::Data::Name;
-// use Name;
-// use Data::Generics;
-
 use std::hash::{Hash, Hasher};
 
-use data::position::*;
-use data::node::*;
+use data::position::{Position, Pos};
+use data::node::{NodeInfo, CNode};
 use data::name::Name;
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, Eq)]
