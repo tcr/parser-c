@@ -31,8 +31,6 @@
 
 {
 
-#[macro_use] use corollary_support::*;
-
 use std::rc::Rc;
 use either::Either::*;
 
@@ -345,7 +343,7 @@ function_definition
 
   | type_qualifier_list  attrs function_declarator compound_statement
         {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
-            CFunctionDef, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), $3, vec![], $4)) }
+            CFunctionDef, addVecs(liftTypeQuals($1), liftCAttrs($2)), $3, vec![], $4)) }
 
   -- old function declarators
 
@@ -369,7 +367,7 @@ function_definition
 
   | type_qualifier_list attrs  function_declarator_old declaration_list compound_statement
         {% p.withNodeInfo($1.clone(), partial_1!(
-            CFunctionDef, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), $3, reverse($4), $5)) }
+            CFunctionDef, addVecs(liftTypeQuals($1), liftCAttrs($2)), $3, reverse($4), $5)) }
 
 -- Read declarator and put function
 function_declarator :: { CDeclr }
@@ -468,7 +466,7 @@ nested_function_definition
 
   | type_qualifier_list   attrs function_declarator compound_statement
         {% p.leaveScope(); p.withNodeInfo($1.clone(), partial_1!(
-            CFunctionDef, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), $3, vec![], $4)) }
+            CFunctionDef, addVecs(liftTypeQuals($1), liftCAttrs($2)), $3, vec![], $4)) }
 
 
 label_declarations :: { Reversed<Vec<Ident>> }
@@ -702,7 +700,7 @@ declaration
   | declaring_list ';'
         {%
             if let CDecl(declspecs, dies, at) = $1 {
-                p.withLength(at, partial_1!(CDecl, declspecs, List::reverse(dies)))
+                p.withLength(at, partial_1!(CDecl, declspecs, revVec(dies)))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -711,7 +709,7 @@ declaration
   | default_declaring_list ';'
         {%
             if let CDecl(declspecs, dies, at) = $1 {
-                p.withLength(at, partial_1!(CDecl, declspecs, List::reverse(dies)))
+                p.withLength(at, partial_1!(CDecl, declspecs, revVec(dies)))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -759,7 +757,7 @@ default_declaring_list
             let declspecs = liftTypeQuals($1.clone());
             let declr = $3.withAsmNameAttrs($4)?;
             p.doDeclIdent(&declspecs, declr.clone());
-            p.withNodeInfo($1, partial_1!(CDecl, __op_addadd(declspecs, liftCAttrs($2)),
+            p.withNodeInfo($1, partial_1!(CDecl, addVecs(declspecs, liftCAttrs($2)),
                                            vec![(Some(declr.reverse()), $5, None)]))
         }
 
@@ -777,10 +775,10 @@ default_declaring_list
         {%
             if let CDecl(declspecs, dies, at) = $1 {
                 let (f, s) = $5;
-                let declr = $4.withAsmNameAttrs((f, __op_addadd(s, $3)))?;
+                let declr = $4.withAsmNameAttrs((f, addVecs(s, $3)))?;
                 p.doDeclIdent(&declspecs, declr.clone());
                 p.withLength(at, partial_1!(CDecl, declspecs,
-                                             __op_concat((Some(declr.reverse()), $6, None), dies)))
+                                             prepend((Some(declr.reverse()), $6, None), dies)))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -819,9 +817,9 @@ declaring_list
         {%
             if let CDecl(declspecs, dies, at) = $1 {
                 let (f, s) = $5;
-                let declr = $4.withAsmNameAttrs((f, __op_addadd(s, $3)))?;
+                let declr = $4.withAsmNameAttrs((f, addVecs(s, $3)))?;
                 p.doDeclIdent(&declspecs, declr.clone());
-                Ok(CDecl(declspecs, __op_concat((Some(declr.reverse()), $6, None), dies), at))
+                Ok(CDecl(declspecs, prepend((Some(declr.reverse()), $6, None), dies), at))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -1186,7 +1184,7 @@ struct_declaration
   : struct_declaring_list ';'
         {
             if let CDecl(declspecs, dies, at) = $1 {
-                CDecl(declspecs, List::reverse(dies), at)
+                CDecl(declspecs, revVec(dies), at)
             } else {
                 panic!("irrefutable pattern");
             }
@@ -1195,7 +1193,7 @@ struct_declaration
   | struct_default_declaring_list';'
         {
             if let CDecl(declspecs, dies, at) = $1 {
-                CDecl(declspecs, List::reverse(dies), at)
+                CDecl(declspecs, revVec(dies), at)
             } else {
                 panic!("irrefutable pattern");
             }
@@ -1213,8 +1211,7 @@ struct_default_declaring_list
   : type_qualifier_list attrs_opt struct_identifier_declarator
         {%
             p.withNodeInfo($1.clone(), match $3 {
-                (d, s) => partial_1!(CDecl, __op_addadd(liftTypeQuals($1), liftCAttrs($2)),
-                                     vec![(d, None, s)])
+                (d, s) => partial_1!(CDecl, addVecs(liftTypeQuals($1), liftCAttrs($2)), vec![(d, None, s)])
             })
         }
 
@@ -1232,10 +1229,10 @@ struct_default_declaring_list
             if let CDecl(declspecs, dies, at) = $1 {
                 match $4 {
                     (Some(d), s) => {
-                        CDecl(declspecs, __op_concat((Some(appendObjAttrs($3, d)), None, s), dies), at)
+                        CDecl(declspecs, prepend((Some(appendObjAttrs($3, d)), None, s), dies), at)
                     },
                     (None, s) => {
-                        CDecl(declspecs, __op_concat((None, None, s), dies), at)
+                        CDecl(declspecs, prepend((None, None, s), dies), at)
                     },
                 }
             } else {
@@ -1265,11 +1262,11 @@ struct_declaring_list
             if let CDecl(declspecs, dies, at) = $1 {
                 match $4 {
                     (Some(d), s) => {
-                        CDecl(declspecs, __op_concat((Some(
-                            appendObjAttrs(__op_addadd($3, $5), d)), None, s), dies), at)
+                        CDecl(declspecs, prepend((Some(
+                            appendObjAttrs(addVecs($3, $5), d)), None, s), dies), at)
                     },
                     (None, s) => {
-                        CDecl(declspecs, __op_concat((None, None, s), dies), at)
+                        CDecl(declspecs, prepend((None, None, s), dies), at)
                     },
                 }
             } else {
@@ -1308,7 +1305,7 @@ struct_identifier_declarator
             match $1 {
                 (None, expr) => (None, expr),
                 (Some(CDeclarator(name, derived, asmname, attrs, node)), bsz) =>
-                    (Some(CDeclarator(name, derived, asmname, __op_addadd(attrs, $2), node)), bsz)
+                    (Some(CDeclarator(name, derived, asmname, addVecs(attrs, $2), node)), bsz)
             }
         }
 
@@ -1638,7 +1635,7 @@ parameter_declaration
   | type_qualifier_list
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, liftTypeQuals($1), vec![])) }
   | type_qualifier_list attr
-        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, addVecs(liftTypeQuals($1), liftCAttrs($2)), vec![])) }
 
   | type_qualifier_list abstract_declarator
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, liftTypeQuals($1),
@@ -1666,7 +1663,7 @@ type_name
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, $1, vec![(Some($2.reverse()), None, None)])) }
 
   |  type_qualifier_list attr
-        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, __op_addadd(liftTypeQuals($1), liftCAttrs($2)), vec![])) }
+        {% p.withNodeInfo($1.clone(), partial_1!(CDecl, addVecs(liftTypeQuals($1), liftCAttrs($2)), vec![])) }
 
   |  type_qualifier_list abstract_declarator
         {% p.withNodeInfo($1.clone(), partial_1!(CDecl, liftTypeQuals($1),
@@ -1759,21 +1756,21 @@ postfix_array_abstract_declarator
                            declr.arrDeclr(reverse($3.clone()), false, true, Some($5.clone()), at)) }
 
   | '[' type_qualifier_list attrs_opt static attrs_opt assignment_expression ']'
-        {% p.withAttributePF($1, __op_addadd($3, $5), box move |at, declr|
+        {% p.withAttributePF($1, addVecs($3, $5), box move |at, declr|
                            declr.arrDeclr(reverse($2.clone()), false, true, Some($6.clone()), at)) }
 
   | '[' '*' attrs_opt ']'
         {% p.withAttributePF($1, $3, box move |at, declr|
                            declr.arrDeclr(vec![], true, false, None, at)) }
   | '[' attrs '*' attrs_opt ']'
-        {% p.withAttributePF($1, __op_addadd($2, $4), box move |at, declr|
+        {% p.withAttributePF($1, addVecs($2, $4), box move |at, declr|
                            declr.arrDeclr(vec![], true, false, None, at)) }
 
   | '[' type_qualifier_list '*' attrs_opt ']'
         {% p.withAttributePF($1, $4, box move |at, declr|
                            declr.arrDeclr(reverse($2.clone()), true, false, None, at)) }
   | '[' type_qualifier_list attrs '*' attrs_opt ']'
-        {% p.withAttributePF($1, __op_addadd($3, $5), box move |at, declr|
+        {% p.withAttributePF($1, addVecs($3, $5), box move |at, declr|
                            declr.arrDeclr(reverse($2.clone()), true, false, None, at)) }
 
 unary_abstract_declarator :: { CDeclrR }
@@ -2192,7 +2189,7 @@ expression
   | assignment_expression ',' comma_expression
         {%
             let es = reverse($3);
-            p.withNodeInfo(es.clone(), partial_1!(CComma, __op_concat($1, es)))
+            p.withNodeInfo(es.clone(), partial_1!(CComma, prepend($1, es)))
         }
 
 comma_expression :: { Reversed<Vec<CExpr>> }
@@ -2273,7 +2270,7 @@ string_literal
         {%
             p.withNodeInfo($1.clone(), box move |_0| {
                 if let CTokSLit(_, s) = $1 {
-                    CStringLiteral(concatCStrings(__op_concat(s, reverse($2))), _0)
+                    CStringLiteral(concatCStrings(prepend(s, reverse($2))), _0)
                 } else {
                     panic!("irrefutable pattern")
                 }
@@ -2317,7 +2314,7 @@ attrs_opt
 attrs :: { Vec<CAttr> }
 attrs
   : attr            { $1 }
-  | attrs attr      { __op_addadd($1, $2) }
+  | attrs attr      { addVecs($1, $2) }
 
 attr :: { Vec<CAttr> }
 attr
@@ -2366,14 +2363,29 @@ attribute_params
 {
 
 /// sometimes it is neccessary to reverse an unreversed list
-fn reverseList<a>(l: Vec<a>) -> Reversed<Vec<a>> {
-    Reversed(List::reverse(l))
+fn reverseList<T>(l: Vec<T>) -> Reversed<Vec<T>> {
+    Reversed(revVec(l))
+}
+
+fn revVec<T>(mut a: Vec<T>) -> Vec<T> {
+    a.reverse();
+    a
+}
+
+fn prepend<T>(t: T, mut a: Vec<T>) -> Vec<T> {
+    a.insert(0, t);
+    a
+}
+
+fn addVecs<T>(mut a: Vec<T>, mut b: Vec<T>) -> Vec<T> {
+    a.append(&mut b);
+    a
 }
 
 fn appendObjAttrs(newAttrs: Vec<CAttribute<NodeInfo>>,
                   CDeclarator(ident, indirections, asmname, cAttrs, at): CDeclarator<NodeInfo>)
                   -> CDeclarator<NodeInfo> {
-    CDeclarator(ident, indirections, asmname, __op_addadd(cAttrs, newAttrs), at)
+    CDeclarator(ident, indirections, asmname, addVecs(cAttrs, newAttrs), at)
 }
 
 fn liftTypeQuals(_curry_0: Reversed<Vec<CTypeQual>>) -> Vec<CDeclSpec> {
@@ -2389,11 +2401,11 @@ fn addTrailingAttrs(declspecs: Reversed<Vec<CDeclSpec>>,
     match viewr(declspecs.clone()) {
         (specs_init, CTypeSpec(CSUType(CStructureUnion(tag, name, Some(def), def_attrs, su_node), node))) => {
             snoc(specs_init, CTypeSpec(CSUType(
-                CStructureUnion(tag, name, Some(def), __op_addadd(def_attrs, new_attrs), su_node), node)))
+                CStructureUnion(tag, name, Some(def), addVecs(def_attrs, new_attrs), su_node), node)))
         },
         (specs_init, CTypeSpec(CEnumType(CEnumeration(name, Some(def), def_attrs, e_node), node))) => {
             snoc(specs_init, CTypeSpec(CEnumType(
-                CEnumeration(name, Some(def), __op_addadd(def_attrs, new_attrs), e_node), node)))
+                CEnumeration(name, Some(def), addVecs(def_attrs, new_attrs), e_node), node)))
         },
         _ => {
             rappend(declspecs, liftCAttrs(new_attrs))
