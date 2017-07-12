@@ -94,26 +94,6 @@ pub fn isJust<T>(input: Option<T>) -> bool {
     input.is_some()
 }
 
-pub fn lines(input: String) -> Vec<String> {
-    input.lines().map(|x| x.to_string()).collect()
-}
-
-pub fn unlines(input: Vec<String>) -> String {
-    input.join("\n")
-}
-
-pub fn isAscii(input: char) -> bool {
-    // TODO
-    false
-}
-
-pub fn isPrint(input: char) -> bool {
-    // TODO
-    false
-}
-
-
-
 pub fn tail_str(input: String) -> String {
     input.chars().skip(1).collect()
 }

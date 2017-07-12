@@ -1,16 +1,9 @@
 // Original file: "GCC.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
+#![allow(dead_code)]
 
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Language::C::Data::RList;
-// use Language::C::System::Preprocess;
-// use Data::Maybe;
-// use System::Process;
-// use System::Directory;
-// use Data::List;
+use corollary_support::*;
 
 use syntax::preprocess::CppArgs;
 use data::r_list::{Reversed, RList, snoc};
@@ -19,9 +12,6 @@ use syntax::preprocess::*;
 
 pub struct GCC {
     gccPath: FilePath,
-}
-fn gccPath(a: GCC) -> FilePath {
-    a.gccPath
 }
 
 pub fn newGCC(gccPath: FilePath) -> GCC {

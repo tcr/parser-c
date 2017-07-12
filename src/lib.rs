@@ -26,21 +26,17 @@
 //! }
 //! ```
 
-// Original file: "C.hs"
-
-#![feature(proc_macro)]
-#![feature(slice_patterns, box_syntax, box_patterns, fnbox)]
+#![feature(box_syntax, box_patterns, fnbox)]
 #![allow(unused_parens)]
 // Cut down on number of warnings until we manage it.
-#![allow(non_snake_case, non_camel_case_types, unused_imports, unused_variables, dead_code)]
-#![recursion_limit="500"]
+#![allow(non_snake_case, non_camel_case_types, unused_imports, unused_variables)]
 
 extern crate num;
-#[macro_use] extern crate bitflags;
 extern crate either;
-extern crate num_derive;
-extern crate parser_c_macro;
-extern crate lazy_static;
+#[macro_use] extern crate bitflags;
+#[macro_use] extern crate num_derive;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate parser_c_macro;
 
 // pub mod analysis;
 #[macro_use] pub mod support;
@@ -48,25 +44,18 @@ pub mod data;
 pub mod parser;
 pub mod syntax;
 
-
 use std::thread;
 
 use support as corollary_support;
-use corollary_support::*;
-use syntax::preprocess::*;
-use syntax::ast::*;
+use corollary_support::FilePath;
+use syntax::preprocess::{Preprocessor, isPreprocessed, runPreprocessor, rawCppArgs};
+use syntax::ast::CTranslUnit;
 use data::input_stream::InputStream;
 use data::position::Position;
 use parser::{ParseError, parseC};
 
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Language::C::Data;
-// use Language::C::Syntax;
-// use Language::C::Pretty;
-// use Language::C::Parser;
-// use Language::C::System::Preprocess;
 
-fn parseCFile<C: Preprocessor>(cpp: C,
+pub fn parseCFile<C: Preprocessor>(cpp: C,
                                    tmp_dir_opt: Option<FilePath>,
                                    args: Vec<String>,
                                    input_file: FilePath)

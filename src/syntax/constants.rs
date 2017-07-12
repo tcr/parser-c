@@ -1,9 +1,6 @@
 // Original file: "Constants.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
-
 use std::char;
 use std::fmt::{self, Display, Formatter};
 
@@ -178,18 +175,21 @@ pub fn cString_w(__str: String) -> CString {
     CString(__str, true)
 }
 
-pub fn getCString(CString(__str, _): CString) -> String {
-    __str
+pub fn getCString(s: CString) -> String {
+    s.0
 }
 
-pub fn isWideString(CString(_, wideflag): CString) -> bool {
-    wideflag
+pub fn isWideString(s: &CString) -> bool {
+    s.1
 }
 
 pub fn concatCStrings(cs: Vec<CString>) -> CString {
-    CString(cs.clone().into_iter()
-        .map(getCString)
-        .collect::<Vec<_>>().join(""), (any(isWideString, cs)))
+    let wideflag = cs.iter().any(isWideString);
+    let mut new_str = String::new();
+    for s in cs {
+        new_str.push_str(&s.0);
+    }
+    CString(new_str, wideflag)
 }
 
 pub fn showStringLit(s: &str) -> String {
@@ -209,7 +209,7 @@ pub fn showStringLit(s: &str) -> String {
 }
 
 pub fn isAsciiSourceChar(c: char) -> bool {
-    (isAscii(c) && isPrint(c))
+    c >= ' ' && c <= '~'
 }
 
 pub fn isCChar(_0: char) -> bool {

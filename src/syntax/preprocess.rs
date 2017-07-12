@@ -1,20 +1,9 @@
 // Original file: "Preprocess.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
 use corollary_support::*;
 
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Language::C::Data::InputStream;
-// use System::Exit;
-// use System::Directory;
-// use System::FilePath;
-// use System::IO;
-// use Control::Exception;
-// use Control::Monad;
-// use Data::List;
-
-use data::input_stream::*;
+use data::input_stream::InputStream;
 
 // 'Preprocessor' encapsulates the abstract interface for invoking C preprocessors
 pub trait Preprocessor {
