@@ -1,4 +1,6 @@
-// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 49
+#![allow(unused_variables)]
+
+// Original location: ../../src/parser/Lexer.x, line 49
 
 
 
@@ -33208,7 +33210,7 @@ const ALEX_ACTIONS: [fn(&mut Parser, Position, isize, InputStream) -> Res<Token>
     alex_action_1,
 ];
 
-// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 268
+// Original location: ../../src/parser/Lexer.x, line 268
 
 
 

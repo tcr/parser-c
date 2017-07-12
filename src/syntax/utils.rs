@@ -6,8 +6,8 @@ use corollary_support::*;
 use syntax::ast::*;
 use data::ident::Ident;
 
-pub fn getSubStmts(_0: CStat) -> Vec<CStat> {
-    match (_0) {
+pub fn getSubStmts(stat: CStat) -> Vec<CStat> {
+    match stat {
         CLabel(_, box s, _, _) => vec![s],
         CCase(_, box s, _) => vec![s],
         CCases(_, _, box s, _) => vec![s],
@@ -67,16 +67,16 @@ pub fn mapBlockItemStmts(_0: fn(CStat) -> bool,
     }
 }
 
-pub fn compoundSubStmts(_0: CBlockItem) -> Vec<CStat> {
-    match (_0) {
+pub fn compoundSubStmts(item: CBlockItem) -> Vec<CStat> {
+    match item {
         CBlockStmt(s) => vec![s],
         CBlockDecl(_) => vec![],
         CNestedFunDef(_) => vec![],
     }
 }
 
-pub fn getLabels(_0: CStat) -> Vec<Ident> {
-    match (_0) {
+pub fn getLabels(stat: CStat) -> Vec<Ident> {
+    match stat {
         CLabel(l, box s, _, _) => __op_concat(l, getLabels(s)),
         CCompound(ls, body, _) => {
             __op_forwardslash(

@@ -20,7 +20,7 @@ pub fn showWideFlag(flag: bool) -> &'static str {
 }
 
 pub fn getCChar(ch: CChar) -> String {
-    match (ch) {
+    match ch {
         CChar(c, _) => c.to_string(),
         CChars(cs, _) => cs.into_iter().collect(),
     }
@@ -110,7 +110,7 @@ pub fn readCInteger(repr: CIntRepr, s: &str) -> Result<CInteger, String> {
     let end = s.chars().position(|x| !x.is_digit(base)).unwrap_or(s.len());
     let number = match isize::from_str_radix(&s[..end], base) {
         Ok(n) => n,
-        Err(e) => return Err(format!("Bad Integer literal: {:?}", s)),
+        Err(_) => return Err(format!("Bad Integer literal: {:?}", s)),
     };
     let flags = parseFlags(&s[end..])?;
     Ok(CInteger(number, repr, flags))
@@ -212,8 +212,8 @@ pub fn isAsciiSourceChar(c: char) -> bool {
     c >= ' ' && c <= '~'
 }
 
-pub fn isCChar(_0: char) -> bool {
-    match (_0) {
+pub fn isCChar(ch: char) -> bool {
+    match ch {
         '\\' => false,
         '\'' => false,
         '\n' => false,
@@ -229,8 +229,8 @@ pub fn escapeCChar(ch: char) -> String {
     }
 }
 
-pub fn isSChar(_0: char) -> bool {
-    match (_0) {
+pub fn isSChar(ch: char) -> bool {
+    match ch {
         '\\' => false,
         '\"' => false,
         '\n' => false,
@@ -238,8 +238,8 @@ pub fn isSChar(_0: char) -> bool {
     }
 }
 
-pub fn escapeChar(_0: char) -> String {
-    match (_0) {
+pub fn escapeChar(ch: char) -> String {
+    match ch {
         '\\' => "\\\\".to_string(),
         '\u{7}' => "\\a".to_string(),
         '\u{8}' => "\\b".to_string(),

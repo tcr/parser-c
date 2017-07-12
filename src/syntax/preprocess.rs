@@ -122,7 +122,7 @@ pub fn runPreprocessor<P: Preprocessor>(cpp: P,
 
 pub fn mkOutputFile(tmp_dir_opt: Option<FilePath>, input_file: FilePath) -> FilePath {
 
-    let getTempDir = |_0| match (_0) {
+    let getTempDir = |_0| match _0 {
         Some(tmpdir) => tmpdir,
         None => getTemporaryDirectory(),
     };
