@@ -22288,7 +22288,7 @@ fn happyFail(p: &mut Parser, i: isize) -> Res<Cont> {
     }
 }
 
-fn notHappyAtAll<a: 'static>() -> a {
+fn notHappyAtAll<T>() -> T {
     panic!("Internal Happy error")
 }
 

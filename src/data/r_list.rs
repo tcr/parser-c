@@ -12,40 +12,40 @@ pub mod RList {
     use super::Reversed;
     use corollary_support::*;
 
-    pub fn empty<a>() -> Reversed<Vec<a>> {
+    pub fn empty<T>() -> Reversed<Vec<T>> {
         Reversed(vec![])
     }
 
-    pub fn singleton<a>(x: a) -> Reversed<Vec<a>> {
+    pub fn singleton<T>(x: T) -> Reversed<Vec<T>> {
         Reversed(vec![x])
     }
 
-    pub fn rappend<a>(Reversed(xs): Reversed<Vec<a>>, mut ys: Vec<a>) -> Reversed<Vec<a>> {
+    pub fn rappend<T>(Reversed(xs): Reversed<Vec<T>>, mut ys: Vec<T>) -> Reversed<Vec<T>> {
         ys.reverse();
         Reversed(__op_addadd(ys, xs))
     }
 
-    pub fn appendr<a>(mut xs: Vec<a>, Reversed(ys): Reversed<Vec<a>>) -> Reversed<Vec<a>> {
+    pub fn appendr<T>(mut xs: Vec<T>, Reversed(ys): Reversed<Vec<T>>) -> Reversed<Vec<T>> {
         xs.reverse();
         Reversed(__op_addadd(ys, xs))
     }
 
-    pub fn rappendr<a>(Reversed(xs): Reversed<Vec<a>>,
-                    Reversed(ys): Reversed<Vec<a>>)
-                    -> Reversed<Vec<a>> {
+    pub fn rappendr<T>(Reversed(xs): Reversed<Vec<T>>,
+                    Reversed(ys): Reversed<Vec<T>>)
+                    -> Reversed<Vec<T>> {
         Reversed(__op_addadd(ys, xs))
     }
 
-    pub fn rmap<a, b>(f: fn(a) -> b, Reversed(xs): Reversed<Vec<a>>) -> Reversed<Vec<b>> {
+    pub fn rmap<T, U>(f: fn(T) -> U, Reversed(xs): Reversed<Vec<T>>) -> Reversed<Vec<U>> {
         Reversed(__map!(f, xs))
     }
 
-    pub fn reverse<a>(Reversed(mut xs): Reversed<Vec<a>>) -> Vec<a> {
+    pub fn reverse<T>(Reversed(mut xs): Reversed<Vec<T>>) -> Vec<T> {
         xs.reverse();
         xs
     }
 
-    pub fn viewr<a>(_0: Reversed<Vec<a>>) -> (Reversed<Vec<a>>, a) {
+    pub fn viewr<T>(_0: Reversed<Vec<T>>) -> (Reversed<Vec<T>>, T) {
         let mut xs = _0.0;
         if xs.is_empty() {
             panic!("viewr: empty RList");
@@ -56,7 +56,7 @@ pub mod RList {
     }
 
     // temporary API
-    pub fn get_mut<a>(_0: &mut Reversed<Vec<a>>, idx: usize) -> Option<&mut a> {
+    pub fn get_mut<T>(_0: &mut Reversed<Vec<T>>, idx: usize) -> Option<&mut T> {
         _0.0.get_mut(idx)
     }
 }
