@@ -133,7 +133,7 @@ impl Parser {
         self.user.savedToken = self.user.prevToken.clone();
     }
 
-    pub fn doDeclIdent(&mut self, declspecs: &[CDeclSpec], declr: CDeclrR) {
+    pub fn doDeclIdent(&mut self, declspecs: &[CDeclSpec], declr: &CDeclrR) {
         let is_typedef = |declspec: &CDeclSpec| match *declspec {
             CStorageSpec(CTypedef(_)) => true,
             _ => false,
@@ -141,11 +141,11 @@ impl Parser {
 
         match declr.ident {
             None => (),
-            Some(ident) => {
+            Some(ref ident) => {
                 if declspecs.iter().any(is_typedef) {
-                    self.addTypedef(ident)
+                    self.addTypedef(ident.clone())
                 } else {
-                    self.shadowTypedef(&ident)
+                    self.shadowTypedef(ident)
                 }
             },
         }
