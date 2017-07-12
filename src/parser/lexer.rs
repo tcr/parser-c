@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 
-// Original location: ../../src/parser/Lexer.x, line 49
+// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 49
 
 
 
@@ -33210,7 +33210,7 @@ const ALEX_ACTIONS: [fn(&mut Parser, Position, isize, InputStream) -> Res<Token>
     alex_action_1,
 ];
 
-// Original location: ../../src/parser/Lexer.x, line 268
+// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 268
 
 
 
@@ -33269,13 +33269,13 @@ fn idkwtok(p: &mut Parser, id: &str, pos: Position) -> Res<CToken> {
         "__asm" => tok(5, CTokAsm, pos),
         "asm" => tok(3, CTokAsm, pos),
         "__asm__" => tok(7, CTokAsm, pos),
-        "__attribute" => tok(11, |posl| CTokGnuC(GnuCAttrTok, posl), pos),
-        "__attribute__" => tok(13, |posl| CTokGnuC(GnuCAttrTok, posl), pos),
+        "__attribute" => tok(11, |posl| CTokGnuC(posl, GnuCAttrTok), pos),
+        "__attribute__" => tok(13, |posl| CTokGnuC(posl, GnuCAttrTok), pos),
         "auto" => tok(4, CTokAuto, pos),
         "break" => tok(5, CTokBreak, pos),
-        "__builtin_offsetof" => tok(18, |posl| CTokGnuC(GnuCOffsetof, posl), pos),
-        "__builtin_types_compatible_p" => tok(28, |posl| CTokGnuC(GnuCTyCompat, posl), pos),
-        "__builtin_va_arg" => tok(16, |posl| CTokGnuC(GnuCVaArg, posl), pos),
+        "__builtin_offsetof" => tok(18, |posl| CTokGnuC(posl, GnuCOffsetof), pos),
+        "__builtin_types_compatible_p" => tok(28, |posl| CTokGnuC(posl, GnuCTyCompat), pos),
+        "__builtin_va_arg" => tok(16, |posl| CTokGnuC(posl, GnuCVaArg), pos),
         "case" => tok(4, CTokCase, pos),
         "char" => tok(4, CTokChar, pos),
         "__complex__" => tok(11, CTokComplex, pos),
@@ -33288,14 +33288,14 @@ fn idkwtok(p: &mut Parser, id: &str, pos: Position) -> Res<CToken> {
         "double" => tok(6, CTokDouble, pos),
         "else" => tok(4, CTokElse, pos),
         "enum" => tok(4, CTokEnum, pos),
-        "__extension__" => tok(13, |posl| CTokGnuC(GnuCExtTok, posl), pos),
+        "__extension__" => tok(13, |posl| CTokGnuC(posl, GnuCExtTok), pos),
         "extern" => tok(6, CTokExtern, pos),
         "float" => tok(5, CTokFloat, pos),
         "for" => tok(3, CTokFor, pos),
         "goto" => tok(4, CTokGoto, pos),
         "if" => tok(2, CTokIf, pos),
-        "__imag" => tok(6, |posl| CTokGnuC(GnuCComplexImag, posl), pos),
-        "__imag__" => tok(8, |posl| CTokGnuC(GnuCComplexImag, posl), pos),
+        "__imag" => tok(6, |posl| CTokGnuC(posl, GnuCComplexImag), pos),
+        "__imag__" => tok(8, |posl| CTokGnuC(posl, GnuCComplexImag), pos),
         "__inline" => tok(8, CTokInline, pos),
         "inline" => tok(6, CTokInline, pos),
         "__inline__" => tok(10, CTokInline, pos),
@@ -33305,8 +33305,8 @@ fn idkwtok(p: &mut Parser, id: &str, pos: Position) -> Res<CToken> {
         "long" => tok(4, CTokLong, pos),
         "__nonnull" => tok(9, CTokNonnull, pos),
         "__nullable" => tok(10, CTokNullable, pos),
-        "__real" => tok(6, |posl| CTokGnuC(GnuCComplexReal, posl), pos),
-        "__real__" => tok(8, |posl| CTokGnuC(GnuCComplexReal, posl), pos),
+        "__real" => tok(6, |posl| CTokGnuC(posl, GnuCComplexReal), pos),
+        "__real__" => tok(8, |posl| CTokGnuC(posl, GnuCComplexReal), pos),
         "register" => tok(8, CTokRegister, pos),
         "__restrict" => tok(10, CTokRestrict, pos),
         "restrict" => tok(8, CTokRestrict, pos),
