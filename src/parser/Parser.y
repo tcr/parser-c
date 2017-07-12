@@ -722,37 +722,36 @@ default_declaring_list :: { CDecl }
 default_declaring_list
   : declaration_qualifier_list identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
-            let declspecs = $1.clone();
+            let declspecs = $1;
             let declr = $2.withAsmNameAttrs($3)?;
-            // TODO: borrow these instead
-            p.doDeclIdent(&declspecs, declr.clone());
-            with_pos!(p, $1, |at| CDecl(declspecs, vec![(Some(declr.reverse()), $4, None)], at))
+            p.doDeclIdent(&declspecs, &declr);
+            with_pos!(p, declspecs, |at| CDecl(declspecs, vec![(Some(declr.reverse()), $4, None)], at))
         }
 
   | type_qualifier_list identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
-            let declspecs = liftTypeQuals($1.clone());
+            let declspecs = liftTypeQuals($1);
             let declr = $2.withAsmNameAttrs($3)?;
-            p.doDeclIdent(&declspecs, declr.clone());
-            with_pos!(p, $1, |at| CDecl(declspecs, vec![(Some(declr.reverse()), $4, None)], at))
+            p.doDeclIdent(&declspecs, &declr);
+            with_pos!(p, declspecs, |at| CDecl(declspecs, vec![(Some(declr.reverse()), $4, None)], at))
         }
 
   | type_qualifier_list attrs identifier_declarator asm_attrs_opt {-{}-} initializer_opt -- FIX 1600
         {%
-            let declspecs = liftTypeQuals($1.clone());
+            let declspecs = liftTypeQuals($1);
             let declr = $3.withAsmNameAttrs($4)?;
-            p.doDeclIdent(&declspecs, declr.clone());
-            with_pos!(p, $1, |at| CDecl(addVecs(declspecs, liftCAttrs($2)),
-                                          vec![(Some(declr.reverse()), $5, None)], at))
+            p.doDeclIdent(&declspecs, &declr);
+            with_pos!(p, declspecs, |at| CDecl(addVecs(declspecs, liftCAttrs($2)),
+                                               vec![(Some(declr.reverse()), $5, None)], at))
         }
 
   -- GNU extension: __attribute__ as the only qualifier
   | attrs identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
-            let declspecs = liftCAttrs($1.clone());
+            let declspecs = liftCAttrs($1);
             let declr = $2.withAsmNameAttrs($3)?;
-            p.doDeclIdent(&declspecs, declr.clone());
-            with_pos!(p, $1, |at| CDecl(declspecs, vec![(Some(declr.reverse()), $4, None)], at))
+            p.doDeclIdent(&declspecs, &declr);
+            with_pos!(p, declspecs, |at| CDecl(declspecs, vec![(Some(declr.reverse()), $4, None)], at))
         }
 
   | default_declaring_list ',' attrs_opt identifier_declarator asm_attrs_opt {-{}-} initializer_opt
@@ -760,7 +759,7 @@ default_declaring_list
             if let CDecl(declspecs, dies, at) = $1 {
                 let (f, s) = $5;
                 let declr = $4.withAsmNameAttrs((f, addVecs(s, $3)))?;
-                p.doDeclIdent(&declspecs, declr.clone());
+                p.doDeclIdent(&declspecs, &declr);
                 p.withLength(at, |at| CDecl(declspecs, prepend((Some(declr.reverse()), $6, None), dies), at))
             } else {
                 panic!("irrefutable pattern")
@@ -785,14 +784,14 @@ declaring_list
   : declaration_specifier declarator asm_attrs_opt initializer_opt
         {%
             let declr = $2.withAsmNameAttrs($3)?;
-            p.doDeclIdent(&$1, declr.clone());
+            p.doDeclIdent(&$1, &declr);
             with_pos!(p, $1, |at| CDecl($1, vec![(Some(declr.reverse()), $4, None)], at))
         }
 
   | type_specifier declarator asm_attrs_opt initializer_opt
         {%
             let declr = $2.withAsmNameAttrs($3)?;
-            p.doDeclIdent(&$1, declr.clone());
+            p.doDeclIdent(&$1, &declr);
             with_pos!(p, $1, |at| CDecl($1, vec![(Some(declr.reverse()), $4, None)], at))
         }
 
@@ -801,7 +800,7 @@ declaring_list
             if let CDecl(declspecs, dies, at) = $1 {
                 let (f, s) = $5;
                 let declr = $4.withAsmNameAttrs((f, addVecs(s, $3)))?;
-                p.doDeclIdent(&declspecs, declr.clone());
+                p.doDeclIdent(&declspecs, &declr);
                 Ok(CDecl(declspecs, prepend((Some(declr.reverse()), $6, None), dies), at))
             } else {
                 panic!("irrefutable pattern")
@@ -2189,8 +2188,8 @@ constant :: { CConst }
 constant
   : cint        {%
                     with_pos!(p, $1, move |at| {
-                        if let CTokILit(_, ref i) = $1 {
-                            CIntConst(i.clone(), at)
+                        if let CTokILit(_, i) = {$1} {
+                            CIntConst(i, at)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -2198,8 +2197,8 @@ constant
                 }
   | cchar       {%
                     with_pos!(p, $1, move |at| {
-                        if let CTokCLit(_, ref c) = $1 {
-                            CCharConst(c.clone(), at)
+                        if let CTokCLit(_, c) = {$1} {
+                            CCharConst(c, at)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -2207,8 +2206,8 @@ constant
                 }
   | cfloat      {%
                     with_pos!(p, $1, move |at| {
-                        if let CTokFLit(_, ref f) = $1 {
-                            CFloatConst(f.clone(), at)
+                        if let CTokFLit(_, f) = {$1} {
+                            CFloatConst(f, at)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -2221,8 +2220,8 @@ string_literal
   : cstr
         {%
             with_pos!(p, $1, move |at| {
-                if let CTokSLit(_, ref s) = $1 {
-                    CStringLiteral(s.clone(), at)
+                if let CTokSLit(_, s) = {$1} {
+                    CStringLiteral(s, at)
                 } else {
                     panic!("irrefutable pattern")
                 }

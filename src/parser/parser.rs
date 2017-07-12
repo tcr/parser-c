@@ -16721,11 +16721,10 @@ fn happyReduce_92(p: &mut Parser, i: isize) -> Res<Cont> {
 fn happyReduction_92(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (HappyAbsSyn94(happy_var_4), HappyAbsSyn35(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => {
-            let declspecs = happy_var_1.clone();
+            let declspecs = happy_var_1;
             let declr = happy_var_2.withAsmNameAttrs(happy_var_3)?;
-            // TODO: borrow these instead
-            p.doDeclIdent(&declspecs, declr.clone());
-            with_pos!(p, happy_var_1, |at| CDecl(declspecs, vec![(Some(declr.reverse()), happy_var_4, None)], at))
+            p.doDeclIdent(&declspecs, &declr);
+            with_pos!(p, declspecs, |at| CDecl(declspecs, vec![(Some(declr.reverse()), happy_var_4, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16739,10 +16738,10 @@ fn happyReduce_93(p: &mut Parser, i: isize) -> Res<Cont> {
 fn happyReduction_93(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (HappyAbsSyn94(happy_var_4), HappyAbsSyn35(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn65(happy_var_1)) => {
-            let declspecs = liftTypeQuals(happy_var_1.clone());
+            let declspecs = liftTypeQuals(happy_var_1);
             let declr = happy_var_2.withAsmNameAttrs(happy_var_3)?;
-            p.doDeclIdent(&declspecs, declr.clone());
-            with_pos!(p, happy_var_1, |at| CDecl(declspecs, vec![(Some(declr.reverse()), happy_var_4, None)], at))
+            p.doDeclIdent(&declspecs, &declr);
+            with_pos!(p, declspecs, |at| CDecl(declspecs, vec![(Some(declr.reverse()), happy_var_4, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16756,11 +16755,11 @@ fn happyReduce_94(p: &mut Parser, i: isize) -> Res<Cont> {
 fn happyReduction_94(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (HappyAbsSyn94(happy_var_5), HappyAbsSyn35(happy_var_4), HappyAbsSyn66(happy_var_3), HappyAbsSyn132(happy_var_2), HappyAbsSyn65(happy_var_1)) => {
-            let declspecs = liftTypeQuals(happy_var_1.clone());
+            let declspecs = liftTypeQuals(happy_var_1);
             let declr = happy_var_3.withAsmNameAttrs(happy_var_4)?;
-            p.doDeclIdent(&declspecs, declr.clone());
-            with_pos!(p, happy_var_1, |at| CDecl(addVecs(declspecs, liftCAttrs(happy_var_2)),
-                                          vec![(Some(declr.reverse()), happy_var_5, None)], at))
+            p.doDeclIdent(&declspecs, &declr);
+            with_pos!(p, declspecs, |at| CDecl(addVecs(declspecs, liftCAttrs(happy_var_2)),
+                                               vec![(Some(declr.reverse()), happy_var_5, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16774,10 +16773,10 @@ fn happyReduce_95(p: &mut Parser, i: isize) -> Res<Cont> {
 fn happyReduction_95(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (HappyAbsSyn94(happy_var_4), HappyAbsSyn35(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn132(happy_var_1)) => {
-            let declspecs = liftCAttrs(happy_var_1.clone());
+            let declspecs = liftCAttrs(happy_var_1);
             let declr = happy_var_2.withAsmNameAttrs(happy_var_3)?;
-            p.doDeclIdent(&declspecs, declr.clone());
-            with_pos!(p, happy_var_1, |at| CDecl(declspecs, vec![(Some(declr.reverse()), happy_var_4, None)], at))
+            p.doDeclIdent(&declspecs, &declr);
+            with_pos!(p, declspecs, |at| CDecl(declspecs, vec![(Some(declr.reverse()), happy_var_4, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
     }
@@ -16794,7 +16793,7 @@ fn happyReduction_96(p: &mut Parser) -> Res<HappyAbsSyn> {
             if let CDecl(declspecs, dies, at) = happy_var_1 {
                 let (f, s) = happy_var_5;
                 let declr = happy_var_4.withAsmNameAttrs((f, addVecs(s, happy_var_3)))?;
-                p.doDeclIdent(&declspecs, declr.clone());
+                p.doDeclIdent(&declspecs, &declr);
                 p.withLength(at, |at| CDecl(declspecs, prepend((Some(declr.reverse()), happy_var_6, None), dies), at))
             } else {
                 panic!("irrefutable pattern")
@@ -16825,7 +16824,7 @@ fn happyReduction_98(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (HappyAbsSyn94(happy_var_4), HappyAbsSyn35(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => {
             let declr = happy_var_2.withAsmNameAttrs(happy_var_3)?;
-            p.doDeclIdent(&happy_var_1, declr.clone());
+            p.doDeclIdent(&happy_var_1, &declr);
             with_pos!(p, happy_var_1, |at| CDecl(happy_var_1, vec![(Some(declr.reverse()), happy_var_4, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
@@ -16841,7 +16840,7 @@ fn happyReduction_99(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap(), p.stack.pop().unwrap()) {
         (HappyAbsSyn94(happy_var_4), HappyAbsSyn35(happy_var_3), HappyAbsSyn66(happy_var_2), HappyAbsSyn37(happy_var_1)) => {
             let declr = happy_var_2.withAsmNameAttrs(happy_var_3)?;
-            p.doDeclIdent(&happy_var_1, declr.clone());
+            p.doDeclIdent(&happy_var_1, &declr);
             with_pos!(p, happy_var_1, |at| CDecl(happy_var_1, vec![(Some(declr.reverse()), happy_var_4, None)], at))
         }.map(HappyAbsSyn32),
         _ => panic!("irrefutable pattern")
@@ -16859,7 +16858,7 @@ fn happyReduction_100(p: &mut Parser) -> Res<HappyAbsSyn> {
             if let CDecl(declspecs, dies, at) = happy_var_1 {
                 let (f, s) = happy_var_5;
                 let declr = happy_var_4.withAsmNameAttrs((f, addVecs(s, happy_var_3)))?;
-                p.doDeclIdent(&declspecs, declr.clone());
+                p.doDeclIdent(&declspecs, &declr);
                 Ok(CDecl(declspecs, prepend((Some(declr.reverse()), happy_var_6, None), dies), at))
             } else {
                 panic!("irrefutable pattern")
@@ -21422,8 +21421,8 @@ fn happyReduction_461(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
         HappyTerminal(happy_var_1) => {
                     with_pos!(p, happy_var_1, move |at| {
-                        if let CTokILit(_, ref i) = happy_var_1 {
-                            CIntConst(i.clone(), at)
+                        if let CTokILit(_, i) = {happy_var_1} {
+                            CIntConst(i, at)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -21442,8 +21441,8 @@ fn happyReduction_462(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
         HappyTerminal(happy_var_1) => {
                     with_pos!(p, happy_var_1, move |at| {
-                        if let CTokCLit(_, ref c) = happy_var_1 {
-                            CCharConst(c.clone(), at)
+                        if let CTokCLit(_, c) = {happy_var_1} {
+                            CCharConst(c, at)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -21462,8 +21461,8 @@ fn happyReduction_463(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
         HappyTerminal(happy_var_1) => {
                     with_pos!(p, happy_var_1, move |at| {
-                        if let CTokFLit(_, ref f) = happy_var_1 {
-                            CFloatConst(f.clone(), at)
+                        if let CTokFLit(_, f) = {happy_var_1} {
+                            CFloatConst(f, at)
                         } else {
                             panic!("irrefutable pattern")
                         }
@@ -21482,8 +21481,8 @@ fn happyReduction_464(p: &mut Parser) -> Res<HappyAbsSyn> {
     match (p.stack.pop().unwrap()) {
         HappyTerminal(happy_var_1) => {
             with_pos!(p, happy_var_1, move |at| {
-                if let CTokSLit(_, ref s) = happy_var_1 {
-                    CStringLiteral(s.clone(), at)
+                if let CTokSLit(_, s) = {happy_var_1} {
+                    CStringLiteral(s, at)
                 } else {
                     panic!("irrefutable pattern")
                 }
