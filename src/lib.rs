@@ -29,13 +29,10 @@
 #![feature(box_syntax, box_patterns, fnbox)]
 #![allow(unused_parens)]
 // Cut down on number of warnings until we manage it.
-#![allow(non_snake_case, non_camel_case_types, unused_imports, unused_variables)]
+#![allow(non_snake_case, non_camel_case_types, unused_variables)]
 
-extern crate num;
 extern crate either;
 #[macro_use] extern crate bitflags;
-#[macro_use] extern crate num_derive;
-#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate parser_c_macro;
 
 // pub mod analysis;

@@ -34,14 +34,12 @@
 use std::rc::Rc;
 use either::Either::*;
 
-use data::position::{Located, Pos};
+use data::position::Located;
 use data::r_list::RList::*;
 use data::r_list::{Reversed, snoc};
-use data::node::{NodeInfo, CNode};
+use data::node::NodeInfo;
 use data::ident::Ident;
-use data::name::Name;
 use parser::tokens::*;
-use parser::builtin::builtinTypeNames;
 use parser::lexer::{lexC, parseError};
 use parser::{ParseError, PState, CDeclrR, ptrDeclr};
 use syntax::ops::*;

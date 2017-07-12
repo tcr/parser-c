@@ -2,12 +2,6 @@
 #![allow(unused_variables)]
 #![allow(non_camel_case_types)]
 
-extern crate num;
-
-use num::ToPrimitive;
-use std;
-use std::str::FromStr;
-
 pub trait OpAddable {
     fn add(self, right: Self) -> Self;
 }
