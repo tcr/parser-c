@@ -26,7 +26,7 @@
 //! }
 //! ```
 
-#![feature(box_syntax, box_patterns, fnbox)]
+#![feature(box_syntax, box_patterns, fnbox, vec_remove_item)]
 // Cut down on number of warnings until we manage it.
 #![allow(non_snake_case)]
 
@@ -36,15 +36,12 @@ extern crate tempdir;
 #[macro_use] extern crate parser_c_macro;
 
 // pub mod analysis;
-#[macro_use] pub mod support;
 pub mod data;
 pub mod parser;
 pub mod system;
 pub mod syntax;
 
 use std::path::{Path, PathBuf};
-
-use support as corollary_support;
 
 use system::preprocess::{CppArgs, Preprocessor, isPreprocessed, runPreprocessor};
 use syntax::ast::CTranslUnit;
