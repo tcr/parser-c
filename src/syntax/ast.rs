@@ -8,14 +8,67 @@ use data::ident::Ident;
 use syntax::ops::*;
 use syntax::constants::*;
 
+// Functor trait for our nodes, to map the info tag
+
+pub trait NodeFunctor<A, B> {
+    type Output;
+    fn fmap<F: Fn(A) -> B>(self, f: F) -> Self::Output where Self: Sized;
+}
+
+// Helper instances that lift the fmap operation
+
+impl<A, B, T: NodeFunctor<A, B>> NodeFunctor<A, B> for Box<T> {
+    type Output = Box<T::Output>;
+    fn fmap<F: Fn(A) -> B>(self, f: F) -> Self::Output {
+        box (*self).fmap(f)
+    }
+}
+
+impl<A, B, T: NodeFunctor<A, B>> NodeFunctor<A, B> for Option<T> {
+    type Output = Option<T::Output>;
+    fn fmap<F: Fn(A) -> B>(self, f: F) -> Self::Output {
+        self.map(|x| x.fmap(f))
+    }
+}
+
+impl<A, B, T: NodeFunctor<A, B>> NodeFunctor<A, B> for Vec<T> {
+    type Output = Vec<T::Output>;
+    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+        self.into_iter().map(|x| x.fmap(f)).collect()
+    }
+}
+
+impl<A, B, T: NodeFunctor<A, B>, U: NodeFunctor<A, B>> NodeFunctor<A, B> for (T, U) {
+    type Output = (T::Output, U::Output);
+    fn fmap<F: Fn(A) -> B>(self, f: F) -> Self::Output {
+        (self.0.fmap(&f), self.1.fmap(&f))
+    }
+}
+
+impl<A, B, T: NodeFunctor<A, B>, U: NodeFunctor<A, B>, V: NodeFunctor<A, B>> NodeFunctor<A, B> for (T, U, V) {
+    type Output = (T::Output, U::Output, V::Output);
+    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+        (self.0.fmap(f), self.1.fmap(f), self.2.fmap(f))
+    }
+}
+
+impl<A, B, T: NodeFunctor<A, B>, U: NodeFunctor<A, B>> NodeFunctor<A, B> for Either<T, U> {
+    type Output = Either<T::Output, U::Output>;
+    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+        self.map_left(|x| x.fmap(f)).map_right(|x| x.fmap(f))
+    }
+}
+
+// AST nodes
+
 pub type CTranslUnit = CTranslationUnit<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub struct CTranslationUnit<I>(pub Vec<CExternalDeclaration<I>>, pub I);
 
 pub type CExtDecl = CExternalDeclaration<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CExternalDeclaration<I> {
     CDeclExt(CDeclaration<I>),
     CFDefExt(CFunctionDef<I>),
@@ -25,7 +78,7 @@ pub use self::CExternalDeclaration::*;
 
 pub type CFunDef = CFunctionDef<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub struct CFunctionDef<I>(pub Vec<CDeclarationSpecifier<I>>,
                            pub CDeclarator<I>,
                            pub Vec<CDeclaration<I>>,
@@ -35,7 +88,7 @@ pub struct CFunctionDef<I>(pub Vec<CDeclarationSpecifier<I>>,
 
 pub type CDecl = CDeclaration<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CDeclaration<I> {
     CDecl(Vec<CDeclarationSpecifier<I>>,
           Vec<(Option<CDeclarator<I>>, Option<CInitializer<I>>, Option<CExpression<I>>)>,
@@ -46,7 +99,7 @@ pub use self::CDeclaration::*;
 
 pub type CDeclr = CDeclarator<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub struct CDeclarator<I>(pub Option<Ident>,
                           pub Vec<CDerivedDeclarator<I>>,
                           pub Option<CStringLiteral<I>>,
@@ -64,9 +117,26 @@ pub enum CDerivedDeclarator<I> {
 }
 pub use self::CDerivedDeclarator::*;
 
+// This one would require dummy instances for Ident and bool, so implement it manually.
+
+impl<A, B> NodeFunctor<A, B> for CDerivedDeclarator<A> {
+    type Output = CDerivedDeclarator<B>;
+    fn fmap<F: Fn(A) -> B>(self, f: F) -> Self::Output {
+        let f = &f;
+        match self {
+            CPtrDeclr(tq, a) => CPtrDeclr(tq.fmap(f), f(a)),
+            CArrDeclr(tq, sz, a) => CArrDeclr(tq.fmap(f), sz.fmap(f), f(a)),
+            CFunDeclr(id_or_args, attrs, a) =>
+                CFunDeclr(id_or_args.map_right(|(decl, x)| (decl.fmap(f), x)),
+                          attrs.fmap(f), f(a)),
+        }
+    }
+}
+
+
 pub type CArrSize = CArraySize<NodeInfo>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, NodeFunctor)]
 pub enum CArraySize<I> {
     CNoArrSize(bool),
     CArrSize(bool, CExpression<I>),
@@ -75,7 +145,7 @@ pub use self::CArraySize::*;
 
 pub type CStat = CStatement<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CStatement<I> {
     CLabel(Ident, Box<CStatement<I>>, Vec<CAttribute<I>>, I),
     CCase(CExpression<I>, Box<CStatement<I>>, I),
@@ -102,7 +172,7 @@ pub use self::CStatement::*;
 
 pub type CAsmStmt = CAssemblyStatement<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub struct CAssemblyStatement<I>(pub Option<CTypeQualifier<I>>,
                                  pub CStringLiteral<I>,
                                  pub Vec<CAssemblyOperand<I>>,
@@ -113,13 +183,13 @@ pub struct CAssemblyStatement<I>(pub Option<CTypeQualifier<I>>,
 
 pub type CAsmOperand = CAssemblyOperand<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub struct CAssemblyOperand<I>(pub Option<Ident>, pub CStringLiteral<I>, pub CExpression<I>, pub I);
 
 
 pub type CBlockItem = CCompoundBlockItem<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CCompoundBlockItem<I> {
     CBlockStmt(CStatement<I>),
     CBlockDecl(CDeclaration<I>),
@@ -129,7 +199,7 @@ pub use self::CCompoundBlockItem::*;
 
 pub type CDeclSpec = CDeclarationSpecifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CDeclarationSpecifier<I> {
     CStorageSpec(CStorageSpecifier<I>),
     CTypeSpec(CTypeSpecifier<I>),
@@ -170,7 +240,7 @@ pub fn partitionDeclSpecs<I>(input: Vec<CDeclarationSpecifier<I>>)
 
 pub type CStorageSpec = CStorageSpecifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, CNode, NodeFunctor, Eq, Ord, PartialEq, PartialOrd)]
 pub enum CStorageSpecifier<I> {
     CAuto(I),
     CRegister(I),
@@ -183,7 +253,7 @@ pub use self::CStorageSpecifier::*;
 
 pub type CTypeSpec = CTypeSpecifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CTypeSpecifier<I> {
     CVoidType(I),
     CCharType(I),
@@ -216,7 +286,7 @@ pub fn isSUEDef<I>(spec: CTypeSpecifier<I>) -> bool {
 
 pub type CTypeQual = CTypeQualifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CTypeQualifier<I> {
     CConstQual(I),
     CVolatQual(I),
@@ -230,7 +300,7 @@ pub use self::CTypeQualifier::*;
 
 pub type CFunSpec = CFunctionSpecifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CFunctionSpecifier<I> {
     CInlineQual(I),
     CNoreturnQual(I),
@@ -239,7 +309,7 @@ pub use self::CFunctionSpecifier::*;
 
 pub type CAlignSpec = CAlignmentSpecifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CAlignmentSpecifier<I> {
     CAlignAsType(CDeclaration<I>, I),
     CAlignAsExpr(CExpression<I>, I),
@@ -248,7 +318,7 @@ pub use self::CAlignmentSpecifier::*;
 
 pub type CStructUnion = CStructureUnion<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub struct CStructureUnion<I>(pub CStructTag,
                               pub Option<Ident>,
                               pub Option<Vec<CDeclaration<I>>>,
@@ -272,25 +342,28 @@ pub struct CEnumeration<I>(pub Option<Ident>,
                            pub Vec<CAttribute<I>>,
                            pub I);
 
+// This one would require a dummy instance for Ident, so implement it manually.
+
+impl<A, B> NodeFunctor<A, B> for CEnumeration<A> {
+    type Output = CEnumeration<B>;
+    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+        let CEnumeration(id, exprs, attrs, a) = self;
+        CEnumeration(id,
+                     exprs.map(|v| v.into_iter().map(|(eid, expr)| (eid, expr.fmap(f))).collect()),
+                     attrs.fmap(f),
+                     f(a))
+    }
+}
+
 
 pub type CInit = CInitializer<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CInitializer<I> {
     CInitExpr(CExpression<I>, I),
     CInitList(CInitializerList<I>, I),
 }
 pub use self::CInitializer::*;
-
-pub fn fmapInitList<A, B, F>(_f: F, _initlist: CInitializerList<A>) -> CInitializerList<B>
-    where F: Fn(A) -> B
-{
-    // initlist.into_iter().map(|(desigs, initializer)| {
-    //     (desigs.fmap(|desig| desig.fmap(f)), initializer.fmap(f))
-    // }).collect()
-    // TODO this needs all the Functor instances
-    unimplemented!()
-}
 
 pub type CInitList = CInitializerList<NodeInfo>;
 
@@ -298,7 +371,7 @@ pub type CInitializerList<I> = Vec<(Vec<CPartDesignator<I>>, CInitializer<I>)>;
 
 pub type CDesignator = CPartDesignator<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CPartDesignator<I> {
     CArrDesig(CExpression<I>, I),
     CMemberDesig(Ident, I),
@@ -308,13 +381,13 @@ pub use self::CPartDesignator::*;
 
 pub type CAttr = CAttribute<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub struct CAttribute<I>(pub Ident, pub Vec<CExpression<I>>, pub I);
 
 
 pub type CExpr = CExpression<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CExpression<I> {
     CComma(Vec<CExpression<I>>, I),
     CAssign(CAssignOp, Box<CExpression<I>>, Box<CExpression<I>>, I),
@@ -343,7 +416,7 @@ pub use self::CExpression::*;
 
 pub type CBuiltin = CBuiltinThing<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CBuiltinThing<I> {
     CBuiltinVaArg(CExpression<I>, CDeclaration<I>, I),
     CBuiltinOffsetOf(CDeclaration<I>, Vec<CPartDesignator<I>>, I),
@@ -353,7 +426,7 @@ pub use self::CBuiltinThing::*;
 
 pub type CConst = CConstant<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub enum CConstant<I> {
     CIntConst(CInteger, I),
     CCharConst(CChar, I),
@@ -364,7 +437,7 @@ pub use self::CConstant::*;
 
 pub type CStrLit = CStringLiteral<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, CNode, NodeFunctor)]
 pub struct CStringLiteral<I>(pub CString, pub I);
 
 
