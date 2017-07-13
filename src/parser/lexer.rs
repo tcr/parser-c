@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 
-// Original location: ../../src/parser/Lexer.x, line 49
+// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 49
 
 
 
@@ -33210,7 +33210,7 @@ const ALEX_ACTIONS: [AlexAction; 124] = [
     alex_action_1,
 ];
 
-// Original location: ../../src/parser/Lexer.x, line 269
+// Original location: /home/gbr/devel/parser-c/src/parser/Lexer.x, line 269
 
 
 
@@ -33348,18 +33348,18 @@ fn adjustLineDirective(pragma: &str, pos: Position) -> Position {
     // note: it is ensured by the lexer that the requisite parts of the line are present
     // so we just use unwrap()
 
+    // TODO this isn't necessarily very nice
     // calculate new offset
     let offs_q = pos.offset() + pragma.len() as isize;
     // get the row
     let row = pragma[1..].split_whitespace().next().unwrap().parse().unwrap();
     // next, the filename
-    // TODO this isn't necessarily very nice
     let fname_start = pragma.as_bytes().iter().position(|&ch| ch == b'"').unwrap();
     let fname_end = pragma[fname_start+1..].as_bytes().iter().position(|&ch| ch == b'"').unwrap();
     let fname = &pragma[fname_start+1..fname_start+fname_end+1];
 
     let current_fname = pos.file();
-    let new_fname = if &*current_fname == fname { current_fname } else { Rc::new(fname.to_string()) };
+    let new_fname = if &*current_fname == fname { current_fname } else { Rc::new(fname.into()) };
     Position::new(offs_q, new_fname, row, 1)
 }
 

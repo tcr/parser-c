@@ -1,9 +1,8 @@
 // Original file: "Node.hs"
 // File auto-generated using Corollary.
 
-use corollary_support::FilePath;
-
 use std::fmt;
+use std::rc::Rc;
 
 use data::name::Name;
 use data::position::{Pos, Position, PosLength};
@@ -114,11 +113,10 @@ impl NodeInfo {
     }
 }
 
-// TODO borrow
-pub fn fileOfNode<A: CNode>(obj: A) -> Option<FilePath> {
-    let pos = obj.into_pos();
+pub fn fileOfNode<A: CNode>(obj: &A) -> Option<Rc<String>> {
+    let pos = obj.pos();
     if pos.isSource() {
-        Some(FilePath { path: (*pos.file()).clone() })
+        Some(pos.file())
     } else {
         None
     }
