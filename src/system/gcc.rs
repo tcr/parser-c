@@ -7,8 +7,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use syntax::preprocess::{Preprocessor, CppArgs, PPResult};
-use syntax::preprocess::CppOption::*;
+use system::preprocess::{Preprocessor, CppArgs, PPResult};
+use system::preprocess::CppOption::*;
 
 pub struct GCC {
     gccPath: PathBuf,
