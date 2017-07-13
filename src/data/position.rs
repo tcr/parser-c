@@ -1,9 +1,8 @@
 // Original file: "Position.hs"
 // File auto-generated using Corollary.
 
-use corollary_support::FilePath;
-
 use std::rc::Rc;
+use std::path::Path;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum Position {
@@ -31,8 +30,9 @@ impl Position {
         Position::Position { offset, file: file, row, column }
     }
 
-    pub fn from_file(file: FilePath) -> Position {
-        Position::Position { offset: 0, file: Rc::new(file.into()), row: 1, column: 1 }
+    pub fn from_file<P: AsRef<Path>>(file: P) -> Position {
+        let path_str = file.as_ref().display().to_string();
+        Position::Position { offset: 0, file: Rc::new(path_str), row: 1, column: 1 }
     }
 
     pub fn none() -> Position {
@@ -119,10 +119,10 @@ impl Position {
         }
     }
 
-    pub fn adjust(self, new_file: FilePath, row: isize) -> Position {
+    pub fn adjust(self, new_file: String, row: isize) -> Position {
         match self {
             Position::Position { offset, .. } =>
-                Self::new(offset, Rc::new(new_file.into()), row, 1),
+                Self::new(offset, Rc::new(new_file), row, 1),
             p => p,
         }
     }

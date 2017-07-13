@@ -1,11 +1,10 @@
 // Original file: "InputStream.hs"
 // File auto-generated using Corollary.
 
-use corollary_support::FilePath;
-
 use std::str;
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 
 #[derive(Debug)]
 pub struct InputStream {
@@ -16,9 +15,9 @@ pub struct InputStream {
 
 impl InputStream {
 
-    pub fn from_file(f: &FilePath) -> InputStream {
+    pub fn from_file<P: AsRef<Path>>(p: P) -> InputStream {
         let mut src = vec![];
-        File::open(&f.path).unwrap().read_to_end(&mut src).unwrap();
+        File::open(p.as_ref()).unwrap().read_to_end(&mut src).unwrap();
         InputStream { src: src, rpos: 0, tpos: 0 }
     }
 

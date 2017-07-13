@@ -31,6 +31,7 @@
 #![allow(non_snake_case)]
 
 extern crate either;
+extern crate tempdir;
 #[macro_use] extern crate bitflags;
 #[macro_use] extern crate parser_c_macro;
 
@@ -40,9 +41,11 @@ pub mod data;
 pub mod parser;
 pub mod syntax;
 
+use std::path::{Path, PathBuf};
+
 use support as corollary_support;
-use corollary_support::FilePath;
-use syntax::preprocess::{Preprocessor, isPreprocessed, runPreprocessor, rawCppArgs};
+
+use syntax::preprocess::{CppArgs, Preprocessor, isPreprocessed, runPreprocessor};
 use syntax::ast::CTranslUnit;
 use data::input_stream::InputStream;
 use data::position::Position;
@@ -50,41 +53,36 @@ use parser::{ParseError, parseC};
 
 
 pub fn parseCFile<C: Preprocessor>(cpp: C,
-                                   tmp_dir_opt: Option<FilePath>,
+                                   tmp_dir_opt: Option<PathBuf>,
                                    args: Vec<String>,
-                                   input_file: FilePath)
+                                   input_file: PathBuf)
                                    -> Result<CTranslUnit, ParseError> {
+    let pos = Position::from_file(&input_file);
 
-    let handleCppError = |_0| match _0 {
-        Err(exitCode) => panic!("Preprocessor failed with {:?}", exitCode),
-        Ok(ok) => ok,
-    };
-
-    let input_stream = if !isPreprocessed(&input_file.path) {
-        let cpp_args = __assign!(rawCppArgs(args, input_file.clone()), {
-            cppTmpDir: tmp_dir_opt
-        });
-
-        handleCppError(runPreprocessor(cpp, cpp_args))
+    let input_stream = if !isPreprocessed(&input_file) {
+        let mut cpp_args = CppArgs::raw(args, input_file);
+        cpp_args.cppTmpDir = tmp_dir_opt;
+        match runPreprocessor(cpp, cpp_args) {
+            Ok(stream) => stream,
+            Err(e) => panic!("Preprocessor failed: {}", e),
+        }
     } else {
         InputStream::from_file(&input_file)
     };
 
-    parseC(input_stream, Position::from_file(input_file))
+    parseC(input_stream, pos)
 }
 
-pub fn parseCFilePre(file: FilePath) -> Result<CTranslUnit, ParseError> {
-    let input_stream = InputStream::from_file(&file);
-    parseC(input_stream, Position::from_file(file))
+pub fn parseCFilePre<P: AsRef<Path>>(file: P) -> Result<CTranslUnit, ParseError> {
+    let input_stream = InputStream::from_file(file.as_ref());
+    parseC(input_stream, Position::from_file(file.as_ref()))
 }
 
 /// Basic public API. Accepts C source and a filename.
-pub fn parse(input: &str, filename: &str) -> Result<CTranslUnit, ParseError> {
+pub fn parse<P: AsRef<Path>>(input: &str, file: P) -> Result<CTranslUnit, ParseError> {
     // This doesn't represent possible final functionality of the crate,
     // but makes it usable at this early stage.
 
-    let input = input.to_string();
-    let filename = filename.to_string();
-    let input_stream = InputStream::from_string(input);
-    parseC(input_stream, Position::from_file(FilePath::from(filename)))
+    let input_stream = InputStream::from_string(input.into());
+    parseC(input_stream, Position::from_file(file.as_ref()))
 }

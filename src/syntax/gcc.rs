@@ -1,179 +1,145 @@
 // Original file: "GCC.hs"
 // File auto-generated using Corollary.
 
-#![allow(dead_code)]
+//use corollary_support::*;
 
-use corollary_support::*;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
-use syntax::preprocess::CppArgs;
-use data::r_list::{Reversed, RList, snoc};
+use syntax::preprocess::{Preprocessor, CppArgs, PPResult};
 use syntax::preprocess::CppOption::*;
-use syntax::preprocess::*;
 
 pub struct GCC {
-    gccPath: FilePath,
+    gccPath: PathBuf,
 }
 
-pub fn newGCC(gccPath: FilePath) -> GCC {
+pub fn newGCC(gccPath: PathBuf) -> GCC {
     GCC { gccPath }
 }
 
-// impl Preprocessor for GCC {
-//     fn parseCPPArgs(_0: Vec<String>) { gccParseCPPArgs(_0) }
-//     fn runCPP(self, cpp_args: ) {
-//         do  -- copy the input to the outputfile, because in case the input is preprocessed,
-//             -- gcc -E will do nothing.
-//             maybe (return()) (copyWritable (inputFile cpp_args)) (outputFile cpp_args)
-//             rawSystem (gccPath gcc) (buildCppArgs cpp_args)
-//                 where copyWritable source target = do copyFile source target
-//                                                       p <- getPermissions target
-//                                                       setPermissions target p{writable=True}
-// }
-
-pub fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), String> {
-
-    fn getDefine(opt: String) -> CppOption {
-        let (key, val) = __break_str(|x| { '=' == x}, opt);
-
-        Define(key, (if val.is_empty() { "".to_string() } else { tail_str(val) }))
+impl Preprocessor for GCC {
+    fn parseCPPArgs(&self, args: Vec<String>) -> Result<(CppArgs, Vec<String>), String> {
+        gccParseCPPArgs(args)
     }
 
-    fn getArgOpt (_cpp_opt: String, _rest: Vec<String>) -> Option<(CppOption, Vec<String>)> {
-        unreachable!()
-        // TODO
-        // if isPrefixOf("-I".to_string(), cpp_opt) {
-        //     Some((IncludeDir(drop_str(2, cpp_opt).into()), rest))
-        // } else if isPrefixOf("-U".to_string(), cpp_opt) {
-        //     Some((Undefine(drop_str(2, cpp_opt)), rest))
-        // } else if isPrefixOf("-D".to_string(), cpp_opt) {
-        //     Some((getDefine(drop_str(2, cpp_opt)), rest))
-        // } else if cpp_opt == "-include" {
-        //     let f = rest.remove(0);
-        //     Some((IncludeFile(f.into()), rest))
-        // } else {
-        //     None
-        // }
-    }
-
-    fn mungeArgs(parsed: ParseArgsState, unparsed_args: Vec<String>) -> Result<ParseArgsState, String> {
-        let (cpp_args, unparsed) = parsed.clone();
-        let (inp, out, cpp_opts) = cpp_args.clone();
-        let (extra, other) = unparsed.clone();
-
-        let a = unparsed_args;
-
-        // ["-E", rest..]
-        if a.len() > 0 && a[0] == "-E" {
-            let rest = a[1..].to_vec();
-            return mungeArgs(parsed, rest);
-        }
-
-        // [flag, flagArg, rest..]
-        if a.len() > 1 {
-            let flag = a[0].clone();
-            let flagArg = a[1].clone();
-            let rest = a[2..].to_vec();
-            if (flag == "-MF".to_string()) ||
-                (flag == "-MT".to_string()) ||
-                (flag == "-MQ".to_string()) {
-                return mungeArgs((cpp_args, (extra, snoc(snoc(other, flag), flagArg))), rest);
-            }
-        }
-
-        // [flag, rest..]
-        if a.len() > 0 {
-            let flag = a[0].clone();
-            let rest = a[1..].to_vec();
-            if flag == "-c" || flag == "-S" || flag.starts_with("-M") {
-                return mungeArgs((cpp_args, (extra, snoc(other, flag))), rest)
-            }
-        }
-
-        // ["-o", file, rest..]
-        if a.len() > 1 && a[0] == "-o" {
-            let file = a[1].clone();
-            let rest = a[2..].to_vec();
-            return if isJust(out) {
-                Err("two output files given".to_string())
-            } else {
-                mungeArgs(((inp, Some(file.into()), cpp_opts), unparsed), rest)
-            };
-        }
-
-        // [cpp_opt, rest..]
-        if a.len() > 0 {
-            let cpp_opt = a[0].clone();
-            let rest = a[1..].to_vec();
-            if getArgOpt(cpp_opt.clone(), rest.to_vec()).is_some() {
-                let (opt, rest_q) = getArgOpt(cpp_opt.clone(), rest.to_vec()).unwrap();
-                return mungeArgs(((inp, out, snoc(cpp_opts, opt)), unparsed), rest_q);
-            }
-        }
-
-        // [cfile, rest..]
-        if a.len() > 0 {
-            let cfile = a[0].clone();
-            let rest = a[1..].to_vec();
-            if [".c", ".hc", ".h"].iter().any(|suf| cfile.ends_with(suf)) {
-                return if isJust(inp) {
-                    Err("two input files given".to_string())
-                } else {
-                    mungeArgs(((Some(cfile.into()), out, cpp_opts), unparsed), rest)
-                };
-            }
-        }
-
-        // [unknown, rest..]
-        if a.len() > 0 {
-            let unknown = a[0].clone();
-            let rest = a[1..].to_vec();
-            return mungeArgs((cpp_args, (snoc(extra, unknown), other)), rest);
-        }
-
-        // otherwise
-        Ok(parsed)
-    }
-
-    match mungeArgs(((None, None, RList::empty()), (RList::empty(), RList::empty())),
-                    args) {
-        Err(err) => Err(err),
-        Ok(((None, _, _), _)) => Err("No .c / .hc / .h source file given".to_string()),
-        Ok(((Some(input_file), output_file_opt, cpp_opts), (extra_args, other_args))) => {
-            Ok((__assign!(rawCppArgs((RList::reverse(extra_args)), input_file),
-                          {
-                              outputFile: output_file_opt,
-                              cppOptions: RList::reverse(cpp_opts),
-                          }),
-                RList::reverse(other_args)))
+    fn runCPP(&self, cpp_args: &CppArgs) -> PPResult<()> {
+        // copy the input to the outputfile, because in case the input is preprocessed,
+        // gcc -E will do nothing.
+        let out = cpp_args.outputFile.as_ref().unwrap();
+        fs::copy(&cpp_args.inputFile, out)?;
+        let meta = fs::metadata(out)?;
+        meta.permissions().set_readonly(false);
+        fs::set_permissions(out, meta.permissions())?;
+        // now run GCC
+        let mut cmd = Command::new(&self.gccPath);
+        buildCppArgs(&mut cmd, cpp_args);
+        if cmd.status()?.success() {
+            Ok(())
+        } else {
+            Err("GCC exited with error".into())
         }
     }
 }
 
-pub type ParseArgsState = ((Option<FilePath>, Option<FilePath>, Reversed<Vec<CppOption>>),
-                           (Reversed<Vec<String>>, Reversed<Vec<String>>));
+fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), String> {
+    let mut input_file = None;
+    let mut output_file = None;
+    let mut cppopt = vec![];
+    let mut extra = vec![];
+    let mut other = vec![];
 
-pub fn buildCppArgs(CppArgs {
-    cppOptions: options,
-    extraOptions: extra_args,
-    cppTmpDir: _tmpdir,
-    inputFile: input_file,
-    outputFile: output_file_opt
-}: CppArgs)
-                    -> Vec<String> {
-
-    let tOption = |_0| match _0 {
-        IncludeDir(incl) => vec!["-I".to_string(), incl.to_string()],
-        Define(key, value) => {
-            vec![format!("-D{}{}{}", key, if value.is_empty() { "" } else { "=" }, value)]
+    let mut args = args.into_iter();
+    while let Some(arg) = args.next() {
+        // -E is implicitly enabled -> ignore it
+        if arg == "-E" {
+            continue;
         }
-        Undefine(key) => vec![format!("-U{}", key)],
-        IncludeFile(f) => vec!["-include".to_string(), f.to_string()],
-    };
 
-    let outputFileOpt = output_file_opt.map_or(vec![], |x| vec!["-o".to_string(), x.to_string()]);
+        // some extra flags we don't want to pass on to CPP
+        if arg == "-MF" || arg == "-MT" || arg == "-MQ" {
+            if let Some(marg) = args.next() {
+                other.push(arg);
+                other.push(marg);
+            } else {
+                return Err(format!("{} option needs an ergument", arg));
+            }
+            continue;
+        }
 
-    __op_addadd((__concatMap!(tOption, options)),
-                __op_addadd(outputFileOpt,
-                            __op_addadd(vec!["-E".to_string(), input_file.to_string()],
-                            extra_args)))
+        if arg == "-c" || arg == "-S" || arg.starts_with("-M") {
+            other.push(arg);
+            continue;
+        }
+
+        // CPP options
+        if arg.starts_with("-I") {
+            cppopt.push(IncludeDir(arg[2..].into()));
+            continue;
+        } else if arg.starts_with("-U") {
+            cppopt.push(Undefine(arg[2..].into()));
+            continue;
+        } else if arg.starts_with("-D") {
+            let mut iter = arg[2..].splitn(2, '=');
+            cppopt.push(Define(iter.next().unwrap().into(),
+                               iter.next().unwrap_or("").into()));
+            continue;
+        }
+
+        // output file option
+        if arg == "-o" {
+            if output_file.is_some() {
+                return Err("two output files given".into());
+            }
+            if let Some(oarg) = args.next() {
+                output_file = Some(Path::new(&oarg).into());
+            } else {
+                return Err("-o option needs an argument".into());
+            }
+            continue;
+        }
+
+        // input file names
+        if arg.ends_with(".c") || arg.ends_with(".hc") || arg.ends_with(".h") {
+            if input_file.is_some() {
+                return Err("two output files given".into());
+            }
+            input_file = Some(Path::new(&arg).into());
+            continue;
+        }
+
+        // others we put into the CPP args
+        extra.push(arg);
+    }
+
+    match input_file {
+        None => Err("No .c / .hc / .h source file given".into()),
+        Some(ifile) => Ok((CppArgs {
+            cppOptions: cppopt,
+            extraOptions: extra,
+            inputFile: ifile,
+            cppTmpDir: None,
+            outputFile: output_file,
+        }, other))
+    }
+}
+
+pub fn buildCppArgs(cmd: &mut Command, cppargs: &CppArgs) {
+    for opt in &cppargs.cppOptions {
+        match *opt {
+            IncludeDir(ref incl) => { cmd.arg("-I"); cmd.arg(incl); }
+            Define(ref key, ref value) => { cmd.arg(
+                &format!("-D{}{}{}", key, if value.is_empty() { "" } else { "=" }, value));
+            }
+            Undefine(ref key) => { cmd.arg(&format!("-U{}", key)); }
+            IncludeFile(ref incfile) => { cmd.arg("-include"); cmd.arg(incfile); }
+        }
+    }
+    if let Some(ofile) = cppargs.outputFile.as_ref() {
+        cmd.arg("-o");
+        cmd.arg(ofile);
+    }
+    cmd.arg("-E");
+    cmd.arg(&cppargs.inputFile);
+    cmd.args(&cppargs.extraOptions);
 }
