@@ -39,13 +39,14 @@ extern crate tempdir;
 #[macro_use] pub mod support;
 pub mod data;
 pub mod parser;
+pub mod system;
 pub mod syntax;
 
 use std::path::{Path, PathBuf};
 
 use support as corollary_support;
 
-use syntax::preprocess::{CppArgs, Preprocessor, isPreprocessed, runPreprocessor};
+use system::preprocess::{CppArgs, Preprocessor, isPreprocessed, runPreprocessor};
 use syntax::ast::CTranslUnit;
 use data::input_stream::InputStream;
 use data::position::Position;
