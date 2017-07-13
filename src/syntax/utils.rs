@@ -1,88 +1,98 @@
 // Original file: "Utils.hs"
 // File auto-generated using Corollary.
 
-use corollary_support::*;
-
 use syntax::ast::*;
 use data::ident::Ident;
 
-pub fn getSubStmts(stat: CStat) -> Vec<CStat> {
-    match stat {
-        CLabel(_, box s, _, _) => vec![s],
-        CCase(_, box s, _) => vec![s],
-        CCases(_, _, box s, _) => vec![s],
-        CDefault(box s, _) => vec![s],
-        CExpr(_, _) => vec![],
-        CCompound(_, body, _) => __concatMap!(compoundSubStmts, body),
-        CIf(_, box sthen, selse, _) => {
-            let sthen2 = sthen.clone();
-            selse
-                .map(|s| vec![sthen, *s])
-                .unwrap_or(vec![sthen2])
+pub fn getSubStmts(stat: &CStat) -> Vec<&CStat> {
+    match *stat {
+        CLabel(_, box ref s, _, _) => vec![s],
+        CCase(_, box ref s, _) => vec![s],
+        CCases(_, _, box ref s, _) => vec![s],
+        CDefault(box ref s, _) => vec![s],
+        CCompound(_, ref body, _) => body.iter().filter_map(compoundSubStmt).collect(),
+        CIf(_, box ref sthen, ref selse, _) => match *selse {
+            None => vec![sthen],
+            Some(ref selse) => vec![sthen, selse]
         },
-        CSwitch(_, box s, _) => vec![s],
-        CWhile(_, box s, _, _) => vec![s],
-        CFor(_, _, _, box s, _) => vec![s],
-        CGoto(_, _) => vec![],
-        CGotoPtr(_, _) => vec![],
-        CCont(_) => vec![],
-        CBreak(_) => vec![],
-        CReturn(_, _) => vec![],
-        CAsm(_, _) => vec![],
+        CSwitch(_, box ref s, _) => vec![s],
+        CWhile(_, box ref s, _, _) => vec![s],
+        CFor(_, _, _, box ref s, _) => vec![s],
+        CGoto(..) | CGotoPtr(..) | CCont(..) | CBreak(..) | CReturn(..) |
+        CAsm(..) | CExpr(..) => vec![],
     }
 }
 
-pub fn mapSubStmts(_0: fn(CStat) -> bool, _1: fn(CStat) -> CStat, _2: CStat) -> CStat {
-    match (_0, _1, _2) {
-        (stop, _, ref s) if stop(s.clone()) => {
-            s.clone()
+pub fn mapSubStmts<S, F>(stop: S, f: F, x: CStat) -> CStat
+    where S: Fn(&CStat) -> bool, F: Fn(CStat) -> CStat
+{
+    let f = &f;
+    let stop = &stop;
+    if stop(&x) { return x; }
+    match x {
+        CLabel(i, box s, attrs, ni) => f(CLabel(i, box mapSubStmts(stop, f, s), attrs, ni)),
+        CCase(e, box s, ni) => f(CCase(e, box mapSubStmts(stop, f, s), ni)),
+        CCases(e1, e2, box s, ni) => f(CCases(e1, e2, box mapSubStmts(stop, f, s), ni)),
+        CDefault(box s, ni) => f(CDefault(box mapSubStmts(stop, f, s), ni)),
+        CCompound(ls, body, ni) => {
+            f(CCompound(ls, body.into_iter().map(|x| mapBlockItemStmts(stop, f, x)).collect(), ni))
         }
-        (stop, f, CLabel(i, box s, attrs, ni)) => f((CLabel(i, box (mapSubStmts(stop, f, s)), attrs, ni))),
-        (stop, f, CCase(e, box s, ni)) => f((CCase(e, box (mapSubStmts(stop, f, s)), ni))),
-        (stop, f, CCases(e1, e2, box s, ni)) => f((CCases(e1, e2, box (mapSubStmts(stop, f, s)), ni))),
-        (stop, f, CDefault(box s, ni)) => f((CDefault(box (mapSubStmts(stop, f, s)), ni))),
-        (stop, f, CCompound(ls, body, ni)) => {
-            f((CCompound(ls, (__map!(|x| { mapBlockItemStmts(stop, f, x) }, body)), ni)))
+        CIf(e, box sthen, selse, ni) => {
+            f(CIf(e,
+                  box mapSubStmts(stop, f, sthen),
+                  selse.map(|x| box mapSubStmts(stop, f, *x)),
+                  ni))
         }
-        (stop, f, CIf(e, box sthen, selse, ni)) => {
-            f((CIf(e,
-                   box (mapSubStmts(stop, f, sthen)),
-                   selse.map(|x| { box mapSubStmts(stop, f, *x) }),
-                   ni)))
-        }
-        (stop, f, CSwitch(e, box s, ni)) => f((CSwitch(e, box (mapSubStmts(stop, f, s)), ni))),
-        (stop, f, CWhile(e, box s, isdo, ni)) => f((CWhile(e, box (mapSubStmts(stop, f, s)), isdo, ni))),
-        (stop, f, CFor(i, t, a, box s, ni)) => f((CFor(i, t, a, box (mapSubStmts(stop, f, s)), ni))),
-        (_, f, s) => f(s),
+        CSwitch(e, box s, ni) => f(CSwitch(e, box mapSubStmts(stop, f, s), ni)),
+        CWhile(e, box s, isdo, ni) => f(CWhile(e, box mapSubStmts(stop, f, s), isdo, ni)),
+        CFor(i, t, a, box s, ni) => f(CFor(i, t, a, box mapSubStmts(stop, f, s), ni)),
+        s => f(s),
     }
 }
 
-pub fn mapBlockItemStmts(_0: fn(CStat) -> bool,
-                         _1: fn(CStat) -> CStat,
-                         _2: CBlockItem)
-                         -> CBlockItem {
-    match (_0, _1, _2) {
-        (stop, f, CBlockStmt(s)) => CBlockStmt((mapSubStmts(stop, f, s))),
-        (_, _, bi) => bi,
+pub fn mapBlockItemStmts<S, F>(stop: S, f: F, bi: CBlockItem) -> CBlockItem
+    where S: Fn(&CStat) -> bool, F: Fn(CStat) -> CStat
+{
+    match bi {
+        CBlockStmt(s) => CBlockStmt(mapSubStmts(stop, f, s)),
+        _ => bi,
     }
 }
 
-pub fn compoundSubStmts(item: CBlockItem) -> Vec<CStat> {
-    match item {
-        CBlockStmt(s) => vec![s],
-        CBlockDecl(_) => vec![],
-        CNestedFunDef(_) => vec![],
+pub fn compoundSubStmt(item: &CBlockItem) -> Option<&CStat> {
+    match *item {
+        CBlockStmt(ref s) => Some(s),
+        CBlockDecl(..) | CNestedFunDef(..) => None,
     }
 }
 
-pub fn getLabels(stat: CStat) -> Vec<Ident> {
-    match stat {
-        CLabel(l, box s, _, _) => __op_concat(l, getLabels(s)),
-        CCompound(ls, body, _) => {
-            __op_forwardslash(
-                __concatMap!(|x| { __concatMap!(getLabels, compoundSubStmts(x)) }, body),
-                ls)
+pub fn getLabels(stat: &CStat) -> Vec<Ident> {
+    fn inner(v: &mut Vec<Ident>, stat: &CStat) {
+        match *stat {
+            CLabel(ref l, box ref s, _, _) => {
+                v.push(l.clone());
+                inner(v, s);
+            }
+            CCompound(ref ls, ref body, _) => {
+                let mut labels = vec![];
+                for stmt in body {
+                    if let Some(stmt) = compoundSubStmt(stmt) {
+                        inner(&mut labels, stmt);
+                    }
+                }
+                for l in ls {
+                    labels.remove_item(l);
+                }
+                v.append(&mut labels);
+            }
+            _ => {
+                for substmt in getSubStmts(stat) {
+                    inner(v, substmt)
+                }
+            }
         }
-        stmt => __concatMap!(getLabels, (getSubStmts(stmt))),
     }
+    let mut labels = vec![];
+    inner(&mut labels, stat);
+    labels
 }

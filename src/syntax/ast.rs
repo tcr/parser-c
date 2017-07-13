@@ -139,7 +139,7 @@ pub enum CDeclarationSpecifier<I> {
 }
 pub use self::CDeclarationSpecifier::*;
 
-pub fn partitionDeclSpecs<I>(_input: Vec<CDeclarationSpecifier<I>>)
+pub fn partitionDeclSpecs<I>(input: Vec<CDeclarationSpecifier<I>>)
     -> (Vec<CStorageSpecifier<I>>,
         Vec<CAttribute<I>>,
         Vec<CTypeQualifier<I>>,
@@ -147,31 +147,25 @@ pub fn partitionDeclSpecs<I>(_input: Vec<CDeclarationSpecifier<I>>)
         Vec<CFunctionSpecifier<I>>,
         Vec<CAlignmentSpecifier<I>>)
 {
+    let mut storage = vec![];
+    let mut attrqual = vec![];
+    let mut typequal = vec![];
+    let mut typespec = vec![];
+    let mut funspec = vec![];
+    let mut alignspec = vec![];
 
-    // let deals = |_0, _1| match (_0, _1) {
-    //     (CStorageSpec(sp), (sts, ats, tqs, tss, fss, ass)) => {
-    //         (__op_concat(sp, sts), ats, tqs, tss, fss, ass)
-    //     }
-    //     (CTypeQual(CAttrQual(attr)), (sts, ats, tqs, tss, fss, ass)) => {
-    //         (sts, __op_concat(attr, ats), tqs, tss, fss, ass)
-    //     }
-    //     (CTypeQual(tq), (sts, ats, tqs, tss, fss, ass)) => {
-    //         (sts, ats, __op_concat(tq, tqs), tss, fss, ass)
-    //     }
-    //     (CTypeSpec(ts), (sts, ats, tqs, tss, fss, ass)) => {
-    //         (sts, ats, tqs, __op_concat(ts, tss), fss, ass)
-    //     }
-    //     (CFunSpec(fs), (sts, ats, tqs, tss, fss, ass)) => {
-    //         (sts, ats, tqs, tss, __op_concat(fs, fss), ass)
-    //     }
-    //     (CAlignSpec(__as), (sts, ats, tqs, tss, fss, ass)) => {
-    //         (sts, ats, tqs, tss, fss, __op_concat(__as, ass))
-    //     }
-    // };
+    for declspec in input {
+        match declspec {
+            CStorageSpec(sp) => storage.push(sp),
+            CTypeQual(CAttrQual(attr)) => attrqual.push(attr),
+            CTypeQual(tq) => typequal.push(tq),
+            CTypeSpec(ts) => typespec.push(ts),
+            CFunSpec(fs) => funspec.push(fs),
+            CAlignSpec(asp) => alignspec.push(asp),
+        }
+    }
 
-    // TODO
-    unreachable!()
-    // __foldr!(deals, (vec![], vec![], vec![], vec![], vec![], vec![]))
+    (storage, attrqual, typequal, typespec, funspec, alignspec)
 }
 
 pub type CStorageSpec = CStorageSpecifier<NodeInfo>;
@@ -288,14 +282,14 @@ pub enum CInitializer<I> {
 }
 pub use self::CInitializer::*;
 
-pub fn fmapInitList<A, B, F: Fn(A) -> B>(_f: F, _a: CInitializerList<A>) -> CInitializerList<B> {
-    // match a {
-    //     CInitExpr(expr, value) => CInitExpr(_f
-    //     CInitList(list, value) =>
-    // }
-    // __map!((|(desigs, initializer)| { (fmap((fmap(_f)), desigs), fmap(_f, initializer)) }))
-    // TODO
-    unreachable!()
+pub fn fmapInitList<A, B, F>(_f: F, _initlist: CInitializerList<A>) -> CInitializerList<B>
+    where F: Fn(A) -> B
+{
+    // initlist.into_iter().map(|(desigs, initializer)| {
+    //     (desigs.fmap(|desig| desig.fmap(f)), initializer.fmap(f))
+    // }).collect()
+    // TODO this needs all the Functor instances
+    unimplemented!()
 }
 
 pub type CInitList = CInitializerList<NodeInfo>;
