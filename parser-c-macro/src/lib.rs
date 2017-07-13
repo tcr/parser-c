@@ -28,6 +28,7 @@ fn impl_cnodeable(ast: &syn::MacroInput) -> quote::Tokens {
         panic!("Expected type with 1 type parameter.");
     }
     let ty_param = ast.generics.ty_params[0].ident.to_string();
+    let pub_ty_param = format!("pub {}", ty_param);
     match ast.body {
         Body::Enum(ref variants) => {
             let mut arms = Vec::new();
@@ -87,7 +88,7 @@ fn impl_cnodeable(ast: &syn::MacroInput) -> quote::Tokens {
                     let mut tokens = Tokens::new();
                     item.to_tokens(&mut tokens);
                     let arg = tokens.to_string();
-                    arg == ty_param || arg == format!("pub {}", ty_param)
+                    arg == ty_param || arg == pub_ty_param
                 })
             } else {
                 unreachable!("Expected struct tuple.");
@@ -97,8 +98,7 @@ fn impl_cnodeable(ast: &syn::MacroInput) -> quote::Tokens {
                 (quote!( (self.0).into_node_info() ),
                  quote!( (self.0).node_info() ))
             } else if let Some(pos) = node_pos {
-                // #pos in quote! produces "1usize" which is not a valid tuple index
-                let expr = syn::parse_expr(&format!("{}", pos)).unwrap();
+                let expr = syn::Ident::from(pos);
                 (quote!( self.#expr ),
                  quote!( &self.#expr ))
             } else {
@@ -150,6 +150,81 @@ pub fn impl_pos(input: TokenStream) -> TokenStream {
                         match self {
                             #(#arms)*
                             _ => panic!("tokenPos: EOF"),
+                        }
+                    }
+                }
+            }
+        }
+    };
+    gen.parse().unwrap()
+}
+
+#[proc_macro_derive(NodeFunctor)]
+pub fn impl_node_functor(input: TokenStream) -> TokenStream {
+
+    let s = input.to_string();
+    let ast = syn::parse_macro_input(&s).unwrap();
+    let name = &ast.ident;
+
+    if ast.generics.ty_params.len() != 1 {
+        panic!("Expected type with 1 type parameter.");
+    }
+    let ty_param = ast.generics.ty_params[0].ident.to_string();
+    let pub_ty_param = format!("pub {}", ty_param);
+    let angle_ty_param = format!("< {} >", ty_param);
+
+    let collect_pats_exprs = |data: &syn::VariantData| -> (Vec<Tokens>, Vec<Tokens>) {
+        let mut pats = Vec::new();
+        let mut exprs = Vec::new();
+        if let &syn::VariantData::Tuple(ref inner) = data {
+            for (i, field) in inner.iter().enumerate() {
+                let mut tokens = Tokens::new();
+                field.to_tokens(&mut tokens);
+                let arg = tokens.to_string();
+                if arg == ty_param || arg == pub_ty_param {
+                    pats.push(quote!( a ));
+                    exprs.push(quote!( f(a) ));
+                } else {
+                    let id = syn::Ident::from(format!("_{}", i));
+                    pats.push(quote!( #id ));
+                    if arg.contains(&angle_ty_param) {
+                        exprs.push(quote!( #id.fmap(f) ));
+                    } else {
+                        exprs.push(quote!( #id ));
+                    }
+                }
+            }
+        } else {
+            unreachable!("Expected tuple struct/enum variant.");
+        }
+        (pats, exprs)
+    };
+
+    let gen = match ast.body {
+        Body::Struct(ref vardata) => {
+            let (pats, exprs) = collect_pats_exprs(vardata);
+            quote! {
+                impl<A, B> NodeFunctor<A, B> for #name<A> {
+                    type Output = #name<B>;
+                    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+                        let #name(#(#pats),*) = self;
+                        #name(#(#exprs),*)
+                    }
+                }
+            }
+        }
+        Body::Enum(ref variants) => {
+            let arms = variants.iter().map(|var| {
+                let name = &var.ident;
+                let (pats, exprs) = collect_pats_exprs(&var.data);
+                quote! { #name(#(#pats),*) => #name(#(#exprs),*) }
+            });
+            quote! {
+                impl<A, B> NodeFunctor<A, B> for #name<A> {
+                    type Output = #name<B>;
+                    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+                        match self {
+                            #(#arms),*
                         }
                     }
                 }
