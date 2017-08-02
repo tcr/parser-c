@@ -76,4 +76,4 @@ stack install alex happy
 
 ## License
 
-MIT or Apache-2.0, at your option.
+MIT
