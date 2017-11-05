@@ -2,7 +2,6 @@
 // File auto-generated using Corollary.
 
 use std::char;
-use std::fmt::{self, Display, Formatter};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum CChar {
@@ -11,12 +10,21 @@ pub enum CChar {
 }
 pub use self::CChar::*;
 
-pub fn showCharConst(c: char) -> String {
-    format!("'{}'", escapeCChar(c))
+fn showWideFlag(flag: bool) -> &'static str {
+    if flag { "L" } else { "" }
 }
 
-pub fn showWideFlag(flag: bool) -> &'static str {
-    if flag { "L" } else { "" }
+pub fn showCChar(ch: &CChar) -> String {
+    match *ch {
+        CChar(ch, wide) =>
+            format!("{}'{}'", showWideFlag(wide), escapeCChar(ch)),
+        CChars(ref chars, wide) => {
+            let mut result = format!("{}'", showWideFlag(wide));
+            chars.iter().for_each(|ch| result.push_str(&escapeCChar(*ch)));
+            result.push('\'');
+            result
+        }
+    }
 }
 
 pub fn getCChar(ch: CChar) -> String {
@@ -101,6 +109,19 @@ fn parseFlags(mut s: &str) -> Result<CIntFlags, String> {
     }
 }
 
+pub fn showCInteger(int: &CInteger) -> String {
+    let mut result = match int.1 {
+        DecRepr => format!("{}", int.0),
+        HexRepr => format!("{:#x}", int.0),
+        OctalRepr => format!("{:#o}", int.0),
+    };
+    if int.2.contains(FLAG_UNSIGNED) { result.push('u'); }
+    if int.2.contains(FLAG_LONG) { result.push('L'); }
+    if int.2.contains(FLAG_LONGLONG) { result.push_str("LL"); }
+    if int.2.contains(FLAG_IMAG) { result.push('i'); }
+    result
+}
+
 pub fn readCInteger(repr: CIntRepr, s: &str) -> Result<CInteger, String> {
     let base = match repr {
         DecRepr => 10,
@@ -149,6 +170,10 @@ pub fn readCFloat(input: &str) -> CFloat {
     CFloat(input.to_string())
 }
 
+pub fn showCFloat(float: &CFloat) -> String {
+    float.0.clone()
+}
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ClangCVersion(pub String);
 
@@ -160,11 +185,9 @@ pub fn readClangCVersion(input: &str) -> ClangCVersion {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct CString(pub String, pub bool);
 
-impl Display for CString {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        let CString(ref s, b) = *self;
-        write!(f, "{}{}", showWideFlag(b), showStringLit(s))
-    }
+pub fn showCString(s: &CString) -> String {
+    let CString(ref s, b) = *s;
+    format!("{}{}", showWideFlag(b), showStringLit(s))
 }
 
 pub fn cString(__str: String) -> CString {
@@ -192,7 +215,7 @@ pub fn concatCStrings(cs: Vec<CString>) -> CString {
     CString(new_str, wideflag)
 }
 
-pub fn showStringLit(s: &str) -> String {
+fn showStringLit(s: &str) -> String {
     let mut new_s = String::with_capacity(s.len());
     new_s.push('"');
     for ch in s.chars() {

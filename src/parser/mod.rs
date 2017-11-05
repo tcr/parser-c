@@ -17,6 +17,7 @@ use parser::parser::translUnitP;
 use parser::builtin::*;
 use parser::tokens::{CToken, CTokEof};
 use syntax::ast::*;
+use syntax::constants::showCString;
 use data::name::{Name, NameSupply, new_name_supply};
 use data::ident::Ident;
 use data::node::{NodeInfo, CNode};
@@ -244,7 +245,7 @@ impl CDeclrR {
             Err(ParseError::new(
                 newname.pos().clone(),
                 vec!["Duplicate assembler name: ".to_string(),
-                     oldname.0.to_string(), newname.0.to_string()]))
+                     showCString(&oldname.0), showCString(&newname.0)]))
         }
     }
 
