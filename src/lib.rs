@@ -26,7 +26,8 @@
 //! }
 //! ```
 
-#![feature(box_syntax, box_patterns, fnbox, vec_remove_item)]
+#![feature(box_syntax, box_patterns, fnbox, vec_remove_item,
+           slice_patterns, advanced_slice_patterns, conservative_impl_trait)]
 // Cut down on number of warnings until we manage it.
 #![allow(non_snake_case)]
 
@@ -40,6 +41,7 @@ pub mod data;
 pub mod parser;
 pub mod system;
 pub mod syntax;
+pub mod pretty;
 
 use std::path::{Path, PathBuf};
 
