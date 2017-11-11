@@ -1,4 +1,7 @@
 #![allow(unreachable_patterns, unused_parens)]
+// action_4 is unused...
+#![allow(dead_code)]
+
 use std::boxed::FnBox;
 use either::Either::*;
 

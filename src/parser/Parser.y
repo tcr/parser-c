@@ -30,6 +30,8 @@
 ------------------------------------------------------------------
 
 {
+// action_4 is unused...
+#![allow(dead_code)]
 
 use std::boxed::FnBox;
 use either::Either::*;
