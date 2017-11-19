@@ -6,6 +6,8 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+use data::position::Position;
+
 #[derive(Debug)]
 pub struct InputStream {
     src: Vec<u8>,
@@ -41,13 +43,18 @@ impl InputStream {
         byte
     }
 
-    pub fn read_char(&mut self) -> char {
-        let ch = self.src[self.rpos] as char;
-        self.rpos += 1;
-        ch
+    pub fn last_char(&self) -> char {
+        self.src[self.tpos] as char
     }
 
-    pub fn mark_read(&mut self, len: usize) {
+    pub fn mark_read(&mut self, len: usize, pos: &mut Position) {
+        for &ch in &self.src[self.tpos..self.tpos+len] {
+            match ch {
+                b'\n' => pos.inc_newline(),
+                b'\r' => pos.inc_offset(1),
+                _ => pos.inc_chars(1),
+            }
+        }
         self.tpos += len;
         self.rpos = self.tpos;
     }

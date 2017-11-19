@@ -15,7 +15,7 @@ fn eval_smoke() {
                 File::open(entry.path()).unwrap().read_to_string(&mut input).unwrap();
                 match parse(&input, &entry.path().display().to_string()) {
                     Err(err) => {
-                        panic!("error: {:?}", err);
+                        panic!("error: {}", err);
                     }
                     Ok(_) => {
                         println!("smoke test passed: {}", entry.path().display());
