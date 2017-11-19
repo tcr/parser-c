@@ -1,4 +1,5 @@
 #![feature(proc_macro)]
+#![recursion_limit="128"]
 
 extern crate proc_macro;
 extern crate syn;
@@ -206,7 +207,7 @@ pub fn impl_node_functor(input: TokenStream) -> TokenStream {
             quote! {
                 impl<A, B> NodeFunctor<A, B> for #name<A> {
                     type Output = #name<B>;
-                    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+                    fn fmap<F: Fn(A) -> B>(self, f: &F) -> Self::Output {
                         let #name(#(#pats),*) = self;
                         #name(#(#exprs),*)
                     }
@@ -222,7 +223,7 @@ pub fn impl_node_functor(input: TokenStream) -> TokenStream {
             quote! {
                 impl<A, B> NodeFunctor<A, B> for #name<A> {
                     type Output = #name<B>;
-                    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+                    fn fmap<F: Fn(A) -> B>(self, f: &F) -> Self::Output {
                         match self {
                             #(#arms),*
                         }
@@ -231,5 +232,163 @@ pub fn impl_node_functor(input: TokenStream) -> TokenStream {
             }
         }
     };
+    // println!("{}", gen);
+    gen.parse().unwrap()
+}
+
+#[proc_macro_derive(Traverse)]
+pub fn impl_generic_node(input: TokenStream) -> TokenStream {
+
+    let s = input.to_string();
+    let ast = syn::parse_macro_input(&s).unwrap();
+    let name = &ast.ident;
+
+    if ast.generics.ty_params.len() != 1 {
+        panic!("Expected type with 1 type parameter.");
+    }
+    let ty_param = ast.generics.ty_params[0].ident.to_string();
+    let pub_ty_param = format!("pub {}", ty_param);
+    let angle_ty_param = format!("< {} >", ty_param);
+
+    let collect_pats_exprs = |data: &syn::VariantData| -> (Vec<Tokens>, Vec<Tokens>) {
+        let mut refmutpats = Vec::new();
+        let mut calls = Vec::new();
+        if let &syn::VariantData::Tuple(ref inner) = data {
+            for (i, field) in inner.iter().enumerate() {
+                let mut tokens = Tokens::new();
+                field.to_tokens(&mut tokens);
+                let arg = tokens.to_string();
+                if arg == ty_param || arg == pub_ty_param {
+                    refmutpats.push(quote!( _ ));
+                } else {
+                    let id = syn::Ident::from(format!("_{}", i));
+                    refmutpats.push(quote!( ref mut #id ));
+                    if arg.contains(&angle_ty_param) {
+                        calls.push(quote!( #id.traverse(f); ));
+                    }
+                }
+            }
+        } else {
+            unreachable!("Expected tuple struct/enum variant.");
+        }
+        (refmutpats, calls)
+    };
+
+    let gen = match ast.body {
+        Body::Struct(ref vardata) => {
+            let (refmutpats, calls) = collect_pats_exprs(vardata);
+            quote! {
+                impl Traverse for #name<NodeInfo> {
+                    fn traverse<F: Fn(&mut Any)>(&mut self, f: &F) {
+                        f(self);
+                        let #name(#(#refmutpats),*) = *self;
+                        #(#calls)*
+                    }
+                }
+            }
+        }
+        Body::Enum(ref variants) => {
+            let refmutarms = variants.iter().map(|var| {
+                let name = &var.ident;
+                let (refmutpats, calls) = collect_pats_exprs(&var.data);
+                quote! { #name(#(#refmutpats),*) => { #(#calls)* } }
+            });
+            quote! {
+                impl Traverse for #name<NodeInfo> {
+                    fn traverse<F: Fn(&mut Any)>(&mut self, f: &F) {
+                        f(self);
+                        match *self {
+                            #(#refmutarms),*
+                        }
+                    }
+                }
+            }
+        }
+    };
+    gen.parse().unwrap()
+}
+
+#[proc_macro_derive(Equiv)]
+pub fn impl_equiv(input: TokenStream) -> TokenStream {
+
+    let s = input.to_string();
+    let ast = syn::parse_macro_input(&s).unwrap();
+    let name = &ast.ident;
+
+    if ast.generics.ty_params.len() != 1 {
+        panic!("Expected type with 1 type parameter.");
+    }
+    let ty_param = ast.generics.ty_params[0].ident.to_string();
+    let pub_ty_param = format!("pub {}", ty_param);
+
+    let collect_pats_exprs = |data: &syn::VariantData| -> (Vec<Tokens>, Vec<Tokens>, Vec<Tokens>) {
+        let mut pats1 = Vec::new();
+        let mut pats2 = Vec::new();
+        let mut exprs = Vec::new();
+        if let &syn::VariantData::Tuple(ref inner) = data {
+            for (i, field) in inner.iter().enumerate() {
+                let mut tokens = Tokens::new();
+                field.to_tokens(&mut tokens);
+                let arg = tokens.to_string();
+                if arg == ty_param || arg == pub_ty_param {
+                    pats1.push(quote!( _ ));
+                    pats2.push(quote!( _ ));
+                    continue;
+                }
+                let id1 = syn::Ident::from(format!("_{}", 2*i));
+                pats1.push(quote!( ref #id1 ));
+                let id2 = syn::Ident::from(format!("_{}", 2*i + 1));
+                pats2.push(quote!( ref #id2 ));
+                exprs.push(quote!( #id1.equiv(#id2) ));
+            }
+        } else {
+            unreachable!("Expected tuple struct/enum variant.");
+        }
+        (pats1, pats2, exprs)
+    };
+
+    let gen = match ast.body {
+        Body::Struct(ref vardata) => {
+            let (pats1, pats2, exprs) = collect_pats_exprs(vardata);
+            let strng = name.to_string();
+            quote! {
+                impl<I> Equiv for #name<I> where I: ::std::fmt::Debug {
+                    fn equiv(&self, other: &Self) -> bool {
+                        let #name(#(#pats1),*) = *self;
+                        let #name(#(#pats2),*) = *other;
+                        if !( #(#exprs)&&* ) { println!(#strng);
+                                               println!("{:?}\n{:?}", self, other);
+                                               false } else { true }
+                    }
+                }
+            }
+        }
+        Body::Enum(ref variants) => {
+            let nstrng = name.to_string();
+            let arms = variants.iter().map(|var| {
+                let name = &var.ident;
+                let strng = nstrng.clone() + "::" + &name.to_string();
+                let (pats1, pats2, exprs) = collect_pats_exprs(&var.data);
+                if exprs.is_empty() {
+                    quote! { (&#name(#(#pats1),*), &#name(#(#pats2),*)) => true, }
+                } else {
+                    quote! { (&#name(#(#pats1),*), &#name(#(#pats2),*)) =>
+                                if !( #(#exprs)&&* ) { println!(#strng); false } else { true },
+                    }
+                }
+            });
+            quote! {
+                impl<I> Equiv for #name<I> where I: ::std::fmt::Debug {
+                    fn equiv(&self, other: &Self) -> bool {
+                        match (self, other) {
+                            #(#arms)*
+                            _ => { println!(#nstrng); false }
+                        }
+                    }
+                }
+            }
+        }
+    };
+    // println!("{}", gen);
     gen.parse().unwrap()
 }
