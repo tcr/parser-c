@@ -276,11 +276,13 @@ pub enum CTypeSpecifier<I> {
 }
 pub use self::CTypeSpecifier::*;
 
-pub fn isSUEDef<I>(spec: CTypeSpecifier<I>) -> bool {
-    match spec {
-        CSUType(CStructureUnion(_, _, Some(_), _, _), _) => true,
-        CEnumType(CEnumeration(_, Some(_), _, _), _) => true,
-        _ => true,
+impl<I> CTypeSpecifier<I> where I: ::std::fmt::Debug {
+    pub fn isSUEDef(&self) -> bool {
+        match *self {
+            CSUType(CStructureUnion(_, _, Some(_), _, _), _) => true,
+            CEnumType(CEnumeration(_, Some(_), _, _), _) => true,
+            _ => false,
+        }
     }
 }
 

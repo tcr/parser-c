@@ -124,15 +124,6 @@ macro_rules! make_spaces {
 
 const SPACES: &str = make_spaces!(,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,);
 
-/// Return a static slice with a given number of spaces.
-fn spaces(k: isize) -> &'static str {
-    if k <= 0 {
-        ""
-    } else {
-        &SPACES[..k as usize]
-    }
-}
-
 #[inline]
 fn mk(edoc: EDoc) -> Doc {
     Doc(Rc::new(edoc))
@@ -350,10 +341,20 @@ impl<'w, W: fmt::Write + 'w> Renderer<'w, W> {
         self.writer.write_str(st)
     }
 
+    fn write_spaces(&mut self, mut n: isize) -> fmt::Result {
+        while n > 0 {
+            let k = n.min(SPACES.len() as isize);
+            self.writer.write_str(&SPACES[..k as usize])?;
+            n -= k;
+        }
+        Ok(())
+    }
+
     fn newline(&mut self) -> fmt::Result {
         self.writer.write_char('\n')?;
-        self.line_pos = self.indent;
-        self.writer.write_str(spaces(self.indent))
+        let n = self.indent;
+        self.line_pos = n;
+        self.write_spaces(n)
     }
 
     fn render<'a>(&mut self, doc: &Doc<'a>) -> fmt::Result {
@@ -373,7 +374,7 @@ impl<'w, W: fmt::Write + 'w> Renderer<'w, W> {
             }
             Nest(k, ref p) => {
                 self.indent += k;
-                self.writer.write_str(spaces(k))?;
+                self.write_spaces(k)?;
                 self.line_pos += k;
                 self.render(p)?;
                 self.indent -= k;
@@ -520,6 +521,15 @@ impl Pretty for CExtDecl {
     }
 }
 
+fn pretty_body<'a>(body: &'a CStat) -> Doc<'a> {
+    // make sure we render a statement body with braces in all cases
+    if let CCompound(..) = *body {
+        body.pretty_prec(-1)
+    } else {
+        block(body.pretty())
+    }
+}
+
 impl Pretty for CFunDef {
     fn pretty<'a>(&'a self) -> Doc<'a> {
         let CFunctionDef(ref declspecs, ref declr, ref decls, ref stat, _) = *self;
@@ -528,8 +538,23 @@ impl Pretty for CFunDef {
         ).above(
             vcat(decls.iter().map(|v| v.pretty() + ';')).nest(INDENT)
         ).above(
-            stat.pretty_prec(-1)
+            // make sure we render the body with braces in all cases
+            pretty_body(stat)
         )
+    }
+}
+
+fn pretty_else<'a>(body: &'a CStat) -> Doc<'a> {
+    if let CIf(ref else_if_expr, ref else_if_stat, ref else_stat, _) = *body {
+        (
+            text("else if ") + parens(else_if_expr.pretty())
+        ).above(
+            pretty_body(else_if_stat)
+        ).above(
+            maybe_doc(|e| pretty_else(e), else_stat)
+        )
+    } else {
+        text("else ").above(pretty_body(body))
     }
 }
 
@@ -548,27 +573,6 @@ impl Pretty for CStat {
                 (maybe_pretty(expr) + ';').nest(INDENT),
             CCompound(..) => self.pretty_prec(0),
             CIf(ref expr, ref stat, ref estat, _) => {
-                fn pretty_body<'a>(body: &'a CStat) -> Doc<'a> {
-                    // make sure we render the body with braces in all cases
-                    if let CCompound(..) = *body {
-                        body.pretty_prec(-1)
-                    } else {
-                        block(body.pretty())
-                    }
-                }
-                fn pretty_else<'a>(body: &'a CStat) -> Doc<'a> {
-                    if let CIf(ref else_if_expr, ref else_if_stat, ref else_stat, _) = *body {
-                        (
-                            text("else if ") + parens(else_if_expr.pretty())
-                        ).above(
-                            pretty_body(else_if_stat)
-                        ).above(
-                            maybe_doc(|e| pretty_else(e), else_stat)
-                        )
-                    } else {
-                        text("else ").above(pretty_body(body))
-                    }
-                }
                 let statement = (
                     text("if ") + parens(expr.pretty())
                 ).above(
@@ -665,8 +669,10 @@ impl Pretty for CDecl {
         match *self {
             CDecl(ref specs, ref divs, _) => {
                 for item in specs.windows(2) {
-                    if let &[CTypeSpec(_), CTypeQual(CAttrQual(_))] = item {
-                        panic!("AST Invariant violated: __attribute__ specifier following struct/union/enum");
+                    if let &[CTypeSpec(ref ty), CTypeQual(CAttrQual(_))] = item {
+                        if ty.isSUEDef() {
+                            panic!("AST Invariant violated: __attribute__ specifier following struct/union/enum");
+                        }
                     }
                 }
                 let pretty_divs = hsep(chr(',').punctuate(divs.iter().map(|&(ref declr, ref initializer, ref expr)| {
@@ -823,12 +829,16 @@ fn pp_decl<'a>(declrs: &'a [CDerivedDeclr], name: &'a Option<Ident>, prec: i32)
     match declrs {
         &[] => maybe_pretty(name),
         &[ref rest.., CPtrDeclr(ref quals, _)] => {
-            let inner = chr('*') + pretty_space_sep(quals) + pp_decl(rest, name, 5);
+            let inner = if quals.is_empty() {
+                chr('*') + pp_decl(rest, name, 5)
+            } else {
+                chr('*') + pretty_space_sep(quals) + SP + pp_decl(rest, name, 5)
+            };
             maybe_paren(prec, 5, inner)
         }
         &[ref rest.., CArrDeclr(ref quals, ref size, _)] => {
             let inner = pp_decl(rest, name, 6) +
-                brackets(pretty_space_sep(quals) + size.pretty());
+                brackets(pretty_space_sep(quals) + SP + size.pretty());
             maybe_paren(prec, 6, inner)
         }
         &[ref rest.., CFunDeclr(ref params, ref fun_attrs, _)] => {
@@ -853,7 +863,7 @@ fn pretty_declarator<'a>(declr: &'a CDeclr, prec: i32, show_attrs: bool)
                          -> Doc<'a> {
 
     let CDeclarator(ref name, ref derived_declrs, ref asmname, ref cattrs, _) = *declr;
-    pp_decl(derived_declrs, name, prec) +
+    pp_decl(derived_declrs, name, prec) + SP +
         maybe_doc(|n| text("__asm__") + parens(n.pretty()), asmname) +
         if show_attrs { pretty_attrlist(cattrs) } else { empty() }
 }
@@ -884,7 +894,7 @@ impl Pretty for CInit {
                 } else {
                     pretty_space_sep(desigs) + " = " + initializer.pretty()
                 });
-                braces(hsep(chr(',').punctuate(initlist)))
+                braces(list(chr(',').punctuate(initlist)))
             }
         }
     }
@@ -896,7 +906,7 @@ impl Pretty for CDesignator {
             CArrDesig(ref expr, _) => brackets(expr.pretty()),
             CMemberDesig(ref ident, _) => chr('.') + ident.pretty(),
             CRangeDesig(ref expr1, ref expr2, _) =>
-                brackets(expr1.pretty() + "..." + expr2.pretty()),
+                brackets(expr1.pretty() + " ... " + expr2.pretty()),
         }
     }
 }
@@ -929,11 +939,12 @@ impl Pretty for CExpr {
                 maybe_paren(prec, -1, hsep(chr(',').punctuate(inner)))
             }
             CAssign(ref op, ref expr1, ref expr2, _) => {
-                let inner = expr1.pretty_prec(3) + SP + op.pretty() + SP + expr2.pretty_prec(3);
+                // NB: parens required around operator in lhs, even though precedence is higher
+                let inner = expr1.pretty_prec(20) + SP + op.pretty() + SP + expr2.pretty_prec(2);
                 maybe_paren(prec, 2, inner)
             }
-            // NB: assignment only has a higher precedence if cond is on the rhs
             CCond(ref expr1, ref expr2, ref expr3, _) => {
+                // NB: assignment only has a higher precedence if cond is on the rhs
                 let inner = expr1.pretty_prec(4) + " ? " + maybe_pretty(expr2) + " : " +
                     expr3.pretty_prec(4);
                 maybe_paren(prec, 2, inner)
@@ -975,11 +986,11 @@ impl Pretty for CExpr {
                 maybe_paren(prec, 25, text("__alignof") + parens(decl.pretty()))
             }
             CComplexReal(ref expr, _) => {
-                let inner = text("__real") + SP + expr.pretty_prec(25);
+                let inner = text("__real__") + parens(expr.pretty());
                 maybe_paren(prec, 25, inner)
             }
             CComplexImag(ref expr, _) => {
-                let inner = text("__imag") + SP + expr.pretty_prec(25);
+                let inner = text("__imag__") + parens(expr.pretty());
                 maybe_paren(prec, 25, inner)
             }
             CIndex(ref expr1, ref expr2, _) => {
@@ -1004,8 +1015,7 @@ impl Pretty for CExpr {
                 let initlist = initl.iter().map(|&(ref mems, ref initializer)| if mems.is_empty() {
                     initializer.pretty()
                 } else {
-                    hcat(chr('.').punctuate(mems.iter().map(|m| m.pretty()))) +
-                        " = " + initializer.pretty()
+                    pretty_cat(mems) + " = " + initializer.pretty()
                 });
                 parens(decl.pretty()) + SP + braces(hsep(chr(',').punctuate(initlist)))
             }
