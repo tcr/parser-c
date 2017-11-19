@@ -30,7 +30,7 @@ int main() {
 fn main() {
     match parse(INPUT, "simple.c") {
         Err(err) => {
-            panic!("error: {:?}", err);
+            panic!("error: {}", err);
         }
         Ok(ast) => {
             println!("success: {:#?}", ast);

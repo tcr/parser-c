@@ -6,7 +6,9 @@ pub mod lexer;
 pub mod parser;
 pub mod tokens;
 
+use std::error;
 use std::mem;
+use std::fmt;
 use std::boxed::FnBox;
 use std::iter::FromIterator;
 use std::collections::HashSet;
@@ -30,6 +32,22 @@ pub struct ParseError(pub (Vec<String>, Position));
 impl ParseError {
     pub fn new(pos: Position, msgs: Vec<String>) -> ParseError {
         ParseError((msgs, pos))
+    }
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for msg in &(self.0).0 {
+            write!(f, "{}", msg)?;
+        }
+        write!(f, " at {}", (self.0).1)
+    }
+}
+
+impl error::Error for ParseError {
+    fn description(&self) -> &str {
+        // TODO: this should be more, if possible
+        &(self.0).0[0]
     }
 }
 

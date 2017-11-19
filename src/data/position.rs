@@ -32,7 +32,7 @@ impl Position {
 
     pub fn from_file<P: AsRef<Path>>(file: P) -> Position {
         let path_str = file.as_ref().display().to_string();
-        Position::Position { offset: 0, file: Rc::new(path_str), row: 1, column: 1 }
+        Position::Position { offset: 1, file: Rc::new(path_str), row: 1, column: 1 }
     }
 
     pub fn none() -> Position {
