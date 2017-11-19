@@ -80,7 +80,7 @@ bitflags! {
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct CInteger(pub isize, pub CIntRepr, pub CIntFlags);
+pub struct CInteger(pub u128, pub CIntRepr, pub CIntFlags);
 
 
 fn parseFlags(mut s: &str) -> Result<CIntFlags, String> {
@@ -113,7 +113,7 @@ pub fn showCInteger(int: &CInteger) -> String {
     let mut result = match int.1 {
         DecRepr => format!("{}", int.0),
         HexRepr => format!("{:#x}", int.0),
-        OctalRepr => format!("{:#o}", int.0),
+        OctalRepr => format!("0{:o}", int.0),
     };
     if int.2.contains(FLAG_UNSIGNED) { result.push('u'); }
     if int.2.contains(FLAG_LONG) { result.push('L'); }
@@ -129,7 +129,7 @@ pub fn readCInteger(repr: CIntRepr, s: &str) -> Result<CInteger, String> {
         OctalRepr => 8,
     };
     let end = s.chars().position(|x| !x.is_digit(base)).unwrap_or(s.len());
-    let number = match isize::from_str_radix(&s[..end], base) {
+    let number = match u128::from_str_radix(&s[..end], base) {
         Ok(n) => n,
         Err(_) => return Err(format!("Bad Integer literal: {:?}", s)),
     };
@@ -150,11 +150,11 @@ pub fn readCOctal(s: &str) -> Result<CInteger, String> {
     }
 }
 
-pub fn getCInteger(CInteger(i, _, _): CInteger) -> isize {
+pub fn getCInteger(CInteger(i, _, _): CInteger) -> u128 {
     i
 }
 
-pub fn cInteger(i: isize) -> CInteger {
+pub fn cInteger(i: u128) -> CInteger {
     CInteger(i, DecRepr, CIntFlags::empty())
 }
 
@@ -306,11 +306,11 @@ pub fn unescapeChar(s: &str) -> (char, &str) {
                         panic!("bad hex escape sequence"); // TODO should be a Result
                     }
                     (char::from_u32(u32::from_str_radix(&s[2..2+digits], 16).unwrap()).unwrap(),
-                     &s[1+digits..])
+                     &s[2+digits..])
                 }
                 dig0 => {
                     if !dig0.is_digit(8) {
-                        panic!("bad hex escape sequence"); // TODO should be a Result
+                        panic!("bad octal escape sequence"); // TODO should be a Result
                     }
                     let digits = iter.position(|x| !x.is_digit(8)).unwrap_or(s.len() - 2);
                     (char::from_u32(u32::from_str_radix(&s[1..2+digits], 8).unwrap()).unwrap(),
