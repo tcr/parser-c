@@ -3,4 +3,4 @@ rust:
   - nightly
 
 script:
-    - cargo test --tests
+  - ./test.sh
