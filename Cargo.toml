@@ -5,19 +5,16 @@ authors = [
   "Tim Ryan <tim@timryan.org>",
   "Georg Brandl <georg@python.org>",
 ]
-description = "Macros for parser-c."
+description = "Rust module for parsing C code."
 repository = "http://github.com/tcr/parser-c"
 homepage = "http://github.com/tcr/parser-c"
 license = "MIT"
+
+[workspace]
+members = ["parser-c-macro", "parser-c-tests"]
 
 [dependencies]
 tempdir = "0.3.5"
 bitflags = "0.9.1"
 either = "1.1.0"
 parser-c-macro = { path = "parser-c-macro", version = "0.3" }
-
-[dev-dependencies]
-walkdir = "1"
-
-[profile.test]
-debug = true
