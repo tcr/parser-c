@@ -1,6 +1,7 @@
 // Original file: "AST.hs"
 // File auto-generated using Corollary.
 
+use std::any::Any;
 use either::Either;
 
 use data::node::{NodeInfo, CNode};
@@ -8,54 +9,176 @@ use data::ident::Ident;
 use syntax::ops::*;
 use syntax::constants::*;
 
+// Trait to compare nodes for equivalence (not equality, since the NodeInfo
+// parameter is not compared)
+
+pub trait Equiv {
+    fn equiv(&self, other: &Self) -> bool;
+}
+
+// Leaf type implementations
+
+macro_rules! equiv_from_eq {
+    () => {};
+    ($ty:ty, $($tt:tt)*) => {
+        impl Equiv for $ty {
+            fn equiv(&self, other: &Self) -> bool {
+                self == other
+            }
+        }
+        equiv_from_eq!($($tt)*);
+    };
+}
+
+equiv_from_eq!(bool, CString, CFloat, CChar, CInteger,
+               CStructTag, CAssignOp, CBinaryOp, CUnaryOp, );
+
+impl Equiv for Ident {
+    fn equiv(&self, other: &Self) -> bool {
+        self.0 == other.0 // only compare string, not nodeinfo
+    }
+}
+
+// Container implementations
+
+impl<T: Equiv> Equiv for Vec<T> {
+    fn equiv(&self, other: &Self) -> bool {
+        self.iter().zip(other).all(|(x, y)| x.equiv(y))
+    }
+}
+
+impl<T: Equiv> Equiv for Option<T> {
+    fn equiv(&self, other: &Self) -> bool {
+        match (self, other) {
+            (&None, &None) => true,
+            (&Some(ref a), &Some(ref b)) => a.equiv(b),
+            _ => false,
+        }
+    }
+}
+
+impl<T: Equiv, U: Equiv> Equiv for Either<T, U> {
+    fn equiv(&self, other: &Self) -> bool {
+        match (self, other) {
+            (&Either::Left(ref a), &Either::Left(ref b)) => a.equiv(b),
+            (&Either::Right(ref a), &Either::Right(ref b)) => a.equiv(b),
+            _ => false,
+        }
+    }
+}
+
+impl<T: Equiv, U: Equiv> Equiv for (T, U) {
+    fn equiv(&self, other: &Self) -> bool {
+        self.0.equiv(&other.0) && self.1.equiv(&other.1)
+    }
+}
+
+impl<T: Equiv, U: Equiv, V: Equiv> Equiv for (T, U, V) {
+    fn equiv(&self, other: &Self) -> bool {
+        self.0.equiv(&other.0) && self.1.equiv(&other.1) && self.2.equiv(&other.2)
+    }
+}
+
+impl<T: Equiv> Equiv for Box<T> {
+    fn equiv(&self, other: &Self) -> bool {
+        (**self).equiv(&*other)
+    }
+}
+
 // Functor trait for our nodes, to map the info tag
 
 pub trait NodeFunctor<A, B> {
     type Output;
-    fn fmap<F: Fn(A) -> B>(self, f: F) -> Self::Output where Self: Sized;
+    fn fmap<F: Fn(A) -> B>(self, f: &F) -> Self::Output where Self: Sized;
 }
 
-// Helper instances that lift the fmap operation
+// Generic node traversal trait, visits all nodes with the same function
+// that can downcast from &mut Any to different types
+
+pub trait Traverse {
+    fn traverse<F: Fn(&mut Any)>(&mut self, f: &F);
+}
+
+// Helper instances that lift the fmap and traverse operations
 
 impl<A, B, T: NodeFunctor<A, B>> NodeFunctor<A, B> for Box<T> {
     type Output = Box<T::Output>;
-    fn fmap<F: Fn(A) -> B>(self, f: F) -> Self::Output {
+    fn fmap<F: Fn(A) -> B>(self, f: &F) -> Self::Output {
         box (*self).fmap(f)
+    }
+}
+
+impl<T: Traverse> Traverse for Box<T> {
+    fn traverse<F: Fn(&mut Any)>(&mut self, f: &F) {
+        (**self).traverse(f)
     }
 }
 
 impl<A, B, T: NodeFunctor<A, B>> NodeFunctor<A, B> for Option<T> {
     type Output = Option<T::Output>;
-    fn fmap<F: Fn(A) -> B>(self, f: F) -> Self::Output {
+    fn fmap<F: Fn(A) -> B>(self, f: &F) -> Self::Output {
         self.map(|x| x.fmap(f))
+    }
+}
+
+impl<T: Traverse> Traverse for Option<T> {
+    fn traverse<F: Fn(&mut Any)>(&mut self, f: &F) {
+        if let Some(ref mut x) = *self { x.traverse(f); }
     }
 }
 
 impl<A, B, T: NodeFunctor<A, B>> NodeFunctor<A, B> for Vec<T> {
     type Output = Vec<T::Output>;
-    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+    fn fmap<F: Fn(A) -> B>(self, f: &F) -> Self::Output {
         self.into_iter().map(|x| x.fmap(f)).collect()
+    }
+}
+
+impl<T: Traverse> Traverse for Vec<T> {
+    fn traverse<F: Fn(&mut Any)>(&mut self, f: &F) {
+        self.iter_mut().for_each(|x| x.traverse(f));
     }
 }
 
 impl<A, B, T: NodeFunctor<A, B>, U: NodeFunctor<A, B>> NodeFunctor<A, B> for (T, U) {
     type Output = (T::Output, U::Output);
-    fn fmap<F: Fn(A) -> B>(self, f: F) -> Self::Output {
-        (self.0.fmap(&f), self.1.fmap(&f))
+    fn fmap<F: Fn(A) -> B>(self, f: &F) -> Self::Output {
+        (self.0.fmap(f), self.1.fmap(f))
+    }
+}
+
+impl<T: Traverse, U: Traverse> Traverse for (T, U) {
+    fn traverse<F: Fn(&mut Any)>(&mut self, f: &F) {
+        self.0.traverse(f);
+        self.1.traverse(f);
     }
 }
 
 impl<A, B, T: NodeFunctor<A, B>, U: NodeFunctor<A, B>, V: NodeFunctor<A, B>> NodeFunctor<A, B> for (T, U, V) {
     type Output = (T::Output, U::Output, V::Output);
-    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+    fn fmap<F: Fn(A) -> B>(self, f: &F) -> Self::Output {
         (self.0.fmap(f), self.1.fmap(f), self.2.fmap(f))
+    }
+}
+
+impl<T: Traverse, U: Traverse, V: Traverse> Traverse for (T, U, V) {
+    fn traverse<F: Fn(&mut Any)>(&mut self, f: &F) {
+        self.0.traverse(f);
+        self.1.traverse(f);
+        self.2.traverse(f);
     }
 }
 
 impl<A, B, T: NodeFunctor<A, B>, U: NodeFunctor<A, B>> NodeFunctor<A, B> for Either<T, U> {
     type Output = Either<T::Output, U::Output>;
-    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+    fn fmap<F: Fn(A) -> B>(self, f: &F) -> Self::Output {
         self.map_left(|x| x.fmap(f)).map_right(|x| x.fmap(f))
+    }
+}
+
+impl<T: Traverse, U: Traverse> Traverse for Either<T, U> {
+    fn traverse<F: Fn(&mut Any)>(&mut self, f: &F) {
+        self.as_mut().map_left(|x| x.traverse(f)).map_right(|x| x.traverse(f));
     }
 }
 
@@ -63,12 +186,12 @@ impl<A, B, T: NodeFunctor<A, B>, U: NodeFunctor<A, B>> NodeFunctor<A, B> for Eit
 
 pub type CTranslUnit = CTranslationUnit<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub struct CTranslationUnit<I>(pub Vec<CExternalDeclaration<I>>, pub I);
 
 pub type CExtDecl = CExternalDeclaration<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CExternalDeclaration<I> {
     CDeclExt(CDeclaration<I>),
     CFDefExt(CFunctionDef<I>),
@@ -78,7 +201,7 @@ pub use self::CExternalDeclaration::*;
 
 pub type CFunDef = CFunctionDef<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub struct CFunctionDef<I>(pub Vec<CDeclarationSpecifier<I>>,
                            pub CDeclarator<I>,
                            pub Vec<CDeclaration<I>>,
@@ -88,7 +211,7 @@ pub struct CFunctionDef<I>(pub Vec<CDeclarationSpecifier<I>>,
 
 pub type CDecl = CDeclaration<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CDeclaration<I> {
     CDecl(Vec<CDeclarationSpecifier<I>>,
           Vec<(Option<CDeclarator<I>>, Option<CInitializer<I>>, Option<CExpression<I>>)>,
@@ -99,7 +222,7 @@ pub use self::CDeclaration::*;
 
 pub type CDeclr = CDeclarator<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub struct CDeclarator<I>(pub Option<Ident>,
                           pub Vec<CDerivedDeclarator<I>>,
                           pub Option<CStringLiteral<I>>,
@@ -109,7 +232,7 @@ pub struct CDeclarator<I>(pub Option<Ident>,
 
 pub type CDerivedDeclr = CDerivedDeclarator<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, Equiv, CNode)]
 pub enum CDerivedDeclarator<I> {
     CPtrDeclr(Vec<CTypeQualifier<I>>, I),
     CArrDeclr(Vec<CTypeQualifier<I>>, CArraySize<I>, I),
@@ -121,8 +244,7 @@ pub use self::CDerivedDeclarator::*;
 
 impl<A, B> NodeFunctor<A, B> for CDerivedDeclarator<A> {
     type Output = CDerivedDeclarator<B>;
-    fn fmap<F: Fn(A) -> B>(self, f: F) -> Self::Output {
-        let f = &f;
+    fn fmap<F: Fn(A) -> B>(self, f: &F) -> Self::Output {
         match self {
             CPtrDeclr(tq, a) => CPtrDeclr(tq.fmap(f), f(a)),
             CArrDeclr(tq, sz, a) => CArrDeclr(tq.fmap(f), sz.fmap(f), f(a)),
@@ -132,11 +254,31 @@ impl<A, B> NodeFunctor<A, B> for CDerivedDeclarator<A> {
         }
     }
 }
+impl Traverse for CDerivedDeclarator<NodeInfo> {
+    fn traverse<F: Fn(&mut Any)>(&mut self, f: &F) {
+        f(self);
+        match *self {
+            CPtrDeclr(ref mut tq, _) => { tq.traverse(f); }
+            CArrDeclr(ref mut tq, ref mut sz, _) => {
+                tq.traverse(f);
+                if let CArrSize(_, ref mut expr) = *sz {
+                    expr.traverse(f);
+                }
+            }
+            CFunDeclr(ref mut id, ref mut attrs, _) => {
+                if let Either::Right(ref mut decls) = *id {
+                    decls.0.traverse(f);
+                }
+                attrs.traverse(f);
+            }
+        }
+    }
+}
 
 
 pub type CArrSize = CArraySize<NodeInfo>;
 
-#[derive(Clone, Debug, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, NodeFunctor)]
 pub enum CArraySize<I> {
     CNoArrSize(bool),
     CArrSize(bool, CExpression<I>),
@@ -145,7 +287,7 @@ pub use self::CArraySize::*;
 
 pub type CStat = CStatement<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CStatement<I> {
     CLabel(Ident, Box<CStatement<I>>, Vec<CAttribute<I>>, I),
     CCase(CExpression<I>, Box<CStatement<I>>, I),
@@ -170,9 +312,10 @@ pub enum CStatement<I> {
 }
 pub use self::CStatement::*;
 
+
 pub type CAsmStmt = CAssemblyStatement<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub struct CAssemblyStatement<I>(pub Option<CTypeQualifier<I>>,
                                  pub CStringLiteral<I>,
                                  pub Vec<CAssemblyOperand<I>>,
@@ -183,13 +326,13 @@ pub struct CAssemblyStatement<I>(pub Option<CTypeQualifier<I>>,
 
 pub type CAsmOperand = CAssemblyOperand<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub struct CAssemblyOperand<I>(pub Option<Ident>, pub CStringLiteral<I>, pub CExpression<I>, pub I);
 
 
 pub type CBlockItem = CCompoundBlockItem<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CCompoundBlockItem<I> {
     CBlockStmt(CStatement<I>),
     CBlockDecl(CDeclaration<I>),
@@ -199,7 +342,7 @@ pub use self::CCompoundBlockItem::*;
 
 pub type CDeclSpec = CDeclarationSpecifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CDeclarationSpecifier<I> {
     CStorageSpec(CStorageSpecifier<I>),
     CTypeSpec(CTypeSpecifier<I>),
@@ -240,7 +383,7 @@ pub fn partitionDeclSpecs<I>(input: Vec<CDeclarationSpecifier<I>>)
 
 pub type CStorageSpec = CStorageSpecifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse, Eq, Ord, PartialEq, PartialOrd)]
 pub enum CStorageSpecifier<I> {
     CAuto(I),
     CRegister(I),
@@ -253,7 +396,7 @@ pub use self::CStorageSpecifier::*;
 
 pub type CTypeSpec = CTypeSpecifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CTypeSpecifier<I> {
     CVoidType(I),
     CCharType(I),
@@ -288,7 +431,7 @@ impl<I> CTypeSpecifier<I> where I: ::std::fmt::Debug {
 
 pub type CTypeQual = CTypeQualifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CTypeQualifier<I> {
     CConstQual(I),
     CVolatQual(I),
@@ -302,7 +445,7 @@ pub use self::CTypeQualifier::*;
 
 pub type CFunSpec = CFunctionSpecifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CFunctionSpecifier<I> {
     CInlineQual(I),
     CNoreturnQual(I),
@@ -311,7 +454,7 @@ pub use self::CFunctionSpecifier::*;
 
 pub type CAlignSpec = CAlignmentSpecifier<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CAlignmentSpecifier<I> {
     CAlignAsType(CDeclaration<I>, I),
     CAlignAsExpr(CExpression<I>, I),
@@ -320,7 +463,7 @@ pub use self::CAlignmentSpecifier::*;
 
 pub type CStructUnion = CStructureUnion<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub struct CStructureUnion<I>(pub CStructTag,
                               pub Option<Ident>,
                               pub Option<Vec<CDeclaration<I>>>,
@@ -338,7 +481,7 @@ pub use self::CStructTag::*;
 
 pub type CEnum = CEnumeration<NodeInfo>;
 
-#[derive(Clone, Debug, CNode)]
+#[derive(Clone, Debug, Equiv, CNode)]
 pub struct CEnumeration<I>(pub Option<Ident>,
                            pub Option<Vec<(Ident, Option<CExpression<I>>)>>,
                            pub Vec<CAttribute<I>>,
@@ -348,7 +491,7 @@ pub struct CEnumeration<I>(pub Option<Ident>,
 
 impl<A, B> NodeFunctor<A, B> for CEnumeration<A> {
     type Output = CEnumeration<B>;
-    fn fmap<F: Fn(A) -> B>(self, ref f: F) -> Self::Output {
+    fn fmap<F: Fn(A) -> B>(self, f: &F) -> Self::Output {
         let CEnumeration(id, exprs, attrs, a) = self;
         CEnumeration(id,
                      exprs.map(|v| v.into_iter().map(|(eid, expr)| (eid, expr.fmap(f))).collect()),
@@ -356,11 +499,20 @@ impl<A, B> NodeFunctor<A, B> for CEnumeration<A> {
                      f(a))
     }
 }
+impl Traverse for CEnumeration<NodeInfo> {
+    fn traverse<F: Fn(&mut Any)>(&mut self, f: &F) {
+        f(self);
+        if let Some(ref mut exprs) = self.1 {
+            exprs.iter_mut().for_each(|v| v.1.traverse(f));
+        }
+        self.2.traverse(f);
+    }
+}
 
 
 pub type CInit = CInitializer<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CInitializer<I> {
     CInitExpr(CExpression<I>, I),
     CInitList(CInitializerList<I>, I),
@@ -373,7 +525,7 @@ pub type CInitializerList<I> = Vec<(Vec<CPartDesignator<I>>, CInitializer<I>)>;
 
 pub type CDesignator = CPartDesignator<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CPartDesignator<I> {
     CArrDesig(CExpression<I>, I),
     CMemberDesig(Ident, I),
@@ -383,13 +535,13 @@ pub use self::CPartDesignator::*;
 
 pub type CAttr = CAttribute<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub struct CAttribute<I>(pub Ident, pub Vec<CExpression<I>>, pub I);
 
 
 pub type CExpr = CExpression<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CExpression<I> {
     CComma(Vec<CExpression<I>>, I),
     CAssign(CAssignOp, Box<CExpression<I>>, Box<CExpression<I>>, I),
@@ -418,7 +570,7 @@ pub use self::CExpression::*;
 
 pub type CBuiltin = CBuiltinThing<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CBuiltinThing<I> {
     CBuiltinVaArg(CExpression<I>, CDeclaration<I>, I),
     CBuiltinOffsetOf(CDeclaration<I>, Vec<CPartDesignator<I>>, I),
@@ -428,7 +580,7 @@ pub use self::CBuiltinThing::*;
 
 pub type CConst = CConstant<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub enum CConstant<I> {
     CIntConst(CInteger, I),
     CCharConst(CChar, I),
@@ -439,7 +591,7 @@ pub use self::CConstant::*;
 
 pub type CStrLit = CStringLiteral<NodeInfo>;
 
-#[derive(Clone, Debug, CNode, NodeFunctor)]
+#[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub struct CStringLiteral<I>(pub CString, pub I);
 
 
