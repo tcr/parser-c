@@ -67,11 +67,25 @@ success: Right(
 
 ## Development
 
-Clone this crate and install its Haskell dependencies:
+Clone this crate:
 
 ```
 git clone https://github.com/tcr/parser-c --init --recursive
-stack install alex happy
+```
+
+Hacking on the lexer and parser requires to build and run the Haskell
+dependencies using:
+
+```
+./regen.sh
+```
+
+The test suite is being ported at the moment.  It is in a separate crate,
+because it requires a build script with prerequisites, so to run it, use
+this script:
+
+```
+./test.sh
 ```
 
 ## License

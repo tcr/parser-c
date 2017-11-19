@@ -1,0 +1,18 @@
+[package]
+name = "parser-c-tests"
+version = "0.3.0"
+authors = [
+  "Tim Ryan <tim@timryan.org>",
+  "Georg Brandl <georg@python.org>",
+]
+description = "Test suite for parser-c."
+license = "MIT"
+workspace = ".."
+
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+parser-c = { path = ".." }
+walkdir = "1"
