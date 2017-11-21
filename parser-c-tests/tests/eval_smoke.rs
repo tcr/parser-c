@@ -8,9 +8,9 @@ use std::io::prelude::*;
 
 #[test]
 fn eval_smoke() {
-    for item in WalkDir::new("tests/smoke") {
+    for item in WalkDir::new("smoke") {
         if let Ok(entry) = item {
-            if entry.path().display().to_string().ends_with(".c") {
+            if entry.path().extension().map_or(false, |v| v == "c") {
                 let mut input = String::new();
                 File::open(entry.path()).unwrap().read_to_string(&mut input).unwrap();
                 match parse(&input, &entry.path().display().to_string()) {
