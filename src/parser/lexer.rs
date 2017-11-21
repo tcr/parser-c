@@ -33373,7 +33373,7 @@ fn tok<M>(len: isize, mkTok: M, pos: Position) -> Res<CToken>
 /// error token
 #[inline]
 fn token_fail(errmsg: &str, pos: Position, _: isize) -> Res<CToken> {
-    Err(ParseError::new(pos, vec!["Lexical error! ".to_string(), errmsg.to_string()]))
+    Err(ParseError::lexical(pos, errmsg.to_string()))
 }
 
 /// token that uses the string
@@ -33390,7 +33390,7 @@ fn token_plus<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: isi
     where R: Fn(&str) -> Result<T, String>, M: Fn(PosLength, T) -> CToken
 {
     match fromStr(p.getTokString()) {
-        Err(err) => Err(ParseError::new(pos, vec!["Lexical error! ".to_string(), err])),
+        Err(err) => Err(ParseError::lexical(pos, err)),
         Ok(ok)   => Ok(mkTok((pos, len), ok)),
     }
 }
@@ -33416,18 +33416,14 @@ fn alexMove(input: &mut AlexInput, len: isize) {
 fn lexicalError<T>(p: &mut Parser) -> Res<T> {
     let input = p.getInput();
     let c = input.1.last_char();
-    Err(ParseError::new(input.0.clone(), vec![
-        "Lexical error! ".to_string(),
-        format!("The character {:?} does not fit", c),
-    ]))
+    Err(ParseError::lexical(input.0.clone(),
+                            format!("The character {:?} does not fit here", c)))
 }
 
 pub fn parseError<T>(p: &mut Parser) -> Res<T> {
     let lastTok = p.getLastToken();
-    Err(ParseError::new(lastTok.clone().into_pos(), vec![
-        "Syntax error! ".to_string(),
-        format!("The symbol '{}' does not fit", lastTok)
-    ]))
+    Err(ParseError::syntax(lastTok.clone().into_pos(),
+                           format!("The symbol '{}' does not fit here", lastTok)))
 }
 
 
