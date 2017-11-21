@@ -6,7 +6,7 @@ pub mod lexer;
 pub mod parser;
 pub mod tokens;
 
-use std::error;
+use std::error::Error;
 use std::mem;
 use std::fmt;
 use std::boxed::FnBox;
@@ -27,27 +27,40 @@ use data::position::{Position, Pos};
 use data::input_stream::InputStream;
 
 #[derive(Debug)]
-pub struct ParseError(pub (Vec<String>, Position));
+pub struct ParseError {
+    kind: ParseErrorKind,
+    msg: String,
+    pos: Position,
+}
+
+#[derive(Debug)]
+pub enum ParseErrorKind {
+    Lexical,
+    Syntax,
+}
 
 impl ParseError {
-    pub fn new(pos: Position, msgs: Vec<String>) -> ParseError {
-        ParseError((msgs, pos))
+    pub fn lexical(pos: Position, msg: String) -> ParseError {
+        ParseError { kind: ParseErrorKind::Lexical, msg, pos }
+    }
+
+    pub fn syntax(pos: Position, msg: String) -> ParseError {
+        ParseError { kind: ParseErrorKind::Syntax, msg, pos }
     }
 }
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for msg in &(self.0).0 {
-            write!(f, "{}", msg)?;
-        }
-        write!(f, " at {}", (self.0).1)
+        write!(f, "{} at {}: {}", self.description(), self.pos, self.msg)
     }
 }
 
-impl error::Error for ParseError {
+impl Error for ParseError {
     fn description(&self) -> &str {
-        // TODO: this should be more, if possible
-        &(self.0).0[0]
+        match self.kind {
+            ParseErrorKind::Lexical => "Lexical error",
+            ParseErrorKind::Syntax => "Syntax error",
+        }
     }
 }
 
@@ -260,10 +273,10 @@ impl CDeclrR {
         } else {
             let newname = mAsmName.unwrap();
             let oldname = self.asmname.as_ref().unwrap();
-            Err(ParseError::new(
+            Err(ParseError::syntax(
                 newname.pos().clone(),
-                vec!["Duplicate assembler name: ".to_string(),
-                     showCString(&oldname.0), showCString(&newname.0)]))
+                format!("Duplicate assembler name: {}, {}",
+                        showCString(&oldname.0), showCString(&newname.0))))
         }
     }
 

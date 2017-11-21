@@ -1,6 +1,7 @@
 // Original file: "Position.hs"
 // File auto-generated using Corollary.
 
+use std::fmt;
 use std::rc::Rc;
 use std::path::Path;
 
@@ -18,10 +19,17 @@ pub enum Position {
 }
 pub use self::Position::{NoPosition, BuiltinPosition, InternalPosition};
 
-// XXX: replace this later
-impl ::std::fmt::Display for Position {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        write!(f, "{:?}", self)
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            NoPosition => write!(f, "<no file>"),
+            BuiltinPosition => write!(f, "<builtin>"),
+            InternalPosition => write!(f, "<internal>"),
+            Position::Position { offset, ref file, row, column } => {
+                write!(f, "{} line {}, column {} (source-offset {})",
+                       file, row, column, offset)
+            }
+        }
     }
 }
 
