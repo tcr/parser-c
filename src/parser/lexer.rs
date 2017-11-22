@@ -33452,15 +33452,15 @@ fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
         AlexError => {
             lexicalError(p)
         },
-        AlexSkip(len) => {
-            alexMove(p.getInput(), len);
+        AlexSkip(len_bytes) => {
+            alexMove(p.getInput(), len_bytes);
             lexToken_q(p, modifyCache)
         },
-        AlexToken(len, action) => {
+        AlexToken(len_bytes, len_chars, action) => {
             let pos = p.getPosClone();
-            alexMove(p.getInput(), len);
-            p.setLastTokLen(len as usize);
-            let nextTok = action(p, pos, len)?;
+            alexMove(p.getInput(), len_bytes);
+            p.setLastTokLen(len_bytes as usize);
+            let nextTok = action(p, pos, len_chars)?;
             if modifyCache {
                 p.setLastToken(nextTok.clone());
             }
@@ -33760,13 +33760,13 @@ enum AlexReturn<T> {
     AlexEOF,
     AlexError,
     AlexSkip(isize),
-    AlexToken(isize, T)
+    AlexToken(isize, isize, T)
 }
 use self::AlexReturn::*;
 
 enum AlexLastAcc {
     AlexNone,
-    AlexLastAcc(isize, isize),
+    AlexLastAcc(isize, isize, isize),
     AlexLastSkip(isize)
 }
 use self::AlexLastAcc::*;
@@ -33791,13 +33791,13 @@ fn alexScan(input: &mut AlexInput) -> AlexReturn<AlexAction> {
                 AlexEOF
             }
         },
-        AlexLastSkip(len) => {
+        AlexLastSkip(len_bytes) => {
 
-            AlexSkip(len)
+            AlexSkip(len_bytes)
         },
-        AlexLastAcc(k, len) => {
+        AlexLastAcc(k, len_bytes, len_chars) => {
 
-            AlexToken(len, ALEX_ACTIONS[k as usize])
+            AlexToken(len_bytes, len_chars, ALEX_ACTIONS[k as usize])
         },
     }
 }
@@ -33807,14 +33807,15 @@ fn alexScan(input: &mut AlexInput) -> AlexReturn<AlexAction> {
 
 fn alex_scan_tkn(input: &mut AlexInput) -> AlexLastAcc {
     let mut last_acc = AlexNone;
-    let mut len = 0;
+    let mut len_bytes = 0;
+    let mut len_chars = 0;
     let mut s = 0;
     loop {
         let right = &ALEX_ACCEPT[s as usize];
         let new_acc = match *right {
             AlexAccNone => last_acc,
-            AlexAcc(a)  => AlexLastAcc(a, len),
-            AlexAccSkip => AlexLastSkip(len),
+            AlexAcc(a)  => AlexLastAcc(a, len_bytes, len_chars),
+            AlexAccSkip => AlexLastSkip(len_bytes),
         };
 
         match alexGetByte(input) {
@@ -33824,9 +33825,8 @@ fn alex_scan_tkn(input: &mut AlexInput) -> AlexLastAcc {
 
                 let base = ALEX_BASE[s as usize];
                 let offset = base + c;
-                let check = ALEX_CHECK[offset as usize];
 
-                let new_s = if offset >= 0 && check == c {
+                let new_s = if offset >= 0 && ALEX_CHECK[offset as usize] == c {
                     ALEX_TABLE[offset as usize]
                 } else {
                     ALEX_DEFLT[s as usize]
@@ -33835,7 +33835,8 @@ fn alex_scan_tkn(input: &mut AlexInput) -> AlexLastAcc {
                 if new_s == -1 {
                     return new_acc;
                 } else {
-                    len += if c < 128 || c >= 192 { 1 } else { 0 };
+                    len_bytes += 1;
+                    len_chars += if c < 128 || c >= 192 { 1 } else { 0 };
                     s = new_s;
                     last_acc = new_acc;
                 }

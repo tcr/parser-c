@@ -235,7 +235,7 @@ impl Parser {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CDeclrR {
     ident: Option<Ident>,
     inner: Vec<CDerivedDeclr>,

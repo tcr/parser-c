@@ -427,7 +427,7 @@ fn tok<M>(len: isize, mkTok: M, pos: Position) -> Res<CToken>
 /// error token
 #[inline]
 fn token_fail(errmsg: &str, pos: Position, _: isize) -> Res<CToken> {
-    Err(ParseError::lexcial(pos, errmsg.to_string()))
+    Err(ParseError::lexical(pos, errmsg.to_string()))
 }
 
 /// token that uses the string
@@ -506,15 +506,15 @@ fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
         AlexError => {
             lexicalError(p)
         },
-        AlexSkip(len) => {
-            alexMove(p.getInput(), len);
+        AlexSkip(len_bytes) => {
+            alexMove(p.getInput(), len_bytes);
             lexToken_q(p, modifyCache)
         },
-        AlexToken(len, action) => {
+        AlexToken(len_bytes, len_chars, action) => {
             let pos = p.getPosClone();
-            alexMove(p.getInput(), len);
-            p.setLastTokLen(len as usize);
-            let nextTok = action(p, pos, len)?;
+            alexMove(p.getInput(), len_bytes);
+            p.setLastTokLen(len_bytes as usize);
+            let nextTok = action(p, pos, len_chars)?;
             if modifyCache {
                 p.setLastToken(nextTok.clone());
             }
