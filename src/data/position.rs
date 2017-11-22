@@ -149,10 +149,14 @@ pub trait Pos {
 
 impl<A: Pos> Pos for Vec<A> {
     fn pos(&self) -> &Position {
-        self[0].pos()
+        self.get(0).map_or(&Position::NoPosition, |v| v.pos())
     }
     fn into_pos(mut self) -> Position {
-        self.remove(0).into_pos()
+        if !self.is_empty() {
+            self.swap_remove(0).into_pos()
+        } else {
+            NoPosition
+        }
     }
 }
 

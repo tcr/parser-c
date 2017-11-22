@@ -35,8 +35,6 @@ impl InputStream {
         self.rpos == self.src.len()
     }
 
-    // TODO correct unicode char handling
-
     pub fn read_byte(&mut self) -> u8 {
         let byte = self.src[self.rpos];
         self.rpos += 1;
@@ -44,15 +42,20 @@ impl InputStream {
     }
 
     pub fn last_char(&self) -> char {
+        // TODO correct unicode char handling
         self.src[self.tpos] as char
     }
 
     pub fn mark_read(&mut self, len: usize, pos: &mut Position) {
-        for &ch in &self.src[self.tpos..self.tpos+len] {
-            match ch {
+        for &byte in &self.src[self.tpos..self.tpos+len] {
+            match byte {
                 b'\n' => pos.inc_newline(),
+                // TODO: handle other control chars
                 b'\r' => pos.inc_offset(1),
-                _ => pos.inc_chars(1),
+                // UTF-8 start bytes
+                0...127 | 192...255 => pos.inc_chars(1),
+                // UTF-8 continuation bytes
+                _ => (),
             }
         }
         self.tpos += len;
@@ -61,10 +64,5 @@ impl InputStream {
 
     pub fn last_string(&self, len: usize) -> &str {
         str::from_utf8(&self.src[self.tpos-len..self.tpos]).unwrap() // TODO UNICODE
-    }
-
-    pub fn count_lines(self) -> isize {
-        // TODO
-        self.to_string().lines().count() as isize
     }
 }
