@@ -33344,23 +33344,24 @@ fn idkwtok(p: &mut Parser, pos: Position, len: isize) -> Res<CToken> {
     }
 }
 
-fn adjustLineDirective(pragma: &str, pos: Position) -> Position {
-    // note: it is ensured by the lexer that the requisite parts of the line are present
-    // so we just use unwrap()
-
+fn adjustLineDirective(pragma: &str, pos: Position) -> Res<Position> {
     // calculate new offset
     let offs_q = pos.offset() + pragma.len() as isize;
-    // get the row
-    let row = pragma[1..].split_whitespace().next().unwrap().parse().unwrap();
-    // next, the filename
-    // TODO this isn't necessarily very nice
-    let fname_start = pragma.as_bytes().iter().position(|&ch| ch == b'"').unwrap();
-    let fname_end = pragma[fname_start+1..].as_bytes().iter().position(|&ch| ch == b'"').unwrap();
-    let fname = &pragma[fname_start+1..fname_start+fname_end+1];
-
+    // find the row
+    let row: String = pragma[1..].trim().chars().take_while(|&ch| ch.is_digit(10)).collect();
+    let row = row.parse().map_err(
+        |_| ParseError::lexical(pos.clone(), "Invalid line in #line pragma".into()))?;
+    // find the filename, if present
     let current_fname = pos.file();
-    let new_fname = if &*current_fname == fname { current_fname } else { Rc::new(fname.to_string()) };
-    Position::new(offs_q, new_fname, row, 1)
+    let new_fname = if let Some(fname_start) = pragma.as_bytes().iter().position(|&ch| ch == b'"') {
+        let fname_end = pragma[fname_start+1..].as_bytes().iter().position(|&ch| ch == b'"').unwrap();
+        let fname = &pragma[fname_start+1..fname_start+fname_end+1];
+        if &*current_fname == fname { current_fname } else { Rc::new(fname.to_string()) }
+    } else {
+        current_fname
+    };
+
+    Ok(Position::new(offs_q, new_fname, row, 1))
 }
 
 #[inline]
@@ -33472,7 +33473,7 @@ fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
 
 fn alex_action_1(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
 
-     let new_pos = adjustLineDirective(p.getTokString(), pos);
+     let new_pos = adjustLineDirective(p.getTokString(), pos)?;
      p.setPos(new_pos);
      lexToken_q(p, false)
   
