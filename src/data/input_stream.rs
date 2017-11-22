@@ -55,7 +55,7 @@ impl InputStream {
                 // UTF-8 start bytes
                 0...127 | 192...255 => pos.inc_chars(1),
                 // UTF-8 continuation bytes
-                _ => (),
+                _ => pos.inc_offset(1),
             }
         }
         self.tpos += len;
