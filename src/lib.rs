@@ -36,12 +36,12 @@ extern crate tempdir;
 #[macro_use] extern crate bitflags;
 #[macro_use] extern crate parser_c_macro;
 
-// pub mod analysis;
 pub mod data;
 pub mod parser;
 pub mod system;
 pub mod syntax;
 pub mod pretty;
+pub mod analysis;
 
 use std::path::{Path, PathBuf};
 

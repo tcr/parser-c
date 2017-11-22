@@ -1,121 +1,110 @@
 // Original file: "NameSpaceMap.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
+use std::collections::BTreeMap;
 
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Prelude;
-// use Prelude;
-// use Data::Map;
-// use Data::List;
-// use Data::Map;
-// use Map;
-
-pub struct NsMap<k, v>(Map<k, v>, Vec<Vec<(k, v)>>);
-
-pub type NameSpaceMap<k, v> = NsMap<k, v>;
-
-
-pub fn globalNames<k, v>(NsMap(g, _): NameSpaceMap<k, v>) -> Map<k, v> {
-    g
+#[derive(Clone, Debug)]
+pub struct NameSpaceMap<K, V> {
+    gs: BTreeMap<K, V>,
+    ls: Vec<Vec<(K, V)>>,
 }
 
-pub fn hasLocalNames<k, v>(NsMap(_, l): NameSpaceMap<k, v>) -> bool {
-    not((null(l)))
-}
+impl<K: Ord, V: Clone> NameSpaceMap<K, V> {
 
-pub fn localNames<k, v>(NsMap(_, l): NameSpaceMap<k, v>) -> Vec<Vec<(k, v)>> {
-    l
-}
-
-pub fn nameSpaceMap<k, v>() -> NameSpaceMap<k, v> {
-    NsMap(Map::empty(), vec![])
-}
-
-pub fn defGlobal<a, k>(NsMap(gs, lss): NameSpaceMap<k, a>,
-                    ident: k,
-                    def: a)
-                    -> (NameSpaceMap<k, a>, Option<a>) {
-    (NsMap((Map::insert(ident, def, gs)), lss), Map::lookup(ident, gs))
-}
-
-pub fn enterNewScope<a, k>(NsMap(gs, lss): NameSpaceMap<k, a>) -> NameSpaceMap<k, a> {
-    NsMap(gs, (__op_concat(vec![], lss)))
-}
-
-pub fn leaveScope<a, k>(_0: NameSpaceMap<k, a>) -> (NameSpaceMap<k, a>, Vec<(k, a)>) {
-    match (_0) {
-        NsMap(_, []) => panic!("NsMaps.leaveScope: No local scope!"),
-        NsMap(gs, [ls, lss]) => (NsMap(gs, lss), ls),
+    pub fn new() -> NameSpaceMap<K, V> {
+        NameSpaceMap { gs: BTreeMap::new(), ls: vec![] }
     }
-}
 
-pub fn defLocal<a, k>(_0: NameSpaceMap<k, a>,
-                   _1: k,
-                   _2: a,
-                   _3: (NameSpaceMap<k, a>, Option<a>))
-                   -> (NameSpaceMap<k, a>, Option<a>) {
-    match (_0, _1, _2, _3, _4) {
-        (ns, __OP__, NsMap(_, []), ident, def) => defGlobal(ns, ident, def),
-        (NsMap(gs, [ls, lss]), ident, def) => {
-            (NsMap(gs, (__op_concat((__op_concat((ident, def), ls)), lss))),
-             Prelude::lookup(ident, ls))
+    pub fn globalNames(&self) -> &BTreeMap<K, V> {
+        &self.gs
+    }
+
+    pub fn hasLocalNames(&self) -> bool {
+        !self.ls.is_empty()
+    }
+
+    pub fn localNames(&self) -> &[Vec<(K, V)>] {
+        &self.ls
+    }
+
+    pub fn defGlobal(&mut self, ident: K, def: V) -> Option<V> {
+        let prev = self.gs.get(&ident).cloned();
+        self.gs.insert(ident, def);
+        prev
+    }
+
+    pub fn enterNewScope(&mut self) {
+        self.ls.push(vec![]);
+    }
+
+    pub fn leaveScope(&mut self) -> Vec<(K, V)> {
+        match self.ls.pop() {
+            None => panic!("NsMaps.leaveScope: No local scope!"),
+            Some(v) => v
         }
     }
-}
 
-pub fn lookupName<a, k>(ns: NameSpaceMap<k, a>,
-                     __OP__: k,
-                     NsMap(_, localDefs): Option<a>)
-                     -> Option<a> {
+    pub fn defLocal(&mut self, ident: K, def: V) -> Option<V> {
+        if self.ls.len() == 0 { // XXX: would match last_mut() with nonlexical borrows
+            return self.defGlobal(ident, def);
+        }
+        let scope = self.ls.last_mut().unwrap();
+        let prev = None; // TODO lookup ident in Vec<k, a>
+        scope.push((ident, def));
+        prev
+    }
 
-    let lookupLocal = |_0| match (_0) {
-        [] => None,
-        [ls, lss] => {
-            match Prelude::lookup(ident, ls) {
-                None => lookupLocal(lss),
-                Some(def) => Some(def),
+    pub fn lookupName(&self, ident: &K) -> Option<&V> {
+        for _scope in self.ls.iter().rev() {
+            if /* TODO lookup */ false {
+                return None; // Some(def)
             }
         }
-    };
-
-    match lookupLocal(localDefs) {
-        None => lookupGlobal(ns, ident),
-        Some(def) => Some(def),
+        self.lookupGlobal(ident)
     }
-}
 
-pub fn lookupGlobal<a, k>(NsMap(gs, _): NameSpaceMap<k, a>, ident: k) -> Option<a> {
-    Map::lookup(ident, gs)
-}
-
-pub fn lookupInnermostScope<a>(nsm: NameSpaceMap<k, a>,
-                               __OP__: k,
-                               NsMap(_gs, localDefs): Option<a>)
-                               -> Option<a> {
-    match localDefs {
-        [ls, _lss] => Prelude::lookup(ident, ls),
-        [] => lookupGlobal(nsm, ident),
+    pub fn lookupGlobal(&self, ident: &K) -> Option<&V> {
+        self.gs.get(ident)
     }
-}
 
-pub fn nsMapToList<a, k>(NsMap(gs, lss): NameSpaceMap<k, a>) -> Vec<(k, a)> {
-    __op_addadd(concat(lss), Map::toList(gs))
-}
-
-pub fn mergeNameSpace<a, k>(NsMap(global1, local1): NameSpaceMap<k, a>,
-                         NsMap(global2, local2): NameSpaceMap<k, a>)
-                         -> NameSpaceMap<k, a> {
-
-    let localUnion = |_0, _1| match (_0, _1) {
-        ([l1, ls1], [l2, ls2]) => {
-            __op_concat(List::unionBy((|p1, p2| (fst(p1) == fst(p2))), l1, l2),
-                        localUnion(ls1, ls2))
+    pub fn lookupInnermostScope(&self, ident: &K) -> Option<&V> {
+        if let Some(_scope) = self.ls.last() {
+            if /* TODO lookup */ false {
+                return None; // Some(def)
+            }
         }
-        ([], ls2) => ls2,
-        (ls1, []) => ls1,
-    };
+        self.lookupGlobal(ident)
+    }
 
-    NsMap((Map::union(global1, global2)), (localUnion(local1, local2)))
+    pub fn toList(self) -> Vec<(K, V)> {
+        let NameSpaceMap { gs, ls } = self;
+        ls.into_iter().flat_map(|v| v).chain(gs.into_iter()).collect()
+    }
+}
+
+pub fn mergeNameSpace<K: Ord + PartialEq, V>(map1: NameSpaceMap<K, V>, map2: NameSpaceMap<K, V>)
+                                             -> NameSpaceMap<K, V> {
+    let NameSpaceMap { gs: mut global1, ls: mut local1 } = map1;
+    let NameSpaceMap { gs: mut global2, ls: mut local2 } = map2;
+    global1.append(&mut global2);
+
+    let mut localUnion = Vec::new();
+    // TODO use zip_longest from Itertools instead
+    loop {
+        match (local1.pop(), local2.pop()) {
+            (Some(mut l1), Some(mut l2)) => {
+                // TODO naive algorithm
+                l2.retain(|l2el| !l1.iter().any(|l1el| l1el.0 == l2el.0));
+                l1.append(&mut l2);
+                localUnion.push(l1);
+            }
+            (Some(l), _) | (_, Some(l)) => {
+                localUnion.push(l);
+            }
+            _ => break,
+        }
+    }
+
+    localUnion.reverse();
+    NameSpaceMap { gs: global1, ls: localUnion }
 }

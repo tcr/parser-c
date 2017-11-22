@@ -1,34 +1,46 @@
 // Original file: "SemError.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
-
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Data::Typeable;
-// use Language::C::Analysis::SemRep;
-// use Language::C::Data::Error;
-// use Language::C::Data::Node;
-
 use data::node::*;
-use analysis::sem_rep::*;
 use data::error::*;
+use data::position::Pos;
+use analysis::sem_rep::*;
 
 #[derive(Debug)]
 pub struct InvalidASTError(pub ErrorInfo);
+
+impl Error for InvalidASTError {
+    fn errorInfo(&self) -> ErrorInfo { self.0.clone() }
+}
 
 
 #[derive(Debug)]
 pub struct BadSpecifierError(pub ErrorInfo);
 
+impl Error for BadSpecifierError {
+    fn errorInfo(&self) -> ErrorInfo { self.0.clone() }
+}
+
 
 #[derive(Debug)]
 pub struct RedefError(pub ErrorLevel, pub RedefInfo);
 
+impl Error for RedefError {
+    fn errorInfo(&self) -> ErrorInfo {
+        let msgs = vec![
+            self.1.redefErrReason(),
+            format!("The previous declaration was here: {}",
+                    ((self.1).3).pos()),
+        ];
+        ErrorInfo(self.0, ((self.1).2).pos().clone(), msgs)
+    }
+}
 
+
+#[derive(Debug)]
 pub struct RedefInfo(pub String, pub RedefKind, pub NodeInfo, pub NodeInfo);
 
-
+#[derive(Clone, Copy, Debug)]
 pub enum RedefKind {
     DuplicateDef,
     DiffKindRedecl,
@@ -38,62 +50,56 @@ pub enum RedefKind {
 }
 pub use self::RedefKind::*;
 
-#[derive(Debug)]
-pub struct TypeMismatch(pub String, pub (NodeInfo, Type), pub (NodeInfo, Type));
-
-
-pub fn invalidAST(node_info: NodeInfo, msg: String) -> InvalidASTError {
-    InvalidAST((mkErrorInfo(LevelError, msg, node_info)))
-}
-
-pub fn badSpecifierError(node_info: NodeInfo, msg: String) -> BadSpecifierError {
-    BadSpecifierError((mkErrorInfo(LevelError, msg, node_info)))
-}
-
-pub fn typeMismatch() -> TypeMismatch {
-    TypeMismatch
-}
-
-pub fn typeMismatchInfo(TypeMismatch(reason, (node1, _ty2), _t2): TypeMismatch) -> ErrorInfo {
-    ErrorInfo(LevelError, (posOfNode(node1)), vec![reason])
-}
-
-pub fn redefErrLabel(RedefInfo(ident, _, _, _): RedefInfo) -> String {
-    __op_addadd(ident, " redefined".to_string())
-}
-
-pub fn redefErrorInfo(lvl: ErrorLevel, info: RedefInfo, __OP__: ErrorInfo) -> ErrorInfo {
-    ErrorInfo(lvl,
-              (posOfNode(node)),
-              (__op_addadd(vec![redefErrReason(info)], prevDeclMsg(old_node))))
-}
-
-pub fn redefErrReason(_0: RedefInfo) -> String {
-    match (_0) {
-        RedefInfo(ident, DuplicateDef, _, _) => {
-            __op_addadd("duplicate definition of ".to_string(), ident)
+impl RedefInfo {
+    fn redefErrReason(&self) -> String {
+        match *self {
+            RedefInfo(ref ident, DuplicateDef, _, _) => {
+                format!("duplicate definition of {}", ident)
+            }
+            RedefInfo(ref ident, ShadowedDef, _, _) => {
+                format!("this declaration of {} shadows a previous one", ident)
+            }
+            RedefInfo(ref ident, DiffKindRedecl, _, _) => {
+                format!("{} previously declared as a different kind of symbol", ident)
+            }
+            RedefInfo(ref ident, DisagreeLinkage, _, _) => {
+                format!("{} previously declared with different linkage", ident)
+            }
+            RedefInfo(ref ident, NoLinkageOld, _, _) => {
+                format!("{} previously declared without linkage", ident)
+            }
         }
-        RedefInfo(ident, ShadowedDef, _, _) => {
-            __op_addadd("this declaration of ".to_string(),
-                        __op_addadd(ident, " shadows a previous one".to_string()))
-        }
-        RedefInfo(ident, DiffKindRedecl, _, _) => {
-            __op_addadd(ident,
-                        " previously declared as a different kind of symbol".to_string())
-        }
-        RedefInfo(ident, DisagreeLinkage, _, _) => {
-            __op_addadd(ident,
-                        " previously declared with different linkage".to_string())
-        }
-        RedefInfo(ident, NoLinkageOld, _, _) => {
-            __op_addadd(ident, " previously declared without linkage".to_string())
-        }
+    }
+
+    fn redefErrLabel(&self) -> String {
+        format!("{} redefined", self.0)
     }
 }
 
-pub fn prevDeclMsg(old_node: NodeInfo) -> Vec<String> {
-    vec!["The previous declaration was here: ".to_string(),
-         show((posOfNode(old_node)))]
+#[derive(Debug)]
+pub struct TypeMismatch(pub String, pub (NodeInfo, Type), pub (NodeInfo, Type));
+
+impl Error for TypeMismatch {
+    fn errorInfo(&self) -> ErrorInfo {
+        ErrorInfo(LevelError, ((self.1).0).pos().clone(), vec![self.0.clone()])
+    }
+}
+
+
+pub fn invalidAST(node_info: NodeInfo, msg: String) -> InvalidASTError {
+    InvalidASTError(mkErrorInfo(LevelError, msg, node_info))
+}
+
+pub fn badSpecifierError(node_info: NodeInfo, msg: String) -> BadSpecifierError {
+    BadSpecifierError(mkErrorInfo(LevelError, msg, node_info))
+}
+
+pub fn typeMismatch(s: String, t: (NodeInfo, Type), u: (NodeInfo, Type)) -> TypeMismatch {
+    TypeMismatch(s, t, u)
+}
+
+pub fn typeMismatchInfo(TypeMismatch(reason, (node1, _ty2), _t2): TypeMismatch) -> ErrorInfo {
+    ErrorInfo(LevelError, node1.into_pos(), vec![reason])
 }
 
 pub fn redefinition(lvl: ErrorLevel,

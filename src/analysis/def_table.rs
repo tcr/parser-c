@@ -1,36 +1,58 @@
 // Original file: "DefTable.hs"
 // File auto-generated using Corollary.
 
-#[macro_use]
-use corollary_support::*;
+use std::collections::HashMap;
+use std::collections::BTreeMap;
+use std::hash::Hash;
+use either::Either;
+use either::Either::*;
 
-// NOTE: These imports are advisory. You probably need to change them to support Rust.
-// use Language::C::Data;
-// use Language::C::Analysis::NameSpaceMap;
-// use Language::C::Analysis::SemRep;
-// use Data::Map;
-// use Data::IntMap;
-// use IntMap;
-// use Data::IntMap;
-// use Data::Generics;
-
-use analysis::sem_rep::*;
 use data::ident::Ident;
-use analysis::name_space_map::mergeNameSpace;
-use data::name::Name;
+use data::name::*;
 use data::ident::*;
+use data::node::*;
+use analysis::name_space_map::*;
+use analysis::sem_rep::*;
 
 pub type IdentEntry = Either<TypeDef, IdentDecl>;
 
-pub fn identOfTyDecl() -> Ident {
-    either(identOfTypeDef, declIdent)
+pub fn identOfTyDecl(entry: &IdentEntry) -> Ident {
+    entry.as_ref().either(identOfTypeDef, declIdent)
 }
 
+// TODO: use a similar dedicated data structure?
+type NameMap<V> = HashMap<Name, V>;
+
+#[derive(Clone)]
 pub enum TagFwdDecl {
     CompDecl(CompTypeRef),
     EnumDecl(EnumTypeRef),
 }
 pub use self::TagFwdDecl::*;
+
+impl HasSUERef for TagFwdDecl {
+    fn sueRef(&self) -> SUERef {
+        match *self {
+            CompDecl(ref ctr) => ctr.sueRef(),
+            EnumDecl(ref etr) => etr.sueRef(),
+        }
+    }
+}
+
+impl CNode for TagFwdDecl {
+    fn node_info(&self) -> &NodeInfo {
+        match *self {
+            CompDecl(ref ctr) => ctr.node_info(),
+            EnumDecl(ref etr) => etr.node_info(),
+        }
+    }
+    fn into_node_info(self) -> NodeInfo {
+        match self {
+            CompDecl(ctr) => ctr.into_node_info(),
+            EnumDecl(etr) => etr.into_node_info(),
+        }
+    }
+}
 
 pub type TagEntry = Either<TagFwdDecl, TagDef>;
 
@@ -39,177 +61,273 @@ pub struct DefTable {
     tagDecls: NameSpaceMap<SUERef, TagEntry>,
     labelDefs: NameSpaceMap<Ident, Ident>,
     memberDecls: NameSpaceMap<Ident, MemberDecl>,
-    refTable: IntMap<Name>,
-    typeTable: IntMap<Type>,
-}
-fn identDecls(a: DefTable) -> NameSpaceMap<Ident, IdentEntry> {
-    a.identDecls
-}
-fn tagDecls(a: DefTable) -> NameSpaceMap<SUERef, TagEntry> {
-    a.tagDecls
-}
-fn labelDefs(a: DefTable) -> NameSpaceMap<Ident, Ident> {
-    a.labelDefs
-}
-fn memberDecls(a: DefTable) -> NameSpaceMap<Ident, MemberDecl> {
-    a.memberDecls
-}
-fn refTable(a: DefTable) -> IntMap<Name> {
-    a.refTable
-}
-fn typeTable(a: DefTable) -> IntMap<Type> {
-    a.typeTable
+    pub refTable: NameMap<Name>, //TODO
+    typeTable: NameMap<Type>,
 }
 
-pub fn emptyDefTable() -> DefTable {
-    DefTable(nameSpaceMap,
-             nameSpaceMap,
-             nameSpaceMap,
-             nameSpaceMap,
-             IntMap::empty,
-             IntMap::empty)
-}
-
-pub fn globalDefs(deftbl: DefTable) -> GlobalDecls {
-
-    let e = Map::empty;
-
-    let insertDecl = |_0, _1, _2| match (_0, _1, _2) {
-        (ident, Left(tydef), ds) => ds { gTypeDefs: Map::insert(ident, tydef, (gTypeDefs(ds))) },
-        (ident, Right(obj), ds) => ds { gObjs: Map::insert(ident, obj, (gObjs(ds))) },
-    };
-
-    Map::foldWithKey(insertDecl,
-                     (GlobalDecls(e, gtags, e)),
-                     (globalNames(identDecls(deftbl))))
-}
-
-pub fn inFileScope(dt: DefTable) -> bool {
-    not(((hasLocalNames((identDecls(dt))) || hasLocalNames((labelDefs(dt))))))
-}
-
-pub fn leaveScope_<a>() -> NameSpaceMap<k, a> {
-    fst(leaveScope)
-}
-
-pub fn enterLocalScope(deftbl: DefTable) -> DefTable {
-    deftbl {
-        identDecls: enterNewScope((identDecls(deftbl))),
-        tagDecls: enterNewScope((tagDecls(deftbl))),
+impl DefTable {
+    pub fn new() -> DefTable {
+        DefTable { identDecls: NameSpaceMap::new(),
+                   tagDecls: NameSpaceMap::new(),
+                   labelDefs: NameSpaceMap::new(),
+                   memberDecls: NameSpaceMap::new(),
+                   refTable: NameMap::default(),
+                   typeTable: NameMap::default() }
     }
-}
 
-pub fn leaveLocalScope(deftbl: DefTable) -> DefTable {
-    deftbl {
-        identDecls: leaveScope_((identDecls(deftbl))),
-        tagDecls: leaveScope_((tagDecls(deftbl))),
+    pub fn lookupIdent(&self, ident: &Ident) -> Option<&IdentEntry> {
+        self.identDecls.lookupName(ident)
     }
-}
 
-pub fn enterFunctionScope(deftbl: DefTable) -> DefTable {
-    enterLocalScope(deftbl { labelDefs: enterNewScope((labelDefs(deftbl))) })
-}
+    pub fn lookupTag(&self, sue_ref: &SUERef) -> Option<&TagEntry> {
+        self.tagDecls.lookupName(sue_ref)
+    }
 
-pub fn leaveFunctionScope(deftbl: DefTable) -> DefTable {
-    leaveLocalScope(deftbl { labelDefs: leaveScope_((labelDefs(deftbl))) })
-}
+    pub fn lookupLabel(&self, ident: &Ident) -> Option<&Ident> {
+        self.labelDefs.lookupName(ident)
+    }
 
-pub fn enterBlockScope(deftbl: DefTable) -> DefTable {
-    enterLocalScope(deftbl { labelDefs: enterNewScope((labelDefs(deftbl))) })
-}
+    pub fn lookupIdentInner(&self, ident: &Ident) -> Option<&IdentEntry> {
+        self.identDecls.lookupInnermostScope(ident)
+    }
 
-pub fn leaveBlockScope(deftbl: DefTable) -> DefTable {
-    leaveLocalScope(deftbl { labelDefs: leaveScope_((labelDefs(deftbl))) })
-}
+    pub fn lookupTagInner(&self, sue_ref: &SUERef) -> Option<&TagEntry> {
+        self.tagDecls.lookupInnermostScope(sue_ref)
+    }
 
-pub fn enterMemberDecl(deftbl: DefTable) -> DefTable {
-    deftbl { memberDecls: enterNewScope((memberDecls(deftbl))) }
-}
+    pub fn insertType(&mut self, n: Name, t: Type) {
+        self.typeTable.insert(n, t);
+    }
 
-pub fn leaveMemberDecl(deftbl: DefTable) -> (Vec<MemberDecl>, DefTable) {
+    pub fn lookupType(&self, n: Name) -> Option<&Type> {
+        self.typeTable.get(&n)
+    }
+
+    pub fn defineScopedIdent(&mut self, ident: Ident, def: IdentDecl) -> DeclarationStatus<IdentEntry> {
+        self.defineScopedIdentWhen(|_| true, ident, def)
+    }
+
+    pub fn globalDefs(&self) -> GlobalDecls {
+        let gtags = self.tagDecls.globalNames().iter().filter_map(|(k, v)| {
+            match *v {
+                Left(_) => None,
+                Right(ref y) => Some((k.clone(), y.clone()))
+            }
+        }).collect();
+        let mut decls = GlobalDecls {
+            gObjs: BTreeMap::new(),
+            gTags: gtags,
+            gTypeDefs: BTreeMap::new(),
+        };
+        let global_names = self.identDecls.globalNames();
+        for (ident, what) in global_names {
+            match *what {
+                Left(ref tydef) => { decls.gTypeDefs.insert(ident.clone(), tydef.clone()); }
+                Right(ref obj) => { decls.gObjs.insert(ident.clone(), obj.clone()); }
+            }
+        }
+        decls
+    }
+
+    pub fn inFileScope(&self) -> bool {
+        !(self.identDecls.hasLocalNames() || self.labelDefs.hasLocalNames())
+    }
+
+    pub fn declareTag(&mut self, sueref: SUERef, decl: TagFwdDecl) -> DeclarationStatus<TagEntry> {
+        match self.lookupTag(&sueref) {
+            None => (),
+            Some(old_def) if tagKind(old_def) == tagKind(&Left(decl)) =>
+                return KeepDef(old_def.clone()),
+            Some(old_def) =>
+                return KindMismatch(old_def.clone()),
+        }
+        self.tagDecls.defLocal(sueref, Left(decl));
+        NewDecl
+    }
+
+    pub fn defineScopedIdentWhen<F>(&mut self, override_def: F, ident: Ident, def: IdentDecl)
+                                    -> DeclarationStatus<IdentEntry>
+        where F: Fn(&IdentDecl) -> bool
     {
-        let (decls_q, members) = leaveScope((memberDecls(deftbl)));
 
-        __op_tuple2((),
-                    (__map!(snd, members))((deftbl { memberDecls: decls_q })))
+        let new_def = Right(def);
+
+        let old_decls = self.identDecls.clone();
+        let old_decl_opt = old_decls.lookupInnermostScope(&ident).cloned();
+
+        let doOverride = |def: &IdentEntry| match *def {
+            Left(_) => false,
+            Right(ref old_def) => override_def(old_def),
+        };
+
+        self.identDecls.defLocal(ident.clone(), new_def.clone());
+
+        if old_decl_opt.as_ref().map_or(false, |old_decl| !compatIdentEntry(old_decl, &new_def)) {
+            KindMismatch(old_decl_opt.unwrap())
+        } else if old_decl_opt.as_ref().map_or(true, doOverride) {
+            defRedeclStatusLocal(compatIdentEntry, &ident, new_def,
+                                 old_decl_opt, &self.identDecls)
+        } else {
+            self.identDecls = old_decls;
+            old_decl_opt.map_or(NewDecl, KeepDef)
+        }
+    }
+
+    pub fn defineTypeDef(&mut self, ident: Ident, tydef: TypeDef) -> DeclarationStatus<IdentEntry> {
+        let old_decl = self.identDecls.defLocal(ident, Left(tydef.clone()));
+        defRedeclStatus(compatIdentEntry, Left(tydef), old_decl)
+    }
+
+    pub fn defineGlobalIdent(&mut self, ident: Ident, def: IdentDecl) -> DeclarationStatus<IdentEntry> {
+        let old_decl = self.identDecls.defGlobal(ident, Right(def.clone()));
+        defRedeclStatus(compatIdentEntry, Right(def), old_decl)
+    }
+
+    pub fn defineTag(&mut self, sueref: SUERef, def: TagDef) -> DeclarationStatus<TagEntry> {
+        let old_decl = self.tagDecls.defLocal(sueref.clone(), Right(def.clone()));
+
+        let redeclStatus = match old_decl {
+            Some(fwd_decl @ Left(_)) => {
+                if tagKind(&fwd_decl) == tagKind(&Right(def)) {
+                    NewDecl
+                } else {
+                    KindMismatch(fwd_decl)
+                }
+            }
+            _ => {
+                defRedeclStatusLocal(compatTagEntry,
+                                     &sueref,
+                                     Right(def),
+                                     old_decl,
+                                     &self.tagDecls)
+            }
+        };
+
+        redeclStatus
+    }
+
+    pub fn defineLabel(&mut self, ident: Ident) -> DeclarationStatus<Ident> {
+        let old_label = self.labelDefs.defLocal(ident.clone(), ident);
+        old_label.map_or(NewDecl, Redeclared)
+    }
+
+    pub fn enterLocalScope(&mut self) {
+        self.identDecls.enterNewScope();
+        self.tagDecls.enterNewScope();
+    }
+
+    pub fn leaveLocalScope(&mut self) {
+        self.identDecls.leaveScope();
+        self.tagDecls.leaveScope();
+    }
+
+    pub fn enterFunctionScope(&mut self) {
+        self.labelDefs.enterNewScope();
+        self.enterLocalScope();
+    }
+
+    pub fn leaveFunctionScope(&mut self) {
+        self.labelDefs.leaveScope();
+        self.leaveLocalScope();
+    }
+
+    pub fn enterBlockScope(&mut self) {
+        self.labelDefs.enterNewScope();
+        self.enterLocalScope();
+    }
+
+    pub fn leaveBlockScope(&mut self) {
+        self.labelDefs.leaveScope();
+        self.leaveLocalScope();
+    }
+
+    pub fn enterMemberDecl(&mut self) {
+        self.memberDecls.enterNewScope();
+    }
+
+    pub fn leaveMemberDecl(&mut self) -> Vec<MemberDecl> {
+        self.memberDecls.leaveScope().into_iter().map(|kv| kv.1).collect()
     }
 }
 
 #[derive(Clone, Debug)]
-pub enum DeclarationStatus<t> {
+pub enum DeclarationStatus<T> {
     NewDecl,
-    Redeclared(t),
-    KeepDef(t),
-    Shadowed(t),
-    KindMismatch(t),
+    Redeclared(T),
+    KeepDef(T),
+    Shadowed(T),
+    KindMismatch(T),
 }
 pub use self::DeclarationStatus::*;
 
-pub fn declStatusDescr(_0: DeclarationStatus<t>) -> String {
-    match (_0) {
-        NewDecl => "new".to_string(),
-        Redeclared(_) => "redeclared".to_string(),
-        KeepDef(_) => "keep old".to_string(),
-        Shadowed(_) => "shadowed".to_string(),
-        KindMismatch(_) => "kind mismatch".to_string(),
+pub fn declStatusDescr<T>(decl: DeclarationStatus<T>) -> &'static str {
+    match decl {
+        NewDecl => "new",
+        Redeclared(_) => "redeclared",
+        KeepDef(_) => "keep old",
+        Shadowed(_) => "shadowed",
+        KindMismatch(_) => "kind mismatch",
     }
 }
 
-pub fn compatIdentEntry(_0: IdentEntry) -> bool {
-    match (_0) {
-        Left(_tydef) => either((__TODO_const(true)), (__TODO_const(false))),
-        Right(def) => {
-            either((__TODO_const(false)), |other_def| match (def, other_def) {
-                (EnumeratorDef(_), EnumeratorDef(_)) => true,
-                (EnumeratorDef(_), _) => true,
-                (_, EnumeratorDef(_)) => true,
-                (_, _) => true,
-            })
-        }
+pub fn compatIdentEntry(entry: &IdentEntry, other: &IdentEntry) -> bool {
+    match (entry, other) {
+        (&Left(_), &Left(_)) => true,
+        (&Left(_), &Right(_)) | (&Right(_), &Left(_)) => false,
+        (&Right(ref def), &Right(ref other_def)) => match (def, other_def) {
+            // TODO: all true?!
+            (&EnumeratorDef(_), &EnumeratorDef(_)) => true,
+            (&EnumeratorDef(_), _) => true,
+            (_, &EnumeratorDef(_)) => true,
+            (_, _) => true,
+        },
     }
 }
 
-#[derive(Eq, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum TagEntryKind {
     CompKind(CompTyKind),
     EnumKind,
 }
 pub use self::TagEntryKind::*;
 
-pub fn tagKind(_0: TagEntry) -> TagEntryKind {
-    match (_0) {
-        Left(CompDecl(cd)) => CompKind((compTag(cd))),
+pub fn tagKind(tag: &TagEntry) -> TagEntryKind {
+    match *tag {
+        Left(CompDecl(ref cd)) => CompKind(cd.compTag()),
         Left(EnumDecl(_)) => EnumKind,
-        Right(CompDef(cd)) => CompKind((compTag(cd))),
+        Right(CompDef(ref cd)) => CompKind(cd.compTag()),
         Right(EnumDef(_)) => EnumKind,
     }
 }
 
-pub fn compatTagEntry(te1: TagEntry, te2: TagEntry) -> bool {
-    (tagKind(te1) == tagKind(te2))
+pub fn compatTagEntry(te1: &TagEntry, te2: &TagEntry) -> bool {
+    tagKind(te1) == tagKind(te2)
 }
 
-pub fn defRedeclStatus<t>(sameKind: fn(t) -> fn(t) -> bool,
-                          def: t,
-                          oldDecl: Option<t>)
-                          -> DeclarationStatus<t> {
-    match oldDecl {
-        Some(def_q) if sameKind(def, def_q) => Redeclared(def_q),
-        Some(def_q) => KindMismatch(def_q),
+pub fn defRedeclStatus<V: Clone, F>(sameKind: F, def: V, old_decl: Option<V>) -> DeclarationStatus<V>
+    where F: Fn(&V, &V) -> bool
+{
+    match old_decl {
         None => NewDecl,
+        Some(def_q) => {
+            if sameKind(&def, &def_q) {
+                Redeclared(def_q)
+            } else {
+                KindMismatch(def_q)
+            }
+        }
     }
 }
 
-pub fn defRedeclStatusLocal<t, k>(sameKind: fn(t) -> fn(t) -> bool,
-                                  ident: k,
-                                  def: t,
-                                  oldDecl: Option<t>,
-                                  nsm: NameSpaceMap<k, t>)
-                                  -> DeclarationStatus<t> {
-    match defRedeclStatus(sameKind, def, oldDecl) {
+pub fn defRedeclStatusLocal<K: Ord, V: Clone, F>(sameKind: F, ident: &K, def: V,
+                                                 old_decl: Option<V>, nsm: &NameSpaceMap<K, V>)
+                                                 -> DeclarationStatus<V>
+    where F: Fn(&V, &V) -> bool
+{
+    match defRedeclStatus(sameKind, def, old_decl) {
         NewDecl => {
-            match lookupName(nsm, ident) {
-                Some(shadowed) => Shadowed(shadowed),
+            match nsm.lookupName(ident) {
+                Some(shadowed) => Shadowed(shadowed.clone()),
                 None => NewDecl,
             }
         }
@@ -217,130 +335,20 @@ pub fn defRedeclStatusLocal<t, k>(sameKind: fn(t) -> fn(t) -> bool,
     }
 }
 
-pub fn defineTypeDef(ident: Ident,
-                     tydef: TypeDef,
-                     deftbl: DefTable)
-                     -> (DeclarationStatus<IdentEntry>, DefTable) {
-
-    (defRedeclStatus(compatIdentEntry, (Left(tydef)), oldDecl), deftbl { identDecls: decls_q })
-}
-
-pub fn defineGlobalIdent(ident: Ident,
-                         def: IdentDecl,
-                         deftbl: DefTable)
-                         -> (DeclarationStatus<IdentEntry>, DefTable) {
-
-    (defRedeclStatus(compatIdentEntry, (Right(def)), oldDecl), deftbl { identDecls: decls_q })
-}
-
-pub fn defineScopedIdent() -> (DeclarationStatus<IdentEntry>, DefTable) {
-    defineScopedIdentWhen((__TODO_const(true)))
-}
-
-pub fn defineScopedIdentWhen(override_def: fn(IdentDecl) -> bool,
-                             ident: Ident,
-                             def: IdentDecl,
-                             deftbl: DefTable)
-                             -> (DeclarationStatus<IdentEntry>, DefTable) {
-
-    let new_def = Right(def);
-
-    let old_decls = identDecls(deftbl);
-
-    let old_decl_opt = lookupInnermostScope(old_decls, ident);
-
-    let new_decls = fst((defLocal(old_decls, ident, new_def)));
-
-    let doOverride = |_0| match (_0) {
-        Left(_) => false,
-        Right(old_def) => override_def(old_def),
-    };
-
-    let redeclStatus_q = |overriden_decl| {
-        defRedeclStatusLocal(compatIdentEntry, ident, new_def, overriden_decl, old_decls)
-    };
-
-    (redecl_status, deftbl { identDecls: decls_q })
-}
-
-pub fn declareTag(sueref: SUERef,
-                  decl: TagFwdDecl,
-                  deftbl: DefTable)
-                  -> (DeclarationStatus<TagEntry>, DefTable) {
-    match lookupTag(sueref, deftbl) {
-        None => {
-            (NewDecl, deftbl { tagDecls: fst(defLocal((tagDecls(deftbl)), sueref, (Left(decl)))) })
-        }
-        Some(old_def) if (tagKind(old_def) == tagKind((Left(decl)))) => (KeepDef(old_def), deftbl),
-        Some(old_def) => (KindMismatch(old_def), deftbl),
+fn mergeHashMap<K: Hash + Eq, V>(mut h1: HashMap<K, V>, h2: HashMap<K, V>) -> HashMap<K, V> {
+    for (k, v) in h2 {
+        h1.insert(k, v);
     }
+    h1
 }
 
-pub fn defineTag(sueref: SUERef,
-                 def: TagDef,
-                 deftbl: DefTable)
-                 -> (DeclarationStatus<TagEntry>, DefTable) {
-
-    let redeclStatus = match olddecl {
-        Some(fwd_decl, __OP__, Left(_)) if (tagKind(fwd_decl) == tagKind((Right(def)))) => NewDecl,
-        Some(fwd_decl, __OP__, Left(_)) => KindMismatch(fwd_decl),
-        _ => {
-            defRedeclStatusLocal(compatTagEntry,
-                                 sueref,
-                                 (Right(def)),
-                                 olddecl,
-                                 (tagDecls(deftbl)))
-        }
-    };
-
-    (redeclStatus, deftbl { tagDecls: decls_q })
-}
-
-pub fn defineLabel(ident: Ident, deftbl: DefTable) -> (DeclarationStatus<Ident>, DefTable) {
-    {
-        let (labels_q, old_label) = defLocal((labelDefs(deftbl)), ident, ident);
-
-        (maybe(NewDecl, Redeclared, old_label), deftbl { labelDefs: labels_q })
-    }
-}
-
-pub fn lookupIdent(ident: Ident, deftbl: DefTable) -> Option<IdentEntry> {
-    lookupName((identDecls(deftbl)), ident)
-}
-
-pub fn lookupTag(sue_ref: SUERef, deftbl: DefTable) -> Option<TagEntry> {
-    lookupName((tagDecls(deftbl)), sue_ref)
-}
-
-pub fn lookupLabel(ident: Ident, deftbl: DefTable) -> Option<Ident> {
-    lookupName((labelDefs(deftbl)), ident)
-}
-
-pub fn lookupIdentInner(ident: Ident, deftbl: DefTable) -> Option<IdentEntry> {
-    lookupInnermostScope((identDecls(deftbl)), ident)
-}
-
-pub fn lookupTagInner(sue_ref: SUERef, deftbl: DefTable) -> Option<TagEntry> {
-    lookupInnermostScope((tagDecls(deftbl)), sue_ref)
-}
-
-pub fn insertType(dt: DefTable, n: Name, t: Type) -> DefTable {
-    __assign!(dt, TODO { typeTable: IntMap::insert((nameId(n)), t, (typeTable(dt))) })
-}
-
-pub fn lookupType(dt: DefTable, n: Name) -> Option<Type> {
-    IntMap::lookup((nameId(n)), (typeTable(dt)))
-}
-
-pub fn mergeDefTable(DefTable(i1, t1, l1, m1, r1, tt1): DefTable,
-                     DefTable(i2, t2, l2, m2, r2, tt2): DefTable)
-                     -> DefTable {
+pub fn mergeDefTable(dt1: DefTable, dt2: DefTable) -> DefTable {
     DefTable {
-        identDecls: mergeNameSpace(i1, i2),
-        tagDecls: mergeNameSpace(t1, t2),
-        labelDefs: mergeNameSpace(l1, l2),
-        memberDecls: mergeNameSpace(m1, m2),
-        refTable: union(r1, r2),
-        typeTable: union(tt1, tt2),
+        identDecls: mergeNameSpace(dt1.identDecls, dt2.identDecls),
+        tagDecls: mergeNameSpace(dt1.tagDecls, dt2.tagDecls),
+        labelDefs: mergeNameSpace(dt1.labelDefs, dt2.labelDefs),
+        memberDecls: mergeNameSpace(dt1.memberDecls, dt2.memberDecls),
+        refTable: mergeHashMap(dt1.refTable, dt2.refTable),
+        typeTable: mergeHashMap(dt1.typeTable, dt2.typeTable),
     }
 }

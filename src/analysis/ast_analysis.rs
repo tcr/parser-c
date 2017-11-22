@@ -34,7 +34,7 @@ use syntax::ast::*;
 use analysis::sem_rep::*;
 use analysis::trav_monad::*;
 use analysis::def_table::*;
-use analysis::decl_analysis::{analyseTypeDecl, analyseTypeDef, StorageSpec, StaticSpec, ExternSpec, analyseVarDecl_q, VarDeclInfo};
+use analysis::decl_analysis::{analyseTypeDecl, StorageSpec, StaticSpec, ExternSpec, analyseVarDecl_q, VarDeclInfo};
 use data::node::NodeInfo;
 use data::ident::Ident;
 use analysis::type_utils::*;

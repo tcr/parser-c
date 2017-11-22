@@ -30,7 +30,7 @@ use syntax::ast::*;
 use analysis::trav_monad::*;
 use analysis::sem_rep::*;
 use data::node::*;
-use analysis::sem_error::*; 
+use analysis::sem_error::*;
 use data::ident::*;
 
 pub fn tParamDecl(_0: CDecl) -> m<ParamDecl> {
@@ -502,10 +502,10 @@ pub fn tArraySize(_0: CArrSize) -> m<ArraySize> {
 pub fn tTypeQuals() -> m<(TypeQuals, Attributes)> {
 
     let go = |_0, _1| match (_0, _1) {
-        (CConstQual(_), (tq, attrs)) => (__assign!(tq, TODO { constant: true }), attrs),
-        (CVolatQual(_), (tq, attrs)) => (__assign!(tq, TODO { volatile: true }), attrs),
-        (CRestrQual(_), (tq, attrs)) => (__assign!(tq, TODO { restrict: true }), attrs),
-        (CAtomicQual(_), (tq, attrs)) => (__assign!(tq, TODO { atomic: true }), attrs),
+        (CConstQual(_), (tq, attrs)) => (__assign!(tq, /*TODO*/ { constant: true }), attrs),
+        (CVolatQual(_), (tq, attrs)) => (__assign!(tq, /*TODO*/ { volatile: true }), attrs),
+        (CRestrQual(_), (tq, attrs)) => (__assign!(tq, /*TODO*/ { restrict: true }), attrs),
+        (CAtomicQual(_), (tq, attrs)) => (__assign!(tq, /*TODO*/ { atomic: true }), attrs),
         (CAttrQual(attr), (tq, attrs)) => {
             liftM((|attr_q| (tq, __op_concat(attr_q, attrs))), (tAttr(attr)))
         }

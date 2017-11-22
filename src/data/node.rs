@@ -3,6 +3,7 @@
 
 use std::fmt;
 use std::rc::Rc;
+use either::Either;
 
 use data::name::Name;
 use data::position::{Pos, Position, PosLength};
@@ -19,6 +20,21 @@ impl CNode for NodeInfo {
     }
     fn into_node_info(self) -> NodeInfo {
         self
+    }
+}
+
+impl<T: CNode, U: CNode> CNode for Either<T, U> {
+    fn node_info(&self) -> &NodeInfo {
+        match *self {
+            Either::Left(ref x) => x.node_info(),
+            Either::Right(ref x) => x.node_info()
+        }
+    }
+    fn into_node_info(self) -> NodeInfo {
+        match self {
+            Either::Left(x) => x.into_node_info(),
+            Either::Right(x) => x.into_node_info()
+        }
     }
 }
 
