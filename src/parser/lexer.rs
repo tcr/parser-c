@@ -33210,7 +33210,7 @@ const ALEX_ACTIONS: [AlexAction; 124] = [
     alex_action_1,
 ];
 
-// Original location: ../../src/parser/Lexer.x, line 269
+// Original location: ../../src/parser/Lexer.x, line 275
 
 
 
@@ -33499,21 +33499,25 @@ fn alex_action_8(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
 }
 
 fn alex_action_9(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
- token(p, CTokCLit, |lit| cChar(unescapeChar(&lit[1..]).0), pos, len) 
+ token_plus(p, CTokCLit,
+                                         |lit| unescapeChar(&lit[1..]).map(|t| cChar(t.0)), pos, len) 
 }
 
 fn alex_action_10(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
- token(p, CTokCLit, |lit| cChar_w(unescapeChar(&lit[2..]).0), pos, len) 
+ token_plus(p, CTokCLit,
+                                         |lit| unescapeChar(&lit[2..]).map(|t| cChar_w(t.0)), pos, len) 
 }
 
 fn alex_action_11(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
- token(p, CTokCLit, |lit| cChars(false, unescapeMultiChars(&lit[1..lit.len()-1])),
-                                    pos, len) 
+ token_plus(p, CTokCLit,
+                                         |lit| unescapeMultiChars(&lit[1..lit.len()-1]).map(|t| cChars(false, t)),
+                                         pos, len) 
 }
 
 fn alex_action_12(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
- token(p, CTokCLit, |lit| cChars(true, unescapeMultiChars(&lit[2..lit.len()-1])),
-                                    pos, len) 
+ token_plus(p, CTokCLit,
+                                         |lit| unescapeMultiChars(&lit[2..lit.len()-1]).map(|t| cChars(true, t)),
+                                         pos, len) 
 }
 
 fn alex_action_13(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
@@ -33535,13 +33539,15 @@ fn alex_action_16(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
 }
 
 fn alex_action_17(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
- token(p, CTokSLit, |lit| cString(unescapeString(&lit[1..lit.len()-1])),
-                                    pos, len) 
+ token_plus(p, CTokSLit,
+                                         |lit| unescapeString(&lit[1..lit.len()-1]).map(cString),
+                                         pos, len) 
 }
 
 fn alex_action_18(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {
- token(p, CTokSLit, |lit| cString_w(unescapeString(&lit[2..lit.len()-1])),
-                                    pos, len) 
+ token_plus(p, CTokSLit,
+                                         |lit| unescapeString(&lit[2..lit.len()-1]).map(cString_w),
+                                         pos, len) 
 }
 
 fn alex_action_19(p: &mut Parser, pos: Position, len: isize) -> Res<Token> {

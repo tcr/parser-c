@@ -280,13 +280,13 @@ pub fn escapeChar(ch: char) -> String {
     }
 }
 
-pub fn unescapeChar(s: &str) -> (char, &str) {
+pub fn unescapeChar(s: &str) -> Result<(char, &str), String> {
     let mut iter = s.chars();
     match iter.next() {
-        None => panic!("unescapeChar: empty string"),
+        None => Err("No character to unescape".into()),
         Some('\\') => match iter.next() {
-            None => ('\\', ""),
-            Some(ch) => match ch {
+            None => Ok(('\\', "")),
+            Some(ch) => Ok(match ch {
                 'n'  => ('\n',   &s[2..]),
                 't'  => ('\t',   &s[2..]),
                 'v'  => ('\x0b', &s[2..]),
@@ -303,41 +303,45 @@ pub fn unescapeChar(s: &str) -> (char, &str) {
                 'x'  => {
                     let digits = iter.position(|x| !x.is_digit(16)).unwrap_or(s.len() - 2);
                     if digits == 0 {
-                        panic!("bad hex escape sequence"); // TODO should be a Result
+                        return Err("Bad hex escape sequence".into());
                     }
-                    (char::from_u32(u32::from_str_radix(&s[2..2+digits], 16).unwrap()).unwrap(),
-                     &s[2+digits..])
+                    let codepoint = u32::from_str_radix(&s[2..2+digits], 16).ok()
+                        .and_then(char::from_u32)
+                        .ok_or("Bad hex escape sequence")?;
+                    (codepoint, &s[2+digits..])
                 }
                 dig0 => {
                     if !dig0.is_digit(8) {
-                        panic!("bad octal escape sequence"); // TODO should be a Result
+                        return Err("Bad octal escape sequence".into());
                     }
                     let digits = iter.position(|x| !x.is_digit(8)).unwrap_or(s.len() - 2);
-                    (char::from_u32(u32::from_str_radix(&s[1..2+digits], 8).unwrap()).unwrap(),
-                     &s[2+digits..])
+                    let codepoint = u32::from_str_radix(&s[1..2+digits], 8).ok()
+                        .and_then(char::from_u32)
+                        .ok_or("Bad octal escape sequence")?;
+                    (codepoint, &s[2+digits..])
                 }
-            }
+            })
         },
-        Some(ch) => (ch, iter.as_str())
+        Some(ch) => Ok((ch, iter.as_str()))
     }
 }
 
-pub fn unescapeString(mut cs: &str) -> String {
+pub fn unescapeString(mut cs: &str) -> Result<String, String> {
     let mut new_str = String::with_capacity(cs.len());
     while !cs.is_empty() {
-        let (ch, newcs) = unescapeChar(cs);
+        let (ch, newcs) = unescapeChar(cs)?;
         cs = newcs;
         new_str.push(ch);
     }
-    new_str
+    Ok(new_str)
 }
 
-pub fn unescapeMultiChars(mut cs: &str) -> Vec<char> {
+pub fn unescapeMultiChars(mut cs: &str) -> Result<Vec<char>, String> {
     let mut new_vec = Vec::with_capacity(cs.len());
     while !cs.is_empty() {
-        let (ch, newcs) = unescapeChar(cs);
+        let (ch, newcs) = unescapeChar(cs)?;
         cs = newcs;
         new_vec.push(ch);
     }
-    new_vec
+    Ok(new_vec)
 }

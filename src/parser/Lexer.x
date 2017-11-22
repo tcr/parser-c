@@ -182,12 +182,16 @@ $digitNZ$digit*@intgnusuffix?   { token_plus(p, CTokILit, |lit| readCInteger(Dec
 -- character constants (follows K&R A2.5.2, C99 6.4.4.4)
 --
 -- * Universal Character Names are unsupported and cause an error.
-\'($inchar|@charesc)\'      { token(p, CTokCLit, |lit| cChar(unescapeChar(&lit[1..]).0), pos, len) }
-L\'($inchar|@charesc)\'     { token(p, CTokCLit, |lit| cChar_w(unescapeChar(&lit[2..]).0), pos, len) }
-\'($inchar|@charesc){2,}\'  { token(p, CTokCLit, |lit| cChars(false, unescapeMultiChars(&lit[1..lit.len()-1])),
-                                    pos, len) }
-L\'($inchar|@charesc){2,}\' { token(p, CTokCLit, |lit| cChars(true, unescapeMultiChars(&lit[2..lit.len()-1])),
-                                    pos, len) }
+\'($inchar|@charesc)\'      { token_plus(p, CTokCLit,
+                                         |lit| unescapeChar(&lit[1..]).map(|t| cChar(t.0)), pos, len) }
+L\'($inchar|@charesc)\'     { token_plus(p, CTokCLit,
+                                         |lit| unescapeChar(&lit[2..]).map(|t| cChar_w(t.0)), pos, len) }
+\'($inchar|@charesc){2,}\'  { token_plus(p, CTokCLit,
+                                         |lit| unescapeMultiChars(&lit[1..lit.len()-1]).map(|t| cChars(false, t)),
+                                         pos, len) }
+L\'($inchar|@charesc){2,}\' { token_plus(p, CTokCLit,
+                                         |lit| unescapeMultiChars(&lit[2..lit.len()-1]).map(|t| cChars(true, t)),
+                                         pos, len) }
 
 -- Clang version literals
 @clangversion               { token(p, |pos, vers| CTokClangC(pos, ClangCTok(vers)),
@@ -204,10 +208,12 @@ L\'($inchar|@charesc){2,}\' { token(p, CTokCLit, |lit| cChars(true, unescapeMult
 
 -- string literal (follows K&R A2.6)
 -- C99: 6.4.5.
-\"($instr|@charesc)*\"      { token(p, CTokSLit, |lit| cString(unescapeString(&lit[1..lit.len()-1])),
-                                    pos, len) }
-L\"($instr|@charesc)*\"     { token(p, CTokSLit, |lit| cString_w(unescapeString(&lit[2..lit.len()-1])),
-                                    pos, len) }
+\"($instr|@charesc)*\"      { token_plus(p, CTokSLit,
+                                         |lit| unescapeString(&lit[1..lit.len()-1]).map(cString),
+                                         pos, len) }
+L\"($instr|@charesc)*\"     { token_plus(p, CTokSLit,
+                                         |lit| unescapeString(&lit[2..lit.len()-1]).map(cString_w),
+                                         pos, len) }
 
 L?\'@ucn\'                        { token_fail("Universal character names are unsupported", pos, len) }
 L?\'\\[^0-7'\"\?\\abfnrtvuUx]\'   { token_fail("Invalid escape sequence", pos, len) }
