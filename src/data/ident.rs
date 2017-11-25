@@ -61,7 +61,7 @@ impl CNode for Ident {
 
 impl Ident {
     pub fn new(pos: Position, s: String, name: Name) -> Ident {
-        let len = s.len() as isize;
+        let len = s.len();
         Ident(s, NodeInfo::new(pos.clone(), (pos, len), name))
     }
 
@@ -70,7 +70,7 @@ impl Ident {
     }
 
     pub fn internal_at(pos: Position, s: String) -> Ident {
-        let len = s.len() as isize;
+        let len = s.len();
         Ident(s, NodeInfo::with_pos_len(pos.clone(), (pos, len)))
     }
 
