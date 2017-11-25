@@ -131,26 +131,21 @@ pub fn impl_pos(input: TokenStream) -> TokenStream {
         Body::Struct(..) => panic!("Expected an enum."),
         Body::Enum(ref variants) => {
             let mut arms = Vec::new();
-            let mut arms_ref = Vec::new();
             for var in variants {
                 let name = &var.ident;
                 if name != "CTokEof" {
-                    arms.push(quote! { #name ((pos, _), ..) => pos, });
-                    arms_ref.push(quote! { #name ((ref pos, _), ..) => pos, });
+                    arms.push(quote! {
+                        #name (ref pl, ..) => pl.0.clone(),
+                    });
                 }
             }
             quote! {
+                use std::rc::Rc;
                 impl Pos for #name {
-                    fn pos(&self) -> &Position {
+                    fn pos(&self) -> Rc<Position> {
                         match *self {
-                            #(#arms_ref)*
-                            _ => panic!("tokenPos: EOF"),
-                        }
-                    }
-                    fn into_pos(self) -> Position {
-                        match self {
                             #(#arms)*
-                            _ => panic!("tokenPos: EOF"),
+                            _ => panic!("CToken::pos: EOF"),
                         }
                     }
                 }

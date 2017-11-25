@@ -136,26 +136,22 @@ impl Position {
     }
 }
 
-pub type PosLength = (Position, usize);
+pub type PosLength = (Rc<Position>, usize);
 
 // class of types which aggregate a source code location
 pub trait Pos {
-    fn pos(&self) -> &Position;
-    fn into_pos(self) -> Position;
+    fn pos(&self) -> Rc<Position>;
 }
 
 // convenient instance, the position of a list of things is the position of
 // the first thing in the list
 
 impl<A: Pos> Pos for Vec<A> {
-    fn pos(&self) -> &Position {
-        self.get(0).map_or(&Position::NoPosition, |v| v.pos())
-    }
-    fn into_pos(mut self) -> Position {
+    fn pos(&self) -> Rc<Position> {
         if !self.is_empty() {
-            self.swap_remove(0).into_pos()
+            self[0].pos()
         } else {
-            NoPosition
+            Rc::new(NoPosition)
         }
     }
 }
@@ -164,20 +160,17 @@ impl<A: Pos> Pos for Vec<A> {
 // have one built in as tokens and most AST elements do.
 
 #[derive(Clone)]
-pub struct Located<T>(T, Position);
+pub struct Located<T>(T, Rc<Position>);
 
 impl<T> Pos for Located<T> {
-    fn pos(&self) -> &Position {
-        &self.1
-    }
-    fn into_pos(self) -> Position {
-        self.1
+    fn pos(&self) -> Rc<Position> {
+        self.1.clone()
     }
 }
 
 impl<T> Located<T> {
     pub fn new<P: Pos>(t: T, pos: P) -> Located<T> {
-        Located(t, pos.into_pos())
+        Located(t, pos.pos())
     }
     pub fn into_inner(self) -> T {
         self.0

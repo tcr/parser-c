@@ -10,7 +10,7 @@ fn main() {
     match parseCFilePre(input_file) {
         Err(e) => eprintln!("{}", e),
         Ok(unit) => if args.nth(0).as_ref().map(|x| &**x) == Some("-p") {
-            println!("{:#?}", unit);
+            println!("{:?}", unit);
         }
     }
 }

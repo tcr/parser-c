@@ -394,6 +394,7 @@ fn idkwtok(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
         "while" => tok(5, CTokWhile, pos),
         _ => {
             let name = p.getNewName();
+            let pos = Rc::new(pos);
             let ident = Ident::new(pos.clone(), p.getTokString().to_string(), name);
             if p.isTypeIdent(&ident) {
                 Ok(CTokTyIdent((pos, len), ident))
@@ -428,7 +429,7 @@ fn adjustLineDirective(pragma: &str, pos: Position) -> Res<Position> {
 fn tok<M>(len: usize, mkTok: M, pos: Position) -> Res<CToken>
     where M: Fn(PosLength) -> CToken
 {
-    Ok(mkTok((pos, len)))
+    Ok(mkTok((Rc::new(pos), len)))
 }
 
 /// error token
@@ -442,7 +443,7 @@ fn token_fail(errmsg: &str, pos: Position) -> Res<CToken> {
 fn token<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: usize) -> Res<CToken>
     where R: Fn(&str) -> T, M: Fn(PosLength, T) -> CToken
 {
-    Ok(mkTok((pos, len), fromStr(p.getTokString())))
+    Ok(mkTok((Rc::new(pos), len), fromStr(p.getTokString())))
 }
 
 /// token that may fail
@@ -452,7 +453,7 @@ fn token_plus<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: usi
 {
     match fromStr(p.getTokString()) {
         Err(err) => Err(ParseError::lexical(pos, err)),
-        Ok(ok)   => Ok(mkTok((pos, len), ok)),
+        Ok(ok)   => Ok(mkTok((Rc::new(pos), len), ok)),
     }
 }
 
@@ -479,7 +480,7 @@ fn lexicalError<T>(p: &mut Parser) -> Res<T> {
 pub fn parseError<T>(p: &mut Parser) -> Res<T> {
     let lastTok = p.getLastToken();
     let errmsg = format!("The symbol '{}' does not fit here", lastTok);
-    Err(ParseError::syntax(lastTok.into_pos(), errmsg))
+    Err(ParseError::syntax(lastTok.pos(), errmsg))
 }
 
 
@@ -518,7 +519,7 @@ fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
             p.setLastTokLen(len_bytes);
             let nextTok = action(p, pos, len_chars)?;
             if modifyCache {
-                p.setLastToken(nextTok.clone());
+                p.setLastToken(&nextTok);
             }
             Ok(nextTok)
         },

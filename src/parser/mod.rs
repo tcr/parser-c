@@ -9,6 +9,7 @@ pub mod tokens;
 use std::error::Error;
 use std::mem;
 use std::fmt;
+use std::rc::Rc;
 use std::boxed::FnBox;
 use std::iter::FromIterator;
 use std::collections::HashSet;
@@ -30,7 +31,7 @@ use data::input_stream::InputStream;
 pub struct ParseError {
     kind: ParseErrorKind,
     msg: String,
-    pos: Position,
+    pos: Rc<Position>,
 }
 
 #[derive(Debug)]
@@ -40,12 +41,12 @@ pub enum ParseErrorKind {
 }
 
 impl ParseError {
-    pub fn lexical(pos: Position, msg: String) -> ParseError {
-        ParseError { kind: ParseErrorKind::Lexical, msg, pos }
+    pub fn lexical<T: Into<Rc<Position>>>(pos: T, msg: String) -> ParseError {
+        ParseError { kind: ParseErrorKind::Lexical, msg, pos: pos.into() }
     }
 
-    pub fn syntax(pos: Position, msg: String) -> ParseError {
-        ParseError { kind: ParseErrorKind::Syntax, msg, pos }
+    pub fn syntax<T: Into<Rc<Position>>>(pos: T, msg: String) -> ParseError {
+        ParseError { kind: ParseErrorKind::Syntax, msg, pos: pos.into() }
     }
 }
 
@@ -149,14 +150,14 @@ impl Parser {
         self.user.savedToken.clone().expect("touched undefined token")
     }
 
-    pub fn setLastToken(&mut self, tk: CToken) {
-        match tk {
+    pub fn setLastToken(&mut self, tk: &CToken) {
+        match *tk {
             CTokEof => {
                 self.user.savedToken = self.user.prevToken.clone();
             }
-            tok => {
+            ref tok => {
                 self.user.savedToken = mem::replace(&mut self.user.prevToken,
-                                                    Some(tok));
+                                                    Some(tok.clone()));
             }
         }
     }
@@ -206,29 +207,30 @@ impl Parser {
         where F: FnOnce(NodeInfo) -> T
     {
         let lastTok = self.getSavedToken();
-        let firstPos = nodeinfo.pos().clone();
-        let attrs = NodeInfo::new(firstPos, lastTok.into_pos_len(),
+        let firstPos = nodeinfo.pos();
+        let (pos, len) = lastTok.into_pos_len();
+        let attrs = NodeInfo::new(firstPos, pos, len,
                                   nodeinfo.name().unwrap_or_else(|| panic!("nameOfNode")));
         Ok(mkAttrNode(attrs))
     }
 
-    pub fn withAttribute<N: Pos, F>(&mut self, node: N, cattrs: Vec<CAttribute<NodeInfo>>,
-                                    mkDeclrNode: F) -> Result<CDeclrR, ParseError>
-        where F: FnOnce(NodeInfo) -> CDeclrR
+    pub fn withAttribute<N: Pos, F>(&mut self, node: N, cattrs: Vec<CAttr>, mkDeclrNode: F)
+                                    -> Result<Box<CDeclrR>, ParseError>
+        where F: FnOnce(NodeInfo) -> Box<CDeclrR>
     {
         let name = self.getNewName();
-        let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
+        let attrs = NodeInfo::with_pos_name(node.pos(), name);
         let newDeclr = mkDeclrNode(attrs).appendAttrs(cattrs);
         Ok(newDeclr)
     }
 
-    pub fn withAttributePF<N: Pos, F>(&mut self, node: N, cattrs: Vec<CAttribute<NodeInfo>>,
-                                      mkDeclrCtor: F) -> Result<Box<FnBox(CDeclrR) -> CDeclrR>, ParseError>
-        where F: FnOnce(NodeInfo, CDeclrR) -> CDeclrR + 'static
+    pub fn withAttributePF<N: Pos, F>(&mut self, node: N, cattrs: Vec<CAttr>,
+                                      mkDeclrCtor: F) -> Result<Box<FnBox(Box<CDeclrR>) -> Box<CDeclrR>>, ParseError>
+        where F: FnOnce(NodeInfo, Box<CDeclrR>) -> Box<CDeclrR> + 'static
     {
         let name = self.getNewName();
-        let attrs = NodeInfo::with_pos_name(node.into_pos(), name);
-        let newDeclr: Box<FnBox(CDeclrR) -> CDeclrR> = box move |_0| {
+        let attrs = NodeInfo::with_pos_name(node.pos(), name);
+        let newDeclr: Box<FnBox(Box<CDeclrR>) -> Box<CDeclrR>> = box move |_0| {
             mkDeclrCtor(attrs.clone(), _0).appendAttrs(cattrs.clone())
         };
         Ok(newDeclr)
@@ -239,8 +241,8 @@ impl Parser {
 pub struct CDeclrR {
     ident: Option<Ident>,
     inner: Vec<CDerivedDeclr>,
-    asmname: Option<CStringLiteral<NodeInfo>>,
-    cattrs: Vec<CAttribute<NodeInfo>>,
+    asmname: Option<Box<CStrLit>>,
+    cattrs: Vec<CAttr>,
     at: NodeInfo,
 }
 
@@ -255,16 +257,16 @@ impl CNode for CDeclrR {
 
 impl CDeclrR {
 
-    pub fn empty() -> CDeclrR {
-        CDeclrR { ident: None, inner: vec![], asmname: None, cattrs: vec![],
-                  at: NodeInfo::undef() }
+    pub fn empty() -> Box<CDeclrR> {
+        box CDeclrR { ident: None, inner: vec![], asmname: None, cattrs: vec![],
+                      at: NodeInfo::undef() }
     }
 
-    pub fn from_var(ident: Ident, ni: NodeInfo) -> CDeclrR {
-        CDeclrR { ident: Some(ident), inner: vec![], asmname: None, cattrs: vec![], at: ni }
+    pub fn from_var(ident: Ident, ni: NodeInfo) -> Box<CDeclrR> {
+        box CDeclrR { ident: Some(ident), inner: vec![], asmname: None, cattrs: vec![], at: ni }
     }
 
-    pub fn setAsmName(mut self, mAsmName: Option<CStringLiteral<NodeInfo>>) -> Result<CDeclrR, ParseError> {
+    pub fn setAsmName(mut self, mAsmName: Option<Box<CStrLit>>) -> Result<CDeclrR, ParseError> {
         if self.asmname.is_none() {
             self.asmname = mAsmName;
             Ok(self)
@@ -273,27 +275,25 @@ impl CDeclrR {
         } else {
             let newname = mAsmName.unwrap();
             let oldname = self.asmname.as_ref().unwrap();
-            Err(ParseError::syntax(
-                newname.pos().clone(),
-                format!("Duplicate assembler name: {}, {}",
-                        showCString(&oldname.0), showCString(&newname.0))))
+            Err(ParseError::syntax(newname.pos(),
+                                   format!("Duplicate assembler name: {}, {}",
+                                           showCString(&oldname.0), showCString(&newname.0))))
         }
     }
 
-    pub fn withAsmNameAttrs(self, (mAsmName, newAttrs): (Option<CStringLiteral<NodeInfo>>,
-                                                         Vec<CAttribute<NodeInfo>>))
+    pub fn withAsmNameAttrs(self, (mAsmName, newAttrs): (Option<Box<CStrLit>>, Vec<CAttr>))
                             -> Result<CDeclrR, ParseError> {
         self.appendObjAttrs(newAttrs).setAsmName(mAsmName)
     }
 
-    pub fn funDeclr(mut self, params: Either<Vec<Ident>, (Vec<CDecl>, bool)>,
-                    cattrs: Vec<CAttribute<NodeInfo>>, at: NodeInfo) -> CDeclrR {
+    pub fn funDeclr(mut self: Box<Self>, params: Either<Vec<Ident>, (Vec<CDecl>, bool)>,
+                    cattrs: Vec<CAttr>, at: NodeInfo) -> Box<Self> {
         self.inner.push(CFunDeclr(params, cattrs, at));
         self
     }
 
-    pub fn arrDeclr(mut self, tyquals: Vec<CTypeQual>, var_sized: bool, static_size: bool,
-                    size_expr_opt: Option<CExpr>, at: NodeInfo) -> CDeclrR {
+    pub fn arrDeclr(mut self: Box<Self>, tyquals: Vec<CTypeQual>, var_sized: bool, static_size: bool,
+                    size_expr_opt: Option<Box<CExpr>>, at: NodeInfo) -> Box<Self> {
         let arr_sz = match size_expr_opt {
             Some(e) => CArrSize(static_size, e),
             None => CNoArrSize(var_sized)
@@ -302,35 +302,38 @@ impl CDeclrR {
         self
     }
 
-    pub fn ptrDeclr(mut self: CDeclrR, tyquals: Vec<CTypeQual>, at: NodeInfo) -> CDeclrR {
+    pub fn ptrDeclr(mut self: Box<CDeclrR>, tyquals: Vec<CTypeQual>, at: NodeInfo) -> Box<Self> {
         self.inner.push(CPtrDeclr(tyquals, at));
         self
     }
 
-    pub fn appendAttrs(mut self, mut newAttrs: Vec<CAttribute<NodeInfo>>) -> Self {
-        match self.inner.last_mut() {
-            None => self.cattrs.append(&mut newAttrs),
-            Some(&mut CPtrDeclr(ref mut typeQuals, _)) => {
-                typeQuals.extend(newAttrs.into_iter().map(CAttrQual))
-            }
-            Some(&mut CArrDeclr(ref mut typeQuals, _, _)) => {
-                typeQuals.extend(newAttrs.into_iter().map(CAttrQual))
-            }
-            Some(&mut CFunDeclr(_, ref mut cattrs, _)) => {
-                 cattrs.append(&mut newAttrs)
+    pub fn appendAttrs(mut self: Box<Self>, mut newAttrs: Vec<CAttr>) -> Box<Self> {
+        if self.inner.is_empty() {
+            self.cattrs.append(&mut newAttrs);
+        } else {
+            match self.inner.last_mut().unwrap() {
+                &mut CPtrDeclr(ref mut typeQuals, _) => {
+                    typeQuals.extend(newAttrs.into_iter().map(|q| CAttrQual(box q)))
+                }
+                &mut CArrDeclr(ref mut typeQuals, _, _) => {
+                    typeQuals.extend(newAttrs.into_iter().map(|q| CAttrQual(box q)))
+                }
+                &mut CFunDeclr(_, ref mut cattrs, _) => {
+                     cattrs.append(&mut newAttrs)
+                }
             }
         }
         self
     }
 
-    pub fn appendObjAttrs(mut self, mut newAttrs: Vec<CAttribute<NodeInfo>>) -> CDeclrR {
+    pub fn appendObjAttrs(mut self, mut newAttrs: Vec<CAttr>) -> CDeclrR {
         self.cattrs.append(&mut newAttrs);
         self
     }
 
-    pub fn reverse(self) -> CDeclarator<NodeInfo> {
+    pub fn reverse(self) -> Box<CDeclr> {
         let CDeclrR { ident, inner, asmname, cattrs, at } = self;
-        CDeclarator(ident, inner, asmname, cattrs, at)
+        box CDeclarator(ident, inner, asmname, cattrs, at)
     }
 }
 

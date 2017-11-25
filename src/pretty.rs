@@ -501,7 +501,7 @@ impl<P> Pretty for Box<P> where P: Pretty {
 
 impl Pretty for Ident {
     fn pretty<'a>(&'a self) -> Doc<'a> {
-        text((self.0).as_str())
+        text(self.as_str())
     }
 }
 
@@ -681,7 +681,7 @@ impl Pretty for CDecl {
                     {
                         let attrlist = match *declr {
                             None => &[][..],
-                            Some(CDeclarator(_, _, _, ref cattrs, _)) => cattrs,
+                            Some(box CDeclarator(_, _, _, ref cattrs, _)) => cattrs,
                         };
                         pretty_attrlist(attrlist)
                     } + SP + maybe_doc(|i| text("= ") + i.pretty(), initializer)
