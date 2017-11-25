@@ -22,19 +22,25 @@ impl CNode for NodeInfo {
     }
 }
 
-impl<T: CNode> Pos for T {
-    fn pos(&self) -> &Position {
-        NodeInfo::pos(self.node_info())
+impl<T: CNode + Clone> CNode for Rc<T> {
+    fn node_info(&self) -> &NodeInfo {
+        (**self).node_info()
     }
-    fn into_pos(self) -> Position {
-        NodeInfo::into_pos(self.into_node_info())
+    fn into_node_info(self) -> NodeInfo {
+        (*self).clone().into_node_info()
+    }
+}
+
+impl<T: CNode> Pos for T {
+    fn pos(&self) -> Rc<Position> {
+        NodeInfo::pos(self.node_info())
     }
 }
 
 #[derive(Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum NodeInfo {
-    OnlyPos(Position, PosLength),
-    NodeInfo(Position, PosLength, Name),
+    OnlyPos(Rc<Position>, Rc<Position>, usize),
+    NodeInfo(Rc<Position>, Rc<Position>, usize, Name),
 }
 pub use self::NodeInfo::*;
 
@@ -51,29 +57,31 @@ impl NodeInfo {
     }
 
     pub fn undef() -> NodeInfo {
-        OnlyPos(Position::none(), (Position::none(), 0))
+        // XXX share undef posn
+        let undef = Rc::new(Position::none());
+        OnlyPos(undef.clone(), undef, 0)
     }
 
-    pub fn new(pos: Position, lasttok: PosLength, name: Name) -> NodeInfo {
-        NodeInfo(pos, lasttok, name)
+    pub fn new(pos1: Rc<Position>, pos2: Rc<Position>, len: usize, name: Name) -> NodeInfo {
+        NodeInfo(pos1, pos2, len, name)
     }
 
     pub fn with_only_pos(pos: Position) -> NodeInfo {
-        OnlyPos(pos, (Position::none(), 0))
+        OnlyPos(Rc::new(pos), Rc::new(Position::none()), 0)
     }
 
-    pub fn with_pos_len(a: Position, b: PosLength) -> NodeInfo {
-        OnlyPos(a, b)
+    pub fn with_pos_len(a: Position, b: Position, len: usize) -> NodeInfo {
+        OnlyPos(Rc::new(a), Rc::new(b), len)
     }
 
-    pub fn with_pos_name(pos: Position, name: Name) -> NodeInfo {
-        NodeInfo(pos, (Position::none(), 0), name)
+    pub fn with_pos_name(pos: Rc<Position>, name: Name) -> NodeInfo {
+        NodeInfo(pos, Rc::new(Position::none()), 0, name)
     }
 
     pub fn len(&self) -> Option<usize> {
         match *self {
-            NodeInfo(ref firstPos, (ref lastPos, lastTokLen), _) |
-            OnlyPos( ref firstPos, (ref lastPos, lastTokLen)) => if lastTokLen == 0 {
+            NodeInfo(ref firstPos, ref lastPos, lastTokLen, _) |
+            OnlyPos(ref firstPos, ref lastPos, lastTokLen) => if lastTokLen == 0 {
                 None
             } else {
                 Some(lastPos.offset() + lastTokLen - firstPos.offset())
@@ -81,34 +89,26 @@ impl NodeInfo {
         }
     }
 
-    pub fn get_last_token_pos(&self) -> &PosLength {
+    pub fn get_last_token_pos(&self) -> PosLength {
         match *self {
-            NodeInfo(_, ref last, _) => last,
-            OnlyPos(_, ref last) => last,
+            NodeInfo(_, ref lastPos, len, _) |
+            OnlyPos(_, ref lastPos, len) => (lastPos.clone(), len),
         }
     }
 
     pub fn name(&self) -> Option<Name> {
         match *self {
-            OnlyPos(_, _) => None,
-            NodeInfo(_, _, name) => Some(name),
+            OnlyPos(..) => None,
+            NodeInfo(_, _, _, name) => Some(name),
         }
     }
 
-    // NOTE: these are not an impl of Pos because that impl is automatic
-    // for all CNodes and falls back to these inherent methods!
+    // NOTE: this is not an impl of Pos because that impl is automatic
+    // for all CNodes and falls back to this inherent method!
 
-    fn pos(&self) -> &Position {
+    fn pos(&self) -> Rc<Position> {
         match *self {
-            OnlyPos(ref pos, _) => pos,
-            NodeInfo(ref pos, _, _) => pos,
-        }
-    }
-
-    fn into_pos(self) -> Position {
-        match self {
-            OnlyPos(pos, _) => pos,
-            NodeInfo(pos, _, _) => pos,
+            NodeInfo(ref pos, ..) | OnlyPos(ref pos, ..) => pos.clone(),
         }
     }
 }

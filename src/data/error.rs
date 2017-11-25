@@ -1,7 +1,8 @@
 // Original file: "Error.hs"
 // File auto-generated using Corollary.
 
-use std::fmt::Write;
+use std::rc::Rc;
+use std::fmt::{self, Write};
 
 use data::node::NodeInfo;
 use data::position::{Position, Pos};
@@ -14,8 +15,8 @@ pub enum ErrorLevel {
 }
 pub use self::ErrorLevel::*;
 
-impl ::std::fmt::Display for ErrorLevel {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+impl fmt::Display for ErrorLevel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
@@ -25,12 +26,11 @@ pub fn isHardError<E: Error>(e: E) -> bool {
 }
 
 #[derive(Debug)]
-pub struct ErrorInfo(pub ErrorLevel, pub Position, pub Vec<String>);
+pub struct ErrorInfo(pub ErrorLevel, pub Rc<Position>, pub Vec<String>);
 
 
 pub fn mkErrorInfo(lvl: ErrorLevel, msg: String, node: NodeInfo) -> ErrorInfo {
-    ErrorInfo(lvl, node.into_pos(),
-              msg.lines().map(Into::into).collect())
+    ErrorInfo(lvl, node.pos(), msg.lines().map(Into::into).collect())
 }
 
 #[derive(Debug)]
@@ -84,10 +84,10 @@ impl Error for CError {
     }
 }
 
-pub fn errorPos<E: Error>(e: E) -> Position {
-    let ErrorInfo(_, pos, _) = e.errorInfo();
-    pos
-}
+// pub fn errorPos<E: Error>(e: E) -> Position {
+//     let ErrorInfo(_, pos, _) = e.errorInfo();
+//     pos
+// }
 
 pub fn errorLevel<E: Error>(e: E) -> ErrorLevel {
     let ErrorInfo(lvl, _, _) = e.errorInfo();
@@ -100,7 +100,7 @@ pub fn errorMsg<E: Error>(e: E) -> Vec<String> {
 }
 
 #[derive(Debug)]
-pub struct UnsupportedFeature(pub String, pub Position);
+pub struct UnsupportedFeature(pub String, pub Rc<Position>);
 
 // pub trait Error<T: UnsupportedFeature> {
 //     fn errorInfo (UnsupportedFeature msg pos) = ErrorInfo LevelError pos (lines msg)
@@ -109,11 +109,11 @@ pub struct UnsupportedFeature(pub String, pub Position);
 
 
 pub fn unsupportedFeature<P: Pos>(msg: String, a: P) -> UnsupportedFeature {
-    UnsupportedFeature(msg, a.into_pos())
+    UnsupportedFeature(msg, a.pos())
 }
 
 pub fn unsupportedFeature_(msg: String) -> UnsupportedFeature {
-    UnsupportedFeature(msg, Position::internal())
+    UnsupportedFeature(msg, Rc::new(Position::internal()))
 }
 
 #[derive(Debug)]
@@ -121,7 +121,7 @@ pub struct UserError(pub ErrorInfo);
 
 
 pub fn userErr(msg: String) -> UserError {
-    UserError(ErrorInfo(LevelError, Position::internal(),
+    UserError(ErrorInfo(LevelError, Rc::new(Position::internal()),
                         msg.lines().map(Into::into).collect()))
 }
 
