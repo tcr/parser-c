@@ -33402,29 +33402,24 @@ fn token_plus<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: usi
 type AlexInput = (Position, InputStream);
 
 fn alexGetByte(input: &mut AlexInput) -> Option<u8> {
-    if input.1.is_done() {
-        None
-    } else {
-        // TODO this is safe for latin-1, but ugly
-        Some(input.1.read_byte())
-    }
+    input.1.peek_byte()
 }
 
 fn alexMove(input: &mut AlexInput, len: usize) {
-    input.1.mark_read(len, &mut input.0);
+    input.1.move_token(len, &mut input.0);
 }
 
 fn lexicalError<T>(p: &mut Parser) -> Res<T> {
     let input = p.getInput();
-    let c = input.1.last_char();
+    let c = input.1.last_char().unwrap_or('?');
     Err(ParseError::lexical(input.0.clone(),
                             format!("The character {:?} does not fit here", c)))
 }
 
 pub fn parseError<T>(p: &mut Parser) -> Res<T> {
     let lastTok = p.getLastToken();
-    Err(ParseError::syntax(lastTok.clone().into_pos(),
-                           format!("The symbol '{}' does not fit here", lastTok)))
+    let errmsg = format!("The symbol '{}' does not fit here", lastTok);
+    Err(ParseError::syntax(lastTok.into_pos(), errmsg))
 }
 
 

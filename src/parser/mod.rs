@@ -141,7 +141,7 @@ impl Parser {
         self.user.tyidents = self.user.scopes.remove(0);
     }
 
-    pub fn getLastToken(&self) -> CToken {   // TODO borrow
+    pub fn getLastToken(&self) -> CToken {
         self.user.prevToken.clone().expect("touched undefined token")
     }
 
