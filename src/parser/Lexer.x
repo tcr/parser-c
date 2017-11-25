@@ -506,18 +506,18 @@ pub fn lexC(p: &mut Parser) -> Res<CToken> {
 
 fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
     match alexScan(p.getInput()) {
-        AlexEOF => {
+        AlexReturn::EOF => {
             p.handleEofToken();
             Ok(CTokEof)
         },
-        AlexError => {
+        AlexReturn::Error => {
             lexicalError(p)
         },
-        AlexSkip(len_bytes) => {
+        AlexReturn::Skip(len_bytes) => {
             alexMove(p.getInput(), len_bytes);
             lexToken_q(p, modifyCache)
         },
-        AlexToken(len_bytes, len_chars, action) => {
+        AlexReturn::Token(len_bytes, len_chars, action) => {
             let pos = p.getPosClone();
             alexMove(p.getInput(), len_bytes);
             p.setLastTokLen(len_bytes);
