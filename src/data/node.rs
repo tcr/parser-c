@@ -51,7 +51,7 @@ impl NodeInfo {
     }
 
     pub fn undef() -> NodeInfo {
-        OnlyPos(Position::none(), (Position::none(), -1))
+        OnlyPos(Position::none(), (Position::none(), 0))
     }
 
     pub fn new(pos: Position, lasttok: PosLength, name: Name) -> NodeInfo {
@@ -59,7 +59,7 @@ impl NodeInfo {
     }
 
     pub fn with_only_pos(pos: Position) -> NodeInfo {
-        OnlyPos(pos, (Position::none(), -1))
+        OnlyPos(pos, (Position::none(), 0))
     }
 
     pub fn with_pos_len(a: Position, b: PosLength) -> NodeInfo {
@@ -67,13 +67,13 @@ impl NodeInfo {
     }
 
     pub fn with_pos_name(pos: Position, name: Name) -> NodeInfo {
-        NodeInfo(pos, (Position::none(), -1), name)
+        NodeInfo(pos, (Position::none(), 0), name)
     }
 
-    pub fn len(&self) -> Option<isize> {
+    pub fn len(&self) -> Option<usize> {
         match *self {
             NodeInfo(ref firstPos, (ref lastPos, lastTokLen), _) |
-            OnlyPos( ref firstPos, (ref lastPos, lastTokLen)) => if lastTokLen < 0 {
+            OnlyPos( ref firstPos, (ref lastPos, lastTokLen)) => if lastTokLen == 0 {
                 None
             } else {
                 Some(lastPos.offset() + lastTokLen - firstPos.offset())

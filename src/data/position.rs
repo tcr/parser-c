@@ -8,10 +8,10 @@ use std::path::Path;
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum Position {
     Position {
-        offset: isize,
+        offset: usize,
         file: Rc<String>,
-        row: isize,
-        column: isize,
+        row: usize,
+        column: usize,
     },
     NoPosition,
     BuiltinPosition,
@@ -34,7 +34,7 @@ impl fmt::Display for Position {
 }
 
 impl Position {
-    pub fn new(offset: isize, file: Rc<String>, row: isize, column: isize) -> Position {
+    pub fn new(offset: usize, file: Rc<String>, row: usize, column: usize) -> Position {
         Position::Position { offset, file: file, row, column }
     }
 
@@ -55,7 +55,7 @@ impl Position {
         InternalPosition
     }
 
-    pub fn offset(&self) -> isize {
+    pub fn offset(&self) -> usize {
         if let Position::Position { offset, .. } = *self {
             offset
         } else {
@@ -71,7 +71,7 @@ impl Position {
         }
     }
 
-    pub fn row(&self) -> isize {
+    pub fn row(&self) -> usize {
         if let Position::Position { row, .. } = *self {
             row
         } else {
@@ -79,7 +79,7 @@ impl Position {
         }
     }
 
-    pub fn column(&self) -> isize {
+    pub fn column(&self) -> usize {
         if let Position::Position { column, .. } = *self {
             column
         } else {
@@ -106,14 +106,14 @@ impl Position {
         self == &InternalPosition
     }
 
-    pub fn inc_chars(&mut self, by: isize) {
+    pub fn inc_chars(&mut self, by: usize) {
         if let Position::Position { ref mut offset, ref mut column, .. } = *self {
             *offset += by;
             *column += by;
         }
     }
 
-    pub fn inc_offset(&mut self, by: isize) {
+    pub fn inc_offset(&mut self, by: usize) {
         if let Position::Position { ref mut offset, .. } = *self {
             *offset += by;
         }
@@ -127,7 +127,7 @@ impl Position {
         }
     }
 
-    pub fn adjust(self, new_file: String, row: isize) -> Position {
+    pub fn adjust(self, new_file: String, row: usize) -> Position {
         match self {
             Position::Position { offset, .. } =>
                 Self::new(offset, Rc::new(new_file), row, 1),
@@ -136,7 +136,7 @@ impl Position {
     }
 }
 
-pub type PosLength = (Position, isize);
+pub type PosLength = (Position, usize);
 
 // class of types which aggregate a source code location
 pub trait Pos {

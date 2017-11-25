@@ -177,7 +177,7 @@ $identletter($identletter|$digit)*   { idkwtok(p, pos, len) }
 $digitNZ$digit*@intgnusuffix?   { token_plus(p, CTokILit, |lit| readCInteger(DecRepr, lit), pos, len) }
 0[xX]$hexdigit+@intgnusuffix?   { token_plus(p, CTokILit, |lit| readCInteger(HexRepr, &lit[2..]), pos, len) }
 
-(0$octdigit*|$digitNZ$digit*|0[xX]$hexdigit+)[uUlL]+ { token_fail("Invalid integer constant suffix", pos, len) }
+(0$octdigit*|$digitNZ$digit*|0[xX]$hexdigit+)[uUlL]+ { token_fail("Invalid integer constant suffix", pos) }
 
 -- character constants (follows K&R A2.5.2, C99 6.4.4.4)
 --
@@ -204,7 +204,7 @@ L\'($inchar|@charesc){2,}\' { token_plus(p, CTokCLit,
 (@mantpart@exppart?|@intpart@exppart)@floatgnusuffix?  { token(p, CTokFLit, readCFloat, pos, len) }
 @hexprefix(@hexmant|@hexdigits)@binexp@floatgnusuffix? { token(p, CTokFLit, readCFloat, pos, len) }
 @hexprefix@hexmant                                     { token_fail("Hexadecimal floating constant requires an exponent",
-                                                                    pos, len) }
+                                                                    pos) }
 
 -- string literal (follows K&R A2.6)
 -- C99: 6.4.5.
@@ -215,11 +215,11 @@ L\"($instr|@charesc)*\"     { token_plus(p, CTokSLit,
                                          |lit| unescapeString(&lit[2..lit.len()-1]).map(cString_w),
                                          pos, len) }
 
-L?\'@ucn\'                        { token_fail("Universal character names are unsupported", pos, len) }
-L?\'\\[^0-7'\"\?\\abfnrtvuUx]\'   { token_fail("Invalid escape sequence", pos, len) }
+L?\'@ucn\'                        { token_fail("Universal character names are unsupported", pos) }
+L?\'\\[^0-7'\"\?\\abfnrtvuUx]\'   { token_fail("Invalid escape sequence", pos) }
 L?\"($inchar|@charesc)*@ucn($inchar|@charesc|@ucn)*\"
   {
-    token_fail("Universal character names in string literals are unsupported", pos, len)
+    token_fail("Universal character names in string literals are unsupported", pos)
   }
 
 -- operators and separators
@@ -310,7 +310,7 @@ label __label__
 */
 // Tokens: _Alignas _Alignof __alignof alignof __alignof__ __asm asm __asm__ _Atomic auto break _Bool case char __const const __const__ continue _Complex __complex__ default do double else enum extern float for _Generic goto if __inline inline __inline__ int __int128 long _Noreturn  _Nullable __nullable _Nonnull __nonnull register __restrict restrict __restrict__ return short __signed signed __signed__ sizeof static _Static_assert struct switch typedef __typeof typeof __typeof__ __thread _Thread_local union unsigned void __volatile volatile __volatile__ while __label__ __attribute __attribute__ __extension__ __real __real__ __imag __imag__ __builtin_va_arg __builtin_offsetof __builtin_types_compatible_p
 
-fn idkwtok(p: &mut Parser, pos: Position, len: isize) -> Res<CToken> {
+fn idkwtok(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
     match p.getTokString() {
         "_Alignas" => tok(8, CTokAlignas, pos),
         "_Alignof" => tok(8, CTokAlignof, pos),
@@ -406,7 +406,7 @@ fn idkwtok(p: &mut Parser, pos: Position, len: isize) -> Res<CToken> {
 
 fn adjustLineDirective(pragma: &str, pos: Position) -> Res<Position> {
     // calculate new offset
-    let offs_q = pos.offset() + pragma.len() as isize;
+    let offs_q = pos.offset() + pragma.len();
     // find the row
     let row: String = pragma[1..].trim().chars().take_while(|&ch| ch.is_digit(10)).collect();
     let row = row.parse().map_err(
@@ -425,7 +425,7 @@ fn adjustLineDirective(pragma: &str, pos: Position) -> Res<Position> {
 }
 
 #[inline]
-fn tok<M>(len: isize, mkTok: M, pos: Position) -> Res<CToken>
+fn tok<M>(len: usize, mkTok: M, pos: Position) -> Res<CToken>
     where M: Fn(PosLength) -> CToken
 {
     Ok(mkTok((pos, len)))
@@ -433,13 +433,13 @@ fn tok<M>(len: isize, mkTok: M, pos: Position) -> Res<CToken>
 
 /// error token
 #[inline]
-fn token_fail(errmsg: &str, pos: Position, _: isize) -> Res<CToken> {
+fn token_fail(errmsg: &str, pos: Position) -> Res<CToken> {
     Err(ParseError::lexical(pos, errmsg.to_string()))
 }
 
 /// token that uses the string
 #[inline]
-fn token<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: isize) -> Res<CToken>
+fn token<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: usize) -> Res<CToken>
     where R: Fn(&str) -> T, M: Fn(PosLength, T) -> CToken
 {
     Ok(mkTok((pos, len), fromStr(p.getTokString())))
@@ -447,7 +447,7 @@ fn token<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: isize) -
 
 /// token that may fail
 #[inline]
-fn token_plus<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: isize) -> Res<CToken>
+fn token_plus<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: usize) -> Res<CToken>
     where R: Fn(&str) -> Result<T, String>, M: Fn(PosLength, T) -> CToken
 {
     match fromStr(p.getTokString()) {
@@ -470,8 +470,8 @@ fn alexGetByte(input: &mut AlexInput) -> Option<u8> {
     }
 }
 
-fn alexMove(input: &mut AlexInput, len: isize) {
-    input.1.mark_read(len as usize, &mut input.0);
+fn alexMove(input: &mut AlexInput, len: usize) {
+    input.1.mark_read(len, &mut input.0);
 }
 
 fn lexicalError<T>(p: &mut Parser) -> Res<T> {
@@ -520,7 +520,7 @@ fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
         AlexToken(len_bytes, len_chars, action) => {
             let pos = p.getPosClone();
             alexMove(p.getInput(), len_bytes);
-            p.setLastTokLen(len_bytes as usize);
+            p.setLastTokLen(len_bytes);
             let nextTok = action(p, pos, len_chars)?;
             if modifyCache {
                 p.setLastToken(nextTok.clone());
