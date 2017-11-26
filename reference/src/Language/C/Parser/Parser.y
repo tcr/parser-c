@@ -201,6 +201,8 @@ else		{ CTokElse	_ }
 enum		{ CTokEnum	_ }
 extern		{ CTokExtern	_ }
 float		{ CTokFloat	_ }
+"__float128"	{ CTokFloat128	_ }
+"_Float128"	{ CTokFloat128	_ }
 for		{ CTokFor	_ }
 "_Generic"      { CTokGeneric   _ }
 goto		{ CTokGoto	_ }
@@ -245,6 +247,7 @@ tyident		{ CTokTyIdent _ $$ }		-- `typedef-name' identifier
 "__builtin_va_arg"		{ CTokGnuC GnuCVaArg    _ }
 "__builtin_offsetof"		{ CTokGnuC GnuCOffsetof _ }
 "__builtin_types_compatible_p"	{ CTokGnuC GnuCTyCompat _ }
+"__builtin_convertvector"	{ CTokClangC _ ClangBuiltinConvertVector }
 clangcversion   { CTokClangC _ (ClangCVersionTok $$) } -- Clang version literal
 
 %%
@@ -872,6 +875,8 @@ basic_type_name
   | "_Bool"			{% withNodeInfo $1 $ CBoolType }
   | "_Complex"			{% withNodeInfo $1 $ CComplexType }
   | "__int128"      {% withNodeInfo $1 $ CInt128Type }
+  | "__float128"      {% withNodeInfo $1 $ CFloat128Type }
+  | "_Float128"      {% withNodeInfo $1 $ CFloat128Type }
 
 
 -- A mixture of type qualifiers, storage class and basic type names in any
@@ -1734,6 +1739,9 @@ primary_expression
 
   | "__builtin_types_compatible_p" '(' type_name ',' type_name ')'
   	{% withNodeInfo $1 $ CBuiltinExpr . CBuiltinTypesCompatible $3 $5 }
+
+  | "__builtin_convertvector" '(' assignment_expression ',' type_name ')'
+        {% withNodeInfo $1 $ CBuiltinExpr . CBuiltinConvertVector $3 $5 }
 
 -- Generic Selection association list (C11 6.5.1.1)
 --

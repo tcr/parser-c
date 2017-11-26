@@ -1,5 +1,22 @@
+Changes since 0.7.0
+==========================================================================
+
+Sat Nov 25 00:46:33 2017 -0600
+    add support for _Float128 (#41)
+
 Changes since 0.6.0
 ==========================================================================
+Mon Jul 31 2017
+    Improve TypeCheck output (#31)
+
+Sun Jul 30 2017
+    * Add `__float128` (fixes #33)
+
+Mon Maz 22 2017
+    * Support clang’s __builtin_convertvector (Fixes #34)
+
+Wed Mar 8 2017
+    * Move file and parent information to new datatype FilePosition for performance reasons
 
 Changes since 0.5.0
 ==========================================================================

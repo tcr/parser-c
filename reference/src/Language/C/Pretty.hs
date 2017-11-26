@@ -244,6 +244,7 @@ instance Pretty CTypeSpec where
     pretty (CIntType _)         = text "int"
     pretty (CLongType _)        = text "long"
     pretty (CFloatType _)       = text "float"
+    pretty (CFloat128Type _)    = text "__float128"
     pretty (CDoubleType _)      = text "double"
     pretty (CSignedType _)      = text "signed"
     pretty (CUnsigType _)       = text "unsigned"
@@ -461,6 +462,9 @@ instance Pretty CBuiltin where
     pretty (CBuiltinTypesCompatible ty1 ty2 _) =
         text "__builtin_types_compatible_p" <+>
         parens (pretty ty1 <> comma <+> pretty ty2)
+    pretty (CBuiltinConvertVector expr ty _)  =
+        text "__builtin_convertvector" <+>
+        parens (pretty expr <> comma <+> pretty ty)
 
 instance Pretty CAssignOp where
   pretty op = text $ case op of

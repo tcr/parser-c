@@ -434,6 +434,7 @@ data CTypeSpecifier a
   | CIntType     a
   | CLongType    a
   | CFloatType   a
+  | CFloat128Type a
   | CDoubleType  a
   | CSignedType  a
   | CUnsigType   a
@@ -716,6 +717,7 @@ data CBuiltinThing a
   = CBuiltinVaArg (CExpression a) (CDeclaration a) a            -- ^ @(expr, type)@
   | CBuiltinOffsetOf (CDeclaration a) [CPartDesignator a] a -- ^ @(type, designator-list)@
   | CBuiltinTypesCompatible (CDeclaration a) (CDeclaration a) a  -- ^ @(type,type)@
+  | CBuiltinConvertVector (CExpression a) (CDeclaration a) a -- ^ @(expr, type)@
     deriving (Show, Data,Typeable {-! ,CNode ,Functor ,Annotated !-})
 
 
@@ -1028,6 +1030,7 @@ instance CNode t1 => CNode (CTypeSpecifier t1) where
         nodeInfo (CIntType d) = nodeInfo d
         nodeInfo (CLongType d) = nodeInfo d
         nodeInfo (CFloatType d) = nodeInfo d
+        nodeInfo (CFloat128Type d) = nodeInfo d
         nodeInfo (CDoubleType d) = nodeInfo d
         nodeInfo (CSignedType d) = nodeInfo d
         nodeInfo (CUnsigType d) = nodeInfo d
@@ -1050,6 +1053,7 @@ instance Functor CTypeSpecifier where
         fmap _f (CIntType a1) = CIntType (_f a1)
         fmap _f (CLongType a1) = CLongType (_f a1)
         fmap _f (CFloatType a1) = CFloatType (_f a1)
+        fmap _f (CFloat128Type a1) = CFloat128Type (_f a1)
         fmap _f (CDoubleType a1) = CDoubleType (_f a1)
         fmap _f (CSignedType a1) = CSignedType (_f a1)
         fmap _f (CUnsigType a1) = CUnsigType (_f a1)
@@ -1070,6 +1074,7 @@ instance Annotated CTypeSpecifier where
         annotation (CIntType n) = n
         annotation (CLongType n) = n
         annotation (CFloatType n) = n
+        annotation (CFloat128Type n) = n
         annotation (CDoubleType n) = n
         annotation (CSignedType n) = n
         annotation (CUnsigType n) = n
@@ -1088,6 +1093,7 @@ instance Annotated CTypeSpecifier where
         amap f (CIntType a_1) = CIntType (f a_1)
         amap f (CLongType a_1) = CLongType (f a_1)
         amap f (CFloatType a_1) = CFloatType (f a_1)
+        amap f (CFloat128Type a_1) = CFloat128Type (f a_1)
         amap f (CDoubleType a_1) = CDoubleType (f a_1)
         amap f (CSignedType a_1) = CSignedType (f a_1)
         amap f (CUnsigType a_1) = CUnsigType (f a_1)
@@ -1322,6 +1328,7 @@ instance CNode t1 => CNode (CBuiltinThing t1) where
         nodeInfo (CBuiltinVaArg _ _ n) = nodeInfo n
         nodeInfo (CBuiltinOffsetOf _ _ n) = nodeInfo n
         nodeInfo (CBuiltinTypesCompatible _ _ n) = nodeInfo n
+        nodeInfo (CBuiltinConvertVector _ _ n) = nodeInfo n
 instance CNode t1 => Pos (CBuiltinThing t1) where
         posOf x = posOf (nodeInfo x)
 
@@ -1332,16 +1339,21 @@ instance Functor CBuiltinThing where
           = CBuiltinOffsetOf (fmap _f a1) (fmap (fmap _f) a2) (_f a3)
         fmap _f (CBuiltinTypesCompatible a1 a2 a3)
           = CBuiltinTypesCompatible (fmap _f a1) (fmap _f a2) (_f a3)
+        fmap _f (CBuiltinConvertVector a1 a2 a3)
+          = CBuiltinConvertVector (fmap _f a1) (fmap _f a2) (_f a3)
 
 instance Annotated CBuiltinThing where
         annotation (CBuiltinVaArg _ _ n) = n
         annotation (CBuiltinOffsetOf _ _ n) = n
         annotation (CBuiltinTypesCompatible _ _ n) = n
+        annotation (CBuiltinConvertVector _ _ n) = n
         amap f (CBuiltinVaArg a_1 a_2 a_3) = CBuiltinVaArg a_1 a_2 (f a_3)
         amap f (CBuiltinOffsetOf a_1 a_2 a_3)
           = CBuiltinOffsetOf a_1 a_2 (f a_3)
         amap f (CBuiltinTypesCompatible a_1 a_2 a_3)
           = CBuiltinTypesCompatible a_1 a_2 (f a_3)
+        amap f (CBuiltinConvertVector a_1 a_2 a_3) =
+          CBuiltinConvertVector a_1 a_2 (f a_3)
 
 instance CNode t1 => CNode (CConstant t1) where
         nodeInfo (CIntConst _ n) = nodeInfo n
