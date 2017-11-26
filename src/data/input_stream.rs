@@ -7,6 +7,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+use parser::ParseError;
 use data::position::Position;
 
 #[derive(Debug)]
@@ -18,10 +19,10 @@ pub struct InputStream {
 
 impl InputStream {
 
-    pub fn from_file<P: AsRef<Path>>(p: P) -> InputStream {
+    pub fn from_file<P: AsRef<Path>>(p: P) -> Result<InputStream, ParseError> {
         let mut src = vec![];
-        File::open(p.as_ref()).unwrap().read_to_end(&mut src).unwrap();
-        InputStream { src: src, peek_pos: 0, tok_pos: 0 }
+        File::open(p.as_ref())?.read_to_end(&mut src)?;
+        Ok(InputStream { src: src, peek_pos: 0, tok_pos: 0 })
     }
 
     pub fn from_string(src: String) -> InputStream {

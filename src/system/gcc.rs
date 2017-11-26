@@ -14,8 +14,8 @@ pub struct GCC {
     gccPath: PathBuf,
 }
 
-pub fn newGCC(gccPath: PathBuf) -> GCC {
-    GCC { gccPath }
+pub fn newGCC<P: Into<PathBuf>>(gccPath: P) -> GCC {
+    GCC { gccPath: gccPath.into() }
 }
 
 impl Preprocessor for GCC {

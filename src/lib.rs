@@ -52,30 +52,34 @@ use data::input_stream::InputStream;
 use data::position::Position;
 use parser::{ParseError, parseC};
 
-
-pub fn parseCFile<C: Preprocessor>(cpp: C,
-                                   tmp_dir_opt: Option<PathBuf>,
-                                   args: Vec<String>,
-                                   input_file: PathBuf)
-                                   -> Result<CTranslUnit, ParseError> {
+/// Parse a C source file.
+///
+/// If the file name does not end in `.i`, use the given preprocessor
+/// before parsing.
+///
+/// You can select a custom temporary directory if necessary.
+pub fn parseCFile<C, P>(cpp: C, tmp_dir: Option<PathBuf>,
+                        args: Vec<String>, input_file: P)
+                        -> Result<CTranslUnit, ParseError>
+    where C: Preprocessor, P: Into<PathBuf>
+{
+    let input_file = input_file.into();
     let pos = Position::from_file(&input_file);
 
     let input_stream = if !isPreprocessed(&input_file) {
         let mut cpp_args = CppArgs::raw(args, input_file);
-        cpp_args.cppTmpDir = tmp_dir_opt;
-        match runPreprocessor(cpp, cpp_args) {
-            Ok(stream) => stream,
-            Err(e) => panic!("Preprocessor failed: {}", e),
-        }
+        cpp_args.cppTmpDir = tmp_dir;
+        runPreprocessor(cpp, cpp_args).map_err(ParseError::input)?
     } else {
-        InputStream::from_file(&input_file)
+        InputStream::from_file(&input_file)?
     };
 
     parseC(input_stream, pos)
 }
 
+/// Parse an already preprocessed C source file.
 pub fn parseCFilePre<P: AsRef<Path>>(file: P) -> Result<CTranslUnit, ParseError> {
-    let input_stream = InputStream::from_file(file.as_ref());
+    let input_stream = InputStream::from_file(file.as_ref())?;
     parseC(input_stream, Position::from_file(file.as_ref()))
 }
 
