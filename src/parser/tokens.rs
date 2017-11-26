@@ -72,6 +72,7 @@ pub enum CToken {
     CTokEnum(PosLength),
     CTokExtern(PosLength),
     CTokFloat(PosLength),
+    CTokFloat128(PosLength),
     CTokFor(PosLength),
     CTokGeneric(PosLength),
     CTokGoto(PosLength),
@@ -182,6 +183,7 @@ impl CToken {
             CTokEnum(posl) => posl,
             CTokExtern(posl) => posl,
             CTokFloat(posl) => posl,
+            CTokFloat128(posl) => posl,
             CTokFor(posl) => posl,
             CTokGeneric(posl) => posl,
             CTokGoto(posl) => posl,
@@ -294,6 +296,7 @@ impl Display for CToken {
             CTokEnum(_)           => write!(f, "enum"),
             CTokExtern(_)         => write!(f, "extern"),
             CTokFloat(_)          => write!(f, "float"),
+            CTokFloat128(_)       => write!(f, "__float128"),
             CTokFor(_)            => write!(f, "for"),
             CTokGeneric(_)        => write!(f, "_Generic"),
             CTokGoto(_)           => write!(f, "goto"),
@@ -338,6 +341,7 @@ impl Display for CToken {
             CTokGnuC(_, GnuCTok::ComplexReal) => write!(f, "__real__"),
             CTokGnuC(_, GnuCTok::ComplexImag) => write!(f, "__image__"),
             CTokClangC(_, ClangCTok::CVersion(ClangCVersion(ref v))) => write!(f, "{}", v),
+            CTokClangC(_, ClangCTok::ConvertVector) => write!(f, "__builtin_convertvector"),
             CTokEof               => write!(f, "<EOF>"),
         }
     }
@@ -357,4 +361,5 @@ pub enum GnuCTok {
 #[derive(Clone, Debug)]
 pub enum ClangCTok {
     CVersion(ClangCVersion),
+    ConvertVector,
 }

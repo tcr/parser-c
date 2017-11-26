@@ -118,7 +118,8 @@ $infname  = . # [ \\ \" ]             -- valid character in a filename
 @hexmant   = @hexdigits?\.@hexdigits|@hexdigits\.
 @binexp    = [pP][\+\-]?@digits
 
-@floatsuffix    = [fFlL]
+-- Suffixes `qQwW` are GNU floating type extensions: <https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html>
+@floatsuffix    = [fFlLqQwW]
 @floatgnusuffix = @floatsuffix@gnusuffix?|@gnusuffix@floatsuffix?
 
 -- clang version literals with a major.minor.rev
@@ -135,10 +136,14 @@ tokens :-
 --
 $white+         ;
 
--- #line directive (K&R A12.6)
+-- #line directive (C11 6.10.4, GCC Line Control)
 --
--- * allows further ints after the file name a la GCC; as the GCC CPP docu
---   doesn't say how many ints there can be, we allow an unbound number
+-- * standard form: int => change line number
+-- * standard form: int string => change source file and line number
+-- * preprocessor (gcc/clang): int string int => change source file and line number,
+--       push or pop item from stack
+--
+-- * see https://gcc.gnu.org/onlinedocs/cpp/Preprocessor-Output.html
 --
 \#$space*@int$space*(\"($infname|@charesc)*\"$space*)?(@int$space*)*\r?$eol
   {
@@ -187,6 +192,7 @@ $white+         ;
 "__builtin_offsetof"           { tok(18, |posl| CTokGnuC(posl, GnuCTok::Offsetof), pos) }
 "__builtin_types_compatible_p" { tok(28, |posl| CTokGnuC(posl, GnuCTok::TyCompat), pos) }
 "__builtin_va_arg"             { tok(16, |posl| CTokGnuC(posl, GnuCTok::VaArg), pos) }
+"__builtin_convertvector"      { tok(23, |posl| CTokClangC(posl, ClangCTok::ConvertVector), pos) }
 "case"                         { tok(4, CTokCase, pos) }
 "char"                         { tok(4, CTokChar, pos) }
 "__complex__"                  { tok(11, CTokComplex, pos) }
@@ -202,6 +208,8 @@ $white+         ;
 "__extension__"                { tok(13, |posl| CTokGnuC(posl, GnuCTok::Ext), pos) }
 "extern"                       { tok(6, CTokExtern, pos) }
 "float"                        { tok(5, CTokFloat, pos) }
+"__float128"                   { tok(10, CTokFloat128, pos) }
+"_Float128"                    { tok(9, CTokFloat128, pos) }
 "for"                          { tok(3, CTokFor, pos) }
 "goto"                         { tok(4, CTokGoto, pos) }
 "if"                           { tok(2, CTokIf, pos) }
