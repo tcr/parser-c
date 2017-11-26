@@ -19,7 +19,8 @@ module Language.C.Data (
      -- * Unqiue names
      Name(..),newNameSupply,
      -- * Source code positions
-     Position(..),Pos(..),
+     Position(..),posFile,posParent,
+     Pos(..),
      initPos, nopos,builtinPos,internalPos,
      isSourcePos,isBuiltinPos,isInternalPos,
      -- * Syntax tree nodes

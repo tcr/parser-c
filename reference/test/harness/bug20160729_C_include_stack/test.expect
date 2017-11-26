@@ -1,0 +1,11 @@
+test.i: Error
+b.h:5: (column 5) [ERROR]  >>> b redefined
+  duplicate definition of b
+  The previous declaration was here: 
+  ("b.h": line 5, in file included from ("a.h": line 6, in file included from ("test.c": line 3)))
+
+test.c:7: (column 5) [ERROR]  >>> a2 redefined
+  duplicate definition of a2
+  The previous declaration was here: 
+  ("a.h": line 9, in file included from ("test.c": line 3))
+

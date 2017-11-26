@@ -1,0 +1,4 @@
+test.c: Error
+test.c:14: (column 10) [ERROR]  >>> AST invariant violated
+  initializer list for type: double
+
