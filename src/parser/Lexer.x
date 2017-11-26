@@ -161,9 +161,92 @@ $white+         ;
 --
 \#$space*ident.*$eol    ;
 
--- identifiers and keywords (follows K&R A2.3 and A2.4)
+-- keywords and builtin types
 --
-$identletter($identletter|$digit)*   { idkwtok(p, pos, len) }
+"_Alignas"                     { tok(8, CTokAlignas, pos) }
+"_Alignof"                     { tok(8, CTokAlignof, pos) }
+"_Atomic"                      { tok(7, CTokAtomic, pos) }
+"_Bool"                        { tok(5, CTokBool, pos) }
+"_Complex"                     { tok(8, CTokComplex, pos) }
+"_Nonnull"                     { tok(8, CTokNonnull, pos) }
+"_Generic"                     { tok(8, CTokGeneric, pos) }
+"_Noreturn"                    { tok(9, CTokNoreturn, pos) }
+"_Nullable"                    { tok(9, CTokNullable, pos) }
+"_Static_assert"               { tok(14, CTokStaticAssert, pos) }
+"_Thread_local"                { tok(13, CTokThread, pos) }
+"__alignof"                    { tok(9, CTokAlignof, pos) }
+"alignof"                      { tok(7, CTokAlignof, pos) }
+"__alignof__"                  { tok(11, CTokAlignof, pos) }
+"__asm"                        { tok(5, CTokAsm, pos) }
+"asm"                          { tok(3, CTokAsm, pos) }
+"__asm__"                      { tok(7, CTokAsm, pos) }
+"__attribute"                  { tok(11, |posl| CTokGnuC(posl, GnuCTok::Attr), pos) }
+"__attribute__"                { tok(13, |posl| CTokGnuC(posl, GnuCTok::Attr), pos) }
+"auto"                         { tok(4, CTokAuto, pos) }
+"break"                        { tok(5, CTokBreak, pos) }
+"__builtin_offsetof"           { tok(18, |posl| CTokGnuC(posl, GnuCTok::Offsetof), pos) }
+"__builtin_types_compatible_p" { tok(28, |posl| CTokGnuC(posl, GnuCTok::TyCompat), pos) }
+"__builtin_va_arg"             { tok(16, |posl| CTokGnuC(posl, GnuCTok::VaArg), pos) }
+"case"                         { tok(4, CTokCase, pos) }
+"char"                         { tok(4, CTokChar, pos) }
+"__complex__"                  { tok(11, CTokComplex, pos) }
+"__const"                      { tok(7, CTokConst, pos) }
+"const"                        { tok(5, CTokConst, pos) }
+"__const__"                    { tok(9, CTokConst, pos) }
+"continue"                     { tok(8, CTokContinue, pos) }
+"default"                      { tok(7, CTokDefault, pos) }
+"do"                           { tok(2, CTokDo, pos) }
+"double"                       { tok(6, CTokDouble, pos) }
+"else"                         { tok(4, CTokElse, pos) }
+"enum"                         { tok(4, CTokEnum, pos) }
+"__extension__"                { tok(13, |posl| CTokGnuC(posl, GnuCTok::Ext), pos) }
+"extern"                       { tok(6, CTokExtern, pos) }
+"float"                        { tok(5, CTokFloat, pos) }
+"for"                          { tok(3, CTokFor, pos) }
+"goto"                         { tok(4, CTokGoto, pos) }
+"if"                           { tok(2, CTokIf, pos) }
+"__imag"                       { tok(6, |posl| CTokGnuC(posl, GnuCTok::ComplexImag), pos) }
+"__imag__"                     { tok(8, |posl| CTokGnuC(posl, GnuCTok::ComplexImag), pos) }
+"__inline"                     { tok(8, CTokInline, pos) }
+"inline"                       { tok(6, CTokInline, pos) }
+"__inline__"                   { tok(10, CTokInline, pos) }
+"int"                          { tok(3, CTokInt, pos) }
+"__int128"                     { tok(8, CTokInt128, pos) }
+"__label__"                    { tok(9, CTokLabel, pos) }
+"long"                         { tok(4, CTokLong, pos) }
+"__nonnull"                    { tok(9, CTokNonnull, pos) }
+"__nullable"                   { tok(10, CTokNullable, pos) }
+"__real"                       { tok(6, |posl| CTokGnuC(posl, GnuCTok::ComplexReal), pos) }
+"__real__"                     { tok(8, |posl| CTokGnuC(posl, GnuCTok::ComplexReal), pos) }
+"register"                     { tok(8, CTokRegister, pos) }
+"__restrict"                   { tok(10, CTokRestrict, pos) }
+"restrict"                     { tok(8, CTokRestrict, pos) }
+"__restrict__"                 { tok(12, CTokRestrict, pos) }
+"return"                       { tok(6, CTokReturn, pos) }
+"short"                        { tok(5, CTokShort, pos) }
+"__signed"                     { tok(8, CTokSigned, pos) }
+"signed"                       { tok(6, CTokSigned, pos) }
+"__signed__"                   { tok(10, CTokSigned, pos) }
+"sizeof"                       { tok(6, CTokSizeof, pos) }
+"static"                       { tok(6, CTokStatic, pos) }
+"struct"                       { tok(6, CTokStruct, pos) }
+"switch"                       { tok(6, CTokSwitch, pos) }
+"__thread"                     { tok(8, CTokThread, pos) }
+"typedef"                      { tok(7, CTokTypedef, pos) }
+"__typeof"                     { tok(8, CTokTypeof, pos) }
+"typeof"                       { tok(6, CTokTypeof, pos) }
+"__typeof__"                   { tok(10, CTokTypeof, pos) }
+"union"                        { tok(5, CTokUnion, pos) }
+"unsigned"                     { tok(8, CTokUnsigned, pos) }
+"void"                         { tok(4, CTokVoid, pos) }
+"__volatile"                   { tok(10, CTokVolatile, pos) }
+"volatile"                     { tok(8, CTokVolatile, pos) }
+"__volatile__"                 { tok(12, CTokVolatile, pos) }
+"while"                        { tok(5, CTokWhile, pos) }
+
+-- other identifiers (follows K&R A2.3 and A2.4)
+--
+$identletter($identletter|$digit)*   { idtok(p, pos, len) }
 
 -- constants (follows K&R A2.5)
 --
@@ -271,101 +354,17 @@ L?\"($inchar|@charesc)*@ucn($inchar|@charesc|@ucn)*\"
 "}"   { tok(1, CTokRBrace, pos) }
 "..." { tok(3, CTokEllipsis, pos) }
 
-
 {
 
-fn idkwtok(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
-    match p.getTokString() {
-        "_Alignas" => tok(8, CTokAlignas, pos),
-        "_Alignof" => tok(8, CTokAlignof, pos),
-        "_Atomic" => tok(7, CTokAtomic, pos),
-        "_Bool" => tok(5, CTokBool, pos),
-        "_Complex" => tok(8, CTokComplex, pos),
-        "_Nonnull" => tok(8, CTokNonnull, pos),
-        "_Generic" => tok(8, CTokGeneric, pos),
-        "_Noreturn" => tok(9, CTokNoreturn, pos),
-        "_Nullable" => tok(9, CTokNullable, pos),
-        "_Static_assert" => tok(14, CTokStaticAssert, pos),
-        "_Thread_local" => tok(13, CTokThread, pos),
-        "__alignof" => tok(9, CTokAlignof, pos),
-        "alignof" => tok(7, CTokAlignof, pos),
-        "__alignof__" => tok(11, CTokAlignof, pos),
-        "__asm" => tok(5, CTokAsm, pos),
-        "asm" => tok(3, CTokAsm, pos),
-        "__asm__" => tok(7, CTokAsm, pos),
-        "__attribute" => tok(11, |posl| CTokGnuC(posl, GnuCTok::Attr), pos),
-        "__attribute__" => tok(13, |posl| CTokGnuC(posl, GnuCTok::Attr), pos),
-        "auto" => tok(4, CTokAuto, pos),
-        "break" => tok(5, CTokBreak, pos),
-        "__builtin_offsetof" => tok(18, |posl| CTokGnuC(posl, GnuCTok::Offsetof), pos),
-        "__builtin_types_compatible_p" => tok(28, |posl| CTokGnuC(posl, GnuCTok::TyCompat), pos),
-        "__builtin_va_arg" => tok(16, |posl| CTokGnuC(posl, GnuCTok::VaArg), pos),
-        "case" => tok(4, CTokCase, pos),
-        "char" => tok(4, CTokChar, pos),
-        "__complex__" => tok(11, CTokComplex, pos),
-        "__const" => tok(7, CTokConst, pos),
-        "const" => tok(5, CTokConst, pos),
-        "__const__" => tok(9, CTokConst, pos),
-        "continue" => tok(8, CTokContinue, pos),
-        "default" => tok(7, CTokDefault, pos),
-        "do" => tok(2, CTokDo, pos),
-        "double" => tok(6, CTokDouble, pos),
-        "else" => tok(4, CTokElse, pos),
-        "enum" => tok(4, CTokEnum, pos),
-        "__extension__" => tok(13, |posl| CTokGnuC(posl, GnuCTok::Ext), pos),
-        "extern" => tok(6, CTokExtern, pos),
-        "float" => tok(5, CTokFloat, pos),
-        "for" => tok(3, CTokFor, pos),
-        "goto" => tok(4, CTokGoto, pos),
-        "if" => tok(2, CTokIf, pos),
-        "__imag" => tok(6, |posl| CTokGnuC(posl, GnuCTok::ComplexImag), pos),
-        "__imag__" => tok(8, |posl| CTokGnuC(posl, GnuCTok::ComplexImag), pos),
-        "__inline" => tok(8, CTokInline, pos),
-        "inline" => tok(6, CTokInline, pos),
-        "__inline__" => tok(10, CTokInline, pos),
-        "int" => tok(3, CTokInt, pos),
-        "__int128" => tok(8, CTokInt128, pos),
-        "__label__" => tok(9, CTokLabel, pos),
-        "long" => tok(4, CTokLong, pos),
-        "__nonnull" => tok(9, CTokNonnull, pos),
-        "__nullable" => tok(10, CTokNullable, pos),
-        "__real" => tok(6, |posl| CTokGnuC(posl, GnuCTok::ComplexReal), pos),
-        "__real__" => tok(8, |posl| CTokGnuC(posl, GnuCTok::ComplexReal), pos),
-        "register" => tok(8, CTokRegister, pos),
-        "__restrict" => tok(10, CTokRestrict, pos),
-        "restrict" => tok(8, CTokRestrict, pos),
-        "__restrict__" => tok(12, CTokRestrict, pos),
-        "return" => tok(6, CTokReturn, pos),
-        "short" => tok(5, CTokShort, pos),
-        "__signed" => tok(8, CTokSigned, pos),
-        "signed" => tok(6, CTokSigned, pos),
-        "__signed__" => tok(10, CTokSigned, pos),
-        "sizeof" => tok(6, CTokSizeof, pos),
-        "static" => tok(6, CTokStatic, pos),
-        "struct" => tok(6, CTokStruct, pos),
-        "switch" => tok(6, CTokSwitch, pos),
-        "__thread" => tok(8, CTokThread, pos),
-        "typedef" => tok(7, CTokTypedef, pos),
-        "__typeof" => tok(8, CTokTypeof, pos),
-        "typeof" => tok(6, CTokTypeof, pos),
-        "__typeof__" => tok(10, CTokTypeof, pos),
-        "union" => tok(5, CTokUnion, pos),
-        "unsigned" => tok(8, CTokUnsigned, pos),
-        "void" => tok(4, CTokVoid, pos),
-        "__volatile" => tok(10, CTokVolatile, pos),
-        "volatile" => tok(8, CTokVolatile, pos),
-        "__volatile__" => tok(12, CTokVolatile, pos),
-        "while" => tok(5, CTokWhile, pos),
-        _ => {
-            let name = p.getNewName();
-            let pos = Rc::new(pos);
-            let ident = Ident::new(pos.clone(), p.getTokString().to_string(), name);
-            if p.isTypeIdent(&ident) {
-                Ok(CTokTyIdent((pos, len), ident))
-            } else {
-                Ok(CTokIdent((pos, len), ident))
-            }
-        },
+fn idtok(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
+    let name = p.getNewName();
+    let pos = Rc::new(pos);
+    let idstr = p.getTokString().to_string();
+    let ident = Ident::new(pos.clone(), idstr, name);
+    if p.isTypeIdent(&ident) {
+        Ok(CTokTyIdent((pos, len), ident))
+    } else {
+        Ok(CTokIdent((pos, len), ident))
     }
 }
 
