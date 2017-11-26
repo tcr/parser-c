@@ -244,15 +244,15 @@ cfloat          { CTokFLit(_, _) }              -- float constant
 cstr            { CTokSLit(_, _) }              -- string constant (no escapes)
 ident           { CTokIdent(_, $$) }            -- identifier
 tyident         { CTokTyIdent(_, $$) }          -- `typedef-name' identifier
-"__attribute__" { CTokGnuC(_, GnuCAttrTok) }    -- special GNU C tokens
-"__extension__" { CTokGnuC(_, GnuCExtTok) }     -- special GNU C tokens
-"__real__"      { CTokGnuC(_, GnuCComplexReal) }
-"__imag__"      { CTokGnuC(_, GnuCComplexImag) }
+"__attribute__" { CTokGnuC(_, GnuCTok::Attr) }    -- special GNU C tokens
+"__extension__" { CTokGnuC(_, GnuCTok::Ext) }     -- special GNU C tokens
+"__real__"      { CTokGnuC(_, GnuCTok::ComplexReal) }
+"__imag__"      { CTokGnuC(_, GnuCTok::ComplexImag) }
 -- special GNU C builtin 'functions' that actually take types as parameters:
-"__builtin_va_arg"              { CTokGnuC(_, GnuCVaArg) }
-"__builtin_offsetof"            { CTokGnuC(_, GnuCOffsetof) }
-"__builtin_types_compatible_p"  { CTokGnuC(_, GnuCTyCompat) }
-clangcversion   { CTokClangC(_, ClangCTok($$)) } -- Clang version literal
+"__builtin_va_arg"              { CTokGnuC(_, GnuCTok::VaArg) }
+"__builtin_offsetof"            { CTokGnuC(_, GnuCTok::Offsetof) }
+"__builtin_types_compatible_p"  { CTokGnuC(_, GnuCTok::TyCompat) }
+clangcversion   { CTokClangC(_, ClangCTok::CVersion($$)) } -- Clang version literal
 
 %%
 

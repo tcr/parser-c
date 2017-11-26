@@ -21555,7 +21555,7 @@ fn happyReduce_468(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_468(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyTerminal(CTokClangC(_, ClangCTok(happy_var_1))) => HappyAbsSyn130(happy_var_1),
+        HappyTerminal(CTokClangC(_, ClangCTok::CVersion(happy_var_1))) => HappyAbsSyn130(happy_var_1),
         _ => notHappyAtAll()
     }
 }
@@ -21908,14 +21908,14 @@ fn happyNewToken(p: &mut Parser) -> Res<Cont> {
         CTokSLit(_, _) => action(p, 236, 236),
         CTokIdent(_, _) => action(p, 237, 237),
         CTokTyIdent(_, _) => action(p, 238, 238),
-        CTokGnuC(_, GnuCAttrTok) => action(p, 239, 239),
-        CTokGnuC(_, GnuCExtTok) => action(p, 240, 240),
-        CTokGnuC(_, GnuCComplexReal) => action(p, 241, 241),
-        CTokGnuC(_, GnuCComplexImag) => action(p, 242, 242),
-        CTokGnuC(_, GnuCVaArg) => action(p, 243, 243),
-        CTokGnuC(_, GnuCOffsetof) => action(p, 244, 244),
-        CTokGnuC(_, GnuCTyCompat) => action(p, 245, 245),
-        CTokClangC(_, ClangCTok(_)) => action(p, 246, 246),
+        CTokGnuC(_, GnuCTok::Attr) => action(p, 239, 239),
+        CTokGnuC(_, GnuCTok::Ext) => action(p, 240, 240),
+        CTokGnuC(_, GnuCTok::ComplexReal) => action(p, 241, 241),
+        CTokGnuC(_, GnuCTok::ComplexImag) => action(p, 242, 242),
+        CTokGnuC(_, GnuCTok::VaArg) => action(p, 243, 243),
+        CTokGnuC(_, GnuCTok::Offsetof) => action(p, 244, 244),
+        CTokGnuC(_, GnuCTok::TyCompat) => action(p, 245, 245),
+        CTokClangC(_, ClangCTok::CVersion(_)) => action(p, 246, 246),
     }
 }
 

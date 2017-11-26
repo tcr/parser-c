@@ -33214,42 +33214,6 @@ const ALEX_ACTIONS: [AlexAction; 124] = [
 
 
 
-// We use the odd looking list of string patterns here rather than normal
-// string literals since GHC converts the latter into a sequence of string
-// comparisons (ie a linear search) but it translates the former using its
-// effecient pattern matching which gives us the expected radix-style search.
-// This change makes a significant performance difference [chak]
-//
-// To make this a little more maintainable, we autogenerate it from this list,
-// using the script GenerateKeywords.hs (in /scripts)
-/*
-alignas _Alignas, alignof _Alignof __alignof alignof __alignof__, asm @__, atomic _Atomic, auto
-break, bool _Bool,
-case, char, const @__, continue, complex _Complex __complex__
-default, do, double,
-else, enum, extern,
-float, for, goto,
-if, inline @__, int, __int128, long, noreturn _Noreturn,
-float, for,
-generic _Generic, goto,
-if, inline @__, int, int128 __int128, long,
-noreturn _Noreturn,  _Nullable __nullable, _Nonnull __nonnull,
-register, restrict @__, return
-short, signed @__, sizeof, static, staticAssert _Static_assert, struct, switch,
-typedef, typeof @__, thread __thread _Thread_local
-union, unsigned, void, volatile @__,
-while,
-label __label__
-(CTokGnuC GnuCAttrTok) __attribute __attribute__
-(CTokGnuC GnuCExtTok) __extension__
-(CTokGnuC GnuCComplexReal) __real __real__
-(CTokGnuC GnuCComplexImag) __imag __imag__
-(CTokGnuC GnuCVaArg) __builtin_va_arg
-(CTokGnuC GnuCOffsetof) __builtin_offsetof
-(CTokGnuC GnuCTyCompat) __builtin_types_compatible_p
-*/
-// Tokens: _Alignas _Alignof __alignof alignof __alignof__ __asm asm __asm__ _Atomic auto break _Bool case char __const const __const__ continue _Complex __complex__ default do double else enum extern float for _Generic goto if __inline inline __inline__ int __int128 long _Noreturn  _Nullable __nullable _Nonnull __nonnull register __restrict restrict __restrict__ return short __signed signed __signed__ sizeof static _Static_assert struct switch typedef __typeof typeof __typeof__ __thread _Thread_local union unsigned void __volatile volatile __volatile__ while __label__ __attribute __attribute__ __extension__ __real __real__ __imag __imag__ __builtin_va_arg __builtin_offsetof __builtin_types_compatible_p
-
 fn idkwtok(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
     match p.getTokString() {
         "_Alignas" => tok(8, CTokAlignas, pos),
@@ -33269,13 +33233,13 @@ fn idkwtok(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
         "__asm" => tok(5, CTokAsm, pos),
         "asm" => tok(3, CTokAsm, pos),
         "__asm__" => tok(7, CTokAsm, pos),
-        "__attribute" => tok(11, |posl| CTokGnuC(posl, GnuCAttrTok), pos),
-        "__attribute__" => tok(13, |posl| CTokGnuC(posl, GnuCAttrTok), pos),
+        "__attribute" => tok(11, |posl| CTokGnuC(posl, GnuCTok::Attr), pos),
+        "__attribute__" => tok(13, |posl| CTokGnuC(posl, GnuCTok::Attr), pos),
         "auto" => tok(4, CTokAuto, pos),
         "break" => tok(5, CTokBreak, pos),
-        "__builtin_offsetof" => tok(18, |posl| CTokGnuC(posl, GnuCOffsetof), pos),
-        "__builtin_types_compatible_p" => tok(28, |posl| CTokGnuC(posl, GnuCTyCompat), pos),
-        "__builtin_va_arg" => tok(16, |posl| CTokGnuC(posl, GnuCVaArg), pos),
+        "__builtin_offsetof" => tok(18, |posl| CTokGnuC(posl, GnuCTok::Offsetof), pos),
+        "__builtin_types_compatible_p" => tok(28, |posl| CTokGnuC(posl, GnuCTok::TyCompat), pos),
+        "__builtin_va_arg" => tok(16, |posl| CTokGnuC(posl, GnuCTok::VaArg), pos),
         "case" => tok(4, CTokCase, pos),
         "char" => tok(4, CTokChar, pos),
         "__complex__" => tok(11, CTokComplex, pos),
@@ -33288,14 +33252,14 @@ fn idkwtok(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
         "double" => tok(6, CTokDouble, pos),
         "else" => tok(4, CTokElse, pos),
         "enum" => tok(4, CTokEnum, pos),
-        "__extension__" => tok(13, |posl| CTokGnuC(posl, GnuCExtTok), pos),
+        "__extension__" => tok(13, |posl| CTokGnuC(posl, GnuCTok::Ext), pos),
         "extern" => tok(6, CTokExtern, pos),
         "float" => tok(5, CTokFloat, pos),
         "for" => tok(3, CTokFor, pos),
         "goto" => tok(4, CTokGoto, pos),
         "if" => tok(2, CTokIf, pos),
-        "__imag" => tok(6, |posl| CTokGnuC(posl, GnuCComplexImag), pos),
-        "__imag__" => tok(8, |posl| CTokGnuC(posl, GnuCComplexImag), pos),
+        "__imag" => tok(6, |posl| CTokGnuC(posl, GnuCTok::ComplexImag), pos),
+        "__imag__" => tok(8, |posl| CTokGnuC(posl, GnuCTok::ComplexImag), pos),
         "__inline" => tok(8, CTokInline, pos),
         "inline" => tok(6, CTokInline, pos),
         "__inline__" => tok(10, CTokInline, pos),
@@ -33305,8 +33269,8 @@ fn idkwtok(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
         "long" => tok(4, CTokLong, pos),
         "__nonnull" => tok(9, CTokNonnull, pos),
         "__nullable" => tok(10, CTokNullable, pos),
-        "__real" => tok(6, |posl| CTokGnuC(posl, GnuCComplexReal), pos),
-        "__real__" => tok(8, |posl| CTokGnuC(posl, GnuCComplexReal), pos),
+        "__real" => tok(6, |posl| CTokGnuC(posl, GnuCTok::ComplexReal), pos),
+        "__real__" => tok(8, |posl| CTokGnuC(posl, GnuCTok::ComplexReal), pos),
         "register" => tok(8, CTokRegister, pos),
         "__restrict" => tok(10, CTokRestrict, pos),
         "restrict" => tok(8, CTokRestrict, pos),
@@ -33518,7 +33482,7 @@ fn alex_action_12(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
 }
 
 fn alex_action_13(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
- token(p, |pos, vers| CTokClangC(pos, ClangCTok(vers)),
+ token(p, |pos, vers| CTokClangC(pos, ClangCTok::CVersion(vers)),
                                     readClangCVersion, pos, len) 
 }
 
