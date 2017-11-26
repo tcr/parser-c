@@ -111383,23 +111383,54 @@ fn idtok(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
 }
 
 fn adjustLineDirective(pragma: &str, pos: Position) -> Res<Position> {
-    // calculate new offset
+    let prag_bytes = pragma.as_bytes();
+
+    // calculate new offset (changes by length of #line pragma)
     let offs_q = pos.offset() + pragma.len();
-    // find the row
-    let row: String = pragma[1..].trim().chars().take_while(|&ch| ch.is_digit(10)).collect();
-    let row = row.parse().map_err(
+
+    // find the new row (first number on the line)
+    let row_start = prag_bytes.iter().position(|&b| b.is_ascii_digit()).unwrap();
+    let row_end = row_start +
+        prag_bytes[row_start..].iter().position(|&b| !b.is_ascii_digit()).unwrap_or(prag_bytes.len() - row_start);
+    let new_row = pragma[row_start..row_end].parse().map_err(
         |_| ParseError::lexical(pos.clone(), "Invalid line in #line pragma".into()))?;
-    // find the filename, if present
+
+    let mut flag_start = row_end;
+    // find the filename, if any (everything between first and last quote
+    let first_quote = prag_bytes.iter().position(|&ch| ch == b'"');
+    let last_quote = prag_bytes.iter().rposition(|&ch| ch == b'"');
     let current_fname = pos.file();
-    let new_fname = if let Some(fname_start) = pragma.as_bytes().iter().position(|&ch| ch == b'"') {
-        let fname_end = pragma[fname_start+1..].as_bytes().iter().position(|&ch| ch == b'"').unwrap();
-        let fname = &pragma[fname_start+1..fname_start+fname_end+1];
+    let new_fname = if first_quote != last_quote { // found a filename
+        let first_quote = first_quote.unwrap();
+        let last_quote = last_quote.unwrap();
+        flag_start = last_quote + 1;
+        // TODO fname should be unescaped if it contains backslashes
+        let fname = &pragma[first_quote+1..last_quote];
         if &*current_fname == fname { current_fname } else { Rc::new(fname.to_string()) }
-    } else {
+    } else { // no or just one quote
         current_fname
     };
 
-    Ok(Position::new(offs_q, new_fname, row, 1))
+    // find the flags
+    let mut lowest_flag = 3;
+    for flag in pragma[flag_start..].split_whitespace() {
+        if flag == "1" { lowest_flag = 1; }
+        else if flag == "2" { lowest_flag = lowest_flag.min(2); }
+    }
+
+    // process parent from flags
+    let new_parent: Option<Rc<Position>> = if lowest_flag == 1 {
+        // entering new file -> push parent
+        Some(Rc::new(pos))
+    } else if lowest_flag == 2 {
+        // returning to this file -> pop parent
+        pos.parent().and_then(|p| p.parent())
+    } else {
+        // same file
+        pos.parent()
+    };
+
+    Ok(Position::new(offs_q, new_fname, new_row, 1, new_parent))
 }
 
 #[inline]
