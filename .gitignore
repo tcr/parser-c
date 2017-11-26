@@ -3,3 +3,5 @@ target
 .stack-work
 reference/stack.yaml
 parser-c-tests/gcc_pre
+callgrind.out.*
+dist/

@@ -1,6 +1,7 @@
 // Original file: "Ident.hs"
 // File auto-generated using Corollary.
 
+use std::fmt;
 use std::rc::Rc;
 use std::hash::{Hash, Hasher};
 
@@ -50,8 +51,14 @@ impl PartialEq for RawIdent {
     }
 }
 
-#[derive(Clone, Debug, PartialOrd, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialOrd, PartialEq, Eq, Hash)]
 pub struct Ident(Rc<RawIdent>);
+
+impl fmt::Debug for Ident {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Ident({:?}, {:?})", (self.0).0, (self.0).1)
+    }
+}
 
 // -- identifiers are attributed
 impl CNode for Ident {
