@@ -9,6 +9,7 @@ pub mod tokens;
 use std::error::Error;
 use std::mem;
 use std::fmt;
+use std::io;
 use std::rc::Rc;
 use std::boxed::FnBox;
 use std::iter::FromIterator;
@@ -28,39 +29,49 @@ use data::position::{Position, Pos};
 use data::input_stream::InputStream;
 
 #[derive(Debug)]
-pub struct ParseError {
-    kind: ParseErrorKind,
-    msg: String,
-    pos: Rc<Position>,
-}
-
-#[derive(Debug)]
-pub enum ParseErrorKind {
-    Lexical,
-    Syntax,
+pub enum ParseError {
+    Input(Box<Error>),
+    Lexical(String, Rc<Position>),
+    Syntax(String, Rc<Position>),
 }
 
 impl ParseError {
+    pub fn input(inner: Box<Error>) -> ParseError {
+        ParseError::Input(inner)
+    }
+
     pub fn lexical<T: Into<Rc<Position>>>(pos: T, msg: String) -> ParseError {
-        ParseError { kind: ParseErrorKind::Lexical, msg, pos: pos.into() }
+        ParseError::Lexical(msg, pos.into())
     }
 
     pub fn syntax<T: Into<Rc<Position>>>(pos: T, msg: String) -> ParseError {
-        ParseError { kind: ParseErrorKind::Syntax, msg, pos: pos.into() }
+        ParseError::Syntax(msg, pos.into())
+    }
+}
+
+impl From<io::Error> for ParseError {
+    fn from(err: io::Error) -> Self {
+        ParseError::input(box err as Box<Error>)
     }
 }
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}: {}: {}", self.pos, self.description(), self.msg)
+        match *self {
+            ParseError::Input(ref e) => write!(f, "Input error: {}", e),
+            ParseError::Lexical(ref msg, ref pos) |
+            ParseError::Syntax(ref msg, ref pos) =>
+                write!(f, "{}: {}: {}", pos, self.description(), msg),
+        }
     }
 }
 
 impl Error for ParseError {
     fn description(&self) -> &str {
-        match self.kind {
-            ParseErrorKind::Lexical => "lexical error",
-            ParseErrorKind::Syntax => "syntax error",
+        match *self {
+            ParseError::Input(_) => "input error",
+            ParseError::Lexical(..) => "lexical error",
+            ParseError::Syntax(..) => "syntax error",
         }
     }
 }

@@ -4,6 +4,7 @@
 use std::fs;
 use std::error::Error;
 use std::path::{Path, PathBuf};
+use std::ffi::OsStr;
 use tempdir;
 
 use data::input_stream::InputStream;
@@ -21,7 +22,7 @@ pub trait Preprocessor {
 pub const PREPROCESSED_EXT: &str = "i";
 
 pub fn isPreprocessed(x: &Path) -> bool {
-    x.ends_with(&format!(".{}", PREPROCESSED_EXT))
+    x.extension() == Some(OsStr::new(PREPROCESSED_EXT))
 }
 
 #[derive(Clone)]
@@ -31,7 +32,6 @@ pub enum CppOption {
     Undefine(String),
     IncludeFile(String),
 }
-pub use self::CppOption::*;
 
 #[derive(Clone)]
 pub struct CppArgs {
@@ -90,22 +90,23 @@ pub fn runPreprocessor<P: Preprocessor>(cpp: P, cpp_args: CppArgs) -> PPResult<I
 }
 
 fn preprocess_with_out_file<P: Preprocessor>(cpp: P, cpp_args: CppArgs) -> PPResult<InputStream> {
-    cpp.runCPP(&cpp_args).map(|_| InputStream::from_file(cpp_args.outputFile.as_ref().unwrap()))
+    let output = cpp_args.outputFile.as_ref().expect("outputFile should be set");
+    cpp.runCPP(&cpp_args).and_then(|_| InputStream::from_file(output).map_err(Into::into))
 }
 
 fn preprocess_with_given_temp_dir<P: Preprocessor>(cpp: P, mut cpp_args: CppArgs) -> PPResult<InputStream> {
     let mut inputFile = cpp_args.inputFile.clone();
     inputFile.set_extension(PREPROCESSED_EXT);
-    let mut outputFile = cpp_args.cppTmpDir.clone().unwrap();
+    let mut outputFile = cpp_args.cppTmpDir.clone().expect("cppTmpDir should be set");
     outputFile.push(inputFile.file_name().unwrap());
     cpp_args.outputFile = Some(outputFile.clone());
     let res = preprocess_with_out_file(cpp, cpp_args);
-    fs::remove_file(&outputFile).unwrap();
+    let _ = fs::remove_file(&outputFile);
     res
 }
 
 fn preprocess_with_new_temp_dir<P: Preprocessor>(cpp: P, mut cpp_args: CppArgs) -> PPResult<InputStream> {
-    let tmpdir = tempdir::TempDir::new("parse-c").unwrap(); // will self-destruct on drop
+    let tmpdir = tempdir::TempDir::new("parse-c")?; // will self-destruct on drop
     cpp_args.cppTmpDir = Some(tmpdir.path().to_path_buf());
     preprocess_with_given_temp_dir(cpp, cpp_args)
 }

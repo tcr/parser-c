@@ -11,8 +11,8 @@ use parser_c::parser::tokens::CTokEof;
 fn main() {
     let mut args = env::args();
     let input_file = args.nth(1).unwrap();
-    let dump = args.nth(0).as_ref().map(|x| &**x) == Some("-p");
-    let input_stream = InputStream::from_file(&input_file);
+    let dump = args.nth(0).as_ref().map(|x| &**x) == Some("-d");
+    let input_stream = InputStream::from_file(&input_file).unwrap();
     let init_pos = Position::from_file(&input_file);
     let res = execParser_(|p| loop {
         let tok = lexC(p)?;
