@@ -377,10 +377,15 @@ fn idtok(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
 }
 
 fn adjustLineDirective(pragma: &str, pos: Position) -> Res<Position> {
+    if pos.offset().is_none() {
+        // internal position -> do not touch
+        return Ok(pos);
+    }
+
     let prag_bytes = pragma.as_bytes();
 
     // calculate new offset (changes by length of #line pragma)
-    let offs_q = pos.offset() + pragma.len();
+    let offs_q = pos.offset().unwrap() + pragma.len();
 
     // find the new row (first number on the line)
     let row_start = prag_bytes.iter().position(|&b| b.is_ascii_digit()).unwrap();
@@ -393,7 +398,7 @@ fn adjustLineDirective(pragma: &str, pos: Position) -> Res<Position> {
     // find the filename, if any (everything between first and last quote
     let first_quote = prag_bytes.iter().position(|&ch| ch == b'"');
     let last_quote = prag_bytes.iter().rposition(|&ch| ch == b'"');
-    let current_fname = pos.file();
+    let current_fname = pos.file().unwrap();
     let new_fname = if first_quote != last_quote { // found a filename
         let first_quote = first_quote.unwrap();
         let last_quote = last_quote.unwrap();

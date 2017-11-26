@@ -84,7 +84,7 @@ impl NodeInfo {
             OnlyPos(ref firstPos, ref lastPos, lastTokLen) => if lastTokLen == 0 {
                 None
             } else {
-                Some(lastPos.offset() + lastTokLen - firstPos.offset())
+                Some(lastPos.offset().unwrap() + lastTokLen - firstPos.offset().unwrap())
             }
         }
     }
@@ -111,17 +111,4 @@ impl NodeInfo {
             NodeInfo(ref pos, ..) | OnlyPos(ref pos, ..) => pos.clone(),
         }
     }
-}
-
-pub fn fileOfNode<A: CNode>(obj: &A) -> Option<Rc<String>> {
-    let pos = obj.pos();
-    if pos.isSource() {
-        Some(pos.file())
-    } else {
-        None
-    }
-}
-
-pub fn eqByName<A: CNode>(obj1: A, obj2: A) -> bool {
-    obj1.node_info() == obj2.node_info()
 }
