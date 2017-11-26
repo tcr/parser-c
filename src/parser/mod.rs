@@ -52,15 +52,15 @@ impl ParseError {
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} at {}: {}", self.description(), self.pos, self.msg)
+        write!(f, "{}: {}: {}", self.pos, self.description(), self.msg)
     }
 }
 
 impl Error for ParseError {
     fn description(&self) -> &str {
         match self.kind {
-            ParseErrorKind::Lexical => "Lexical error",
-            ParseErrorKind::Syntax => "Syntax error",
+            ParseErrorKind::Lexical => "lexical error",
+            ParseErrorKind::Syntax => "syntax error",
         }
     }
 }

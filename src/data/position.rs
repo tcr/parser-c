@@ -8,57 +8,83 @@ use std::path::Path;
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum Position {
     Position {
+        /// Absolute offset in the preprocessed file.
         offset: usize,
+        /// Original file name. Affected by #line pragmas.
         file: Rc<String>,
+        /// Line in the original file. Affected by #line pragmas.
         row: usize,
+        /// Column in the original file. Affected by #line pragmas.
         column: usize,
+        /// Including file, if any (forms #line stack).
+        parent: Option<Rc<Position>>,
     },
-    NoPosition,
-    BuiltinPosition,
-    InternalPosition,
+    None,
+    Builtin,
+    Internal,
 }
-pub use self::Position::{NoPosition, BuiltinPosition, InternalPosition};
+
+fn parent_display(pos: &Position, f: &mut fmt::Formatter) -> fmt::Result {
+    match *pos {
+        Position::None | Position::Builtin | Position::Internal => {
+            write!(f, "In file included from {}", pos)
+        }
+        Position::Position { ref file, row, column, parent: None, .. } => {
+            write!(f, "In file included from {}:{}:{}", file, row, column)
+        }
+        Position::Position { ref file, row, column, parent: Some(ref parent), .. } => {
+            parent_display(parent, f)?;
+            write!(f, ",\n                 from {}:{}:{}", file, row, column)
+        }
+    }
+}
 
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            NoPosition => write!(f, "<no file>"),
-            BuiltinPosition => write!(f, "<builtin>"),
-            InternalPosition => write!(f, "<internal>"),
-            Position::Position { offset, ref file, row, column } => {
-                write!(f, "{} line {}, column {} (source-offset {})",
-                       file, row, column, offset)
+            Position::None => write!(f, "<no file>"),
+            Position::Builtin => write!(f, "<builtin>"),
+            Position::Internal => write!(f, "<internal>"),
+            Position::Position { offset, ref file, row, column, ref parent } => {
+                if let Some(ref parent) = *parent {
+                    parent_display(parent, f)?;
+                    write!(f, ":\n")?;
+                }
+                write!(f, "{}:{}:{} (offset {})", file, row, column, offset)
             }
         }
     }
 }
 
 impl Position {
-    pub fn new(offset: usize, file: Rc<String>, row: usize, column: usize) -> Position {
-        Position::Position { offset, file: file, row, column }
+    pub fn new(offset: usize, file: Rc<String>, row: usize, column: usize,
+               parent: Option<Rc<Position>>) -> Position {
+        Position::Position { offset, file, row, column, parent }
     }
 
     pub fn from_file<P: AsRef<Path>>(file: P) -> Position {
         let path_str = file.as_ref().display().to_string();
-        Position::Position { offset: 1, file: Rc::new(path_str), row: 1, column: 1 }
+        Position::Position { offset: 1, file: Rc::new(path_str),
+                             row: 1, column: 1, parent: None }
     }
 
     pub fn none() -> Position {
-        NoPosition
+        Position::None
     }
 
     pub fn builtin() -> Position {
-        BuiltinPosition
+        Position::Builtin
     }
 
     pub fn internal() -> Position {
-        InternalPosition
+        Position::Internal
     }
 
     pub fn offset(&self) -> usize {
         if let Position::Position { offset, .. } = *self {
             offset
         } else {
+            // TODO: return an Option
             panic!("Non Position::Position passed to posOffset")
         }
     }
@@ -87,6 +113,14 @@ impl Position {
         }
     }
 
+    pub fn parent(&self) -> Option<Rc<Position>> {
+        if let Position::Position { ref parent, .. } = *self {
+            parent.clone()
+        } else {
+            panic!("Non Position::Position passed to posParent")
+        }
+    }
+
     pub fn isSource(&self) -> bool {
         match *self {
             Position::Position { .. } => true,
@@ -95,15 +129,15 @@ impl Position {
     }
 
     pub fn isNone(&self) -> bool {
-        self == &NoPosition
+        self == &Position::None
     }
 
     pub fn isBuiltin(&self) -> bool {
-        self == &BuiltinPosition
+        self == &Position::Builtin
     }
 
     pub fn isInternal(&self) -> bool {
-        self == &InternalPosition
+        self == &Position::Internal
     }
 
     pub fn inc_chars(&mut self, by: usize) {
@@ -126,14 +160,6 @@ impl Position {
             *column = 1;
         }
     }
-
-    pub fn adjust(self, new_file: String, row: usize) -> Position {
-        match self {
-            Position::Position { offset, .. } =>
-                Self::new(offset, Rc::new(new_file), row, 1),
-            p => p,
-        }
-    }
 }
 
 pub type PosLength = (Rc<Position>, usize);
@@ -151,7 +177,7 @@ impl<A: Pos> Pos for Vec<A> {
         if !self.is_empty() {
             self[0].pos()
         } else {
-            Rc::new(NoPosition)
+            Rc::new(Position::None)
         }
     }
 }

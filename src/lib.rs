@@ -28,7 +28,7 @@
 
 #![feature(box_syntax, box_patterns, fnbox, vec_remove_item, i128_type,
            slice_patterns, advanced_slice_patterns, conservative_impl_trait,
-           decode_utf8)]
+           decode_utf8, ascii_ctype)]
 // Cut down on number of warnings until we manage it.
 #![allow(non_snake_case)]
 
