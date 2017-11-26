@@ -404,6 +404,7 @@ pub enum CTypeSpecifier<I> {
     CIntType(I),
     CLongType(I),
     CFloatType(I),
+    CFloat128Type(I),
     CDoubleType(I),
     CSignedType(I),
     CUnsigType(I),
@@ -575,6 +576,7 @@ pub enum CBuiltinThing<I> {
     CBuiltinVaArg(Box<CExpression<I>>, Box<CDeclaration<I>>, I),
     CBuiltinOffsetOf(Box<CDeclaration<I>>, Vec<CPartDesignator<I>>, I),
     CBuiltinTypesCompatible(Box<CDeclaration<I>>, Box<CDeclaration<I>>, I),
+    CBuiltinConvertVector(Box<CExpression<I>>, Box<CDeclaration<I>>, I),
 }
 pub use self::CBuiltinThing::*;
 

@@ -48,15 +48,14 @@ fn main() {
 
         let test_name = file_str.trim_right_matches(".i").replace(&['-', '.', '+'][..], "__");
         let should_fail = fail_list.contains(&*file_str);
-        let should_roundtrip = true;//roundtrip_list.contains(&*file_str);
 
         write!(out, "\
 #[test]
 #[allow(non_snake_case)]
 fn gcc_dg_{}() {{
-    check_gcc_dg_file({:?}, {}, {});
+    check_gcc_dg_file({:?}, {});
 }}
 
-", test_name, file_str, should_fail, should_roundtrip).unwrap();
+", test_name, file_str, should_fail).unwrap();
     }
 }

@@ -208,6 +208,7 @@ else            { CTokElse(_) }
 enum            { CTokEnum(_) }
 extern          { CTokExtern(_) }
 float           { CTokFloat(_) }
+"__float128"    { CTokFloat128(_) }
 for             { CTokFor(_) }
 "_Generic"      { CTokGeneric(_) }
 goto            { CTokGoto(_) }
@@ -252,6 +253,7 @@ tyident         { CTokTyIdent(_, $$) }          -- `typedef-name' identifier
 "__builtin_va_arg"              { CTokGnuC(_, GnuCTok::VaArg) }
 "__builtin_offsetof"            { CTokGnuC(_, GnuCTok::Offsetof) }
 "__builtin_types_compatible_p"  { CTokGnuC(_, GnuCTok::TyCompat) }
+"__builtin_convertvector"       { CTokClangC(_, ClangCTok::ConvertVector) }
 clangcversion   { CTokClangC(_, ClangCTok::CVersion($$)) } -- Clang version literal
 
 %%
@@ -923,6 +925,7 @@ basic_type_name
   | "_Bool"                     {% with_pos!(p, $1, |at| box CBoolType(at)) }
   | "_Complex"                  {% with_pos!(p, $1, |at| box CComplexType(at)) }
   | "__int128"                  {% with_pos!(p, $1, |at| box CInt128Type(at)) }
+  | "__float128"                {% with_pos!(p, $1, |at| box CFloat128Type(at)) }
 
 
 -- A mixture of type qualifiers, storage class and basic type names in any
@@ -1843,6 +1846,9 @@ array_designator
 --     __builtin_va_arg
 --     __builtin_offsetof
 --     __builtin_types_compatible_p
+-- * Clang extensions:
+--     __builtin_convertvector
+--
 primary_expression :: { Box<CExpr> }
 primary_expression
   : ident                {% with_pos!(p, $1, |at| box CVar($1, at)) }
@@ -1863,6 +1869,9 @@ primary_expression
 
   | "__builtin_types_compatible_p" '(' type_name ',' type_name ')'
         {% with_pos!(p, $1, |at| box CBuiltinExpr(box CBuiltinTypesCompatible($3, $5, at))) }
+
+  | "__builtin_convertvector" '(' assignment_expression ',' type_name ')'
+        {% with_pos!(p, $1, |at| box CBuiltinExpr(box CBuiltinConvertVector($3, $5, at))) }
 
 -- Generic Selection association list (C11 6.5.1.1)
 --

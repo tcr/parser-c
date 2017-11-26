@@ -29,7 +29,7 @@ fn normalize(node: &mut Any) {
     }
 }
 
-fn check_gcc_dg_file(file_str: &str, should_fail: bool, should_roundtrip: bool) {
+fn check_gcc_dg_file(file_str: &str, should_fail: bool) {
     let path = Path::new("./gcc_pre").join(file_str);
     let mut ast = match parseCFilePre(&path) {
         Ok(mut ast) => if !should_fail {
@@ -43,35 +43,33 @@ fn check_gcc_dg_file(file_str: &str, should_fail: bool, should_roundtrip: bool) 
             panic!("*** Parse fail: {}", e);
         }
     };
-    if should_roundtrip {
-        let pretty = prettyToString(&ast);
-        let mut ast2 = match parse(&pretty, file_str) {
-            Ok(mut ast) => ast,
-            Err(e) => {
-                let mut s = String::new();
-                File::open(&path).unwrap().read_to_string(&mut s).unwrap();
-                println!("--- Original source:");
-                println!("{}", s);
-                println!("--- Pretty-printed source:");
-                println!("{}", pretty);
-                println!("---");
-                panic!("*** Parse pretty-printed source fail: {}", e);
-            }
-        };
-        ast.traverse(&normalize);
-        ast2.traverse(&normalize);
-        if !ast.equiv(&ast2) {
+    let pretty = prettyToString(&ast);
+    let mut ast2 = match parse(&pretty, file_str) {
+        Ok(mut ast) => ast,
+        Err(e) => {
             let mut s = String::new();
             File::open(&path).unwrap().read_to_string(&mut s).unwrap();
             println!("--- Original source:");
             println!("{}", s);
-            println!("--- Pretty-print of original AST:");
-            println!("{}", prettyToString(&ast));
-            println!("--- Pretty-print of reparsed AST:");
-            println!("{}", prettyToString(&ast2));
+            println!("--- Pretty-printed source:");
+            println!("{}", pretty);
             println!("---");
-            println!("*** Parsed ASTs are not equivalent");
+            panic!("*** Parse pretty-printed source fail: {}", e);
         }
+    };
+    ast.traverse(&normalize);
+    ast2.traverse(&normalize);
+    if !ast.equiv(&ast2) {
+        let mut s = String::new();
+        File::open(&path).unwrap().read_to_string(&mut s).unwrap();
+        println!("--- Original source:");
+        println!("{}", s);
+        println!("--- Pretty-print of original AST:");
+        println!("{}", prettyToString(&ast));
+        println!("--- Pretty-print of reparsed AST:");
+        println!("{}", prettyToString(&ast2));
+        println!("---");
+        println!("*** Parsed ASTs are not equivalent");
     }
 }
 

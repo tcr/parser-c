@@ -737,6 +737,7 @@ impl Pretty for CTypeSpec {
             CIntType(_) => text("int"),
             CLongType(_) => text("long"),
             CFloatType(_) => text("float"),
+            CFloat128Type(_) => text("__float128"),
             CDoubleType(_) => text("double"),
             CSignedType(_) => text("signed"),
             CUnsigType(_) => text("unsigned"),
@@ -1056,6 +1057,8 @@ impl Pretty for CBuiltin {
             },
             CBuiltinTypesCompatible(ref ty1, ref ty2, _) =>
                 text("__builtin_types_compatible_p") + parens(ty1.pretty() + ", " + ty2.pretty()),
+            CBuiltinConvertVector(ref expr, ref ty, _) =>
+                text("__builtin_convertvector") + parens(expr.pretty() + ", " + ty.pretty()),
         }
     }
 }
