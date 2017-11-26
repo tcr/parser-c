@@ -80,34 +80,33 @@ impl Position {
         Position::Internal
     }
 
-    pub fn offset(&self) -> usize {
+    pub fn offset(&self) -> Option<usize> {
         if let Position::Position { offset, .. } = *self {
-            offset
+            Some(offset)
         } else {
-            // TODO: return an Option
-            panic!("Non Position::Position passed to posOffset")
+            None
         }
     }
 
-    pub fn file(&self) -> Rc<String> {
+    pub fn file(&self) -> Option<Rc<String>> {
         if let Position::Position { ref file, .. } = *self {
-            file.clone()
+            Some(file.clone())
         } else {
-            panic!("Non Position::Position passed to posFile")
+            None
         }
     }
 
-    pub fn row(&self) -> usize {
+    pub fn row(&self) -> Option<usize> {
         if let Position::Position { row, .. } = *self {
-            row
+            Some(row)
         } else {
-            panic!("Non Position::Position passed to posRow")
+            None
         }
     }
 
-    pub fn column(&self) -> usize {
+    pub fn column(&self) -> Option<usize> {
         if let Position::Position { column, .. } = *self {
-            column
+            Some(column)
         } else {
             panic!("Non Position::Position passed to posColumn")
         }
@@ -117,7 +116,7 @@ impl Position {
         if let Position::Position { ref parent, .. } = *self {
             parent.clone()
         } else {
-            panic!("Non Position::Position passed to posParent")
+            None
         }
     }
 

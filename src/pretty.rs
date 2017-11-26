@@ -9,7 +9,7 @@ use either::Either;
 use syntax::ast::*;
 use syntax::ops::*;
 use data::ident::Ident;
-use data::node::fileOfNode;
+use data::position::Pos;
 use syntax::constants::{showCChar, showCString, showCInteger, showCFloat};
 
 const INDENT: isize = 4;
@@ -46,7 +46,7 @@ pub fn prettyUsingInclude(&CTranslationUnit(ref edecls, _): &CTranslUnit) -> Str
     let mut header_files = HashSet::new();
     let mut doc = empty();
     for decl in edecls {
-        match fileOfNode(decl) {
+        match decl.pos().file() {
             Some(ref f) if f.ends_with(".h") => {
                 if header_files.insert(f.clone()) {
                     doc = doc.above(text("#include \"") + text(f.to_string()) + '"');

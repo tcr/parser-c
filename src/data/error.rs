@@ -125,9 +125,9 @@ pub fn userErr(msg: String) -> UserError {
                         msg.lines().map(Into::into).collect()))
 }
 
-pub fn showError<E: Error>(short_msg: String, e: E) -> String {
-    showErrorInfo(short_msg, e.errorInfo())
-}
+// pub fn showError<E: Error>(short_msg: String, e: E) -> String {
+//     showErrorInfo(short_msg, e.errorInfo())
+// }
 
 
 pub const INDENT: &str = "  ";
@@ -137,27 +137,27 @@ pub const INTERNAL_ERR_PREFIX: &str = "parser-c : Internal Error\n\
      https://github.com/tcr/parser-c";
 
 
-pub fn showErrorInfo(short_msg: String, ErrorInfo(level, pos, mut msgs): ErrorInfo) -> String {
-    let mut res = String::new();
+// pub fn showErrorInfo(short_msg: String, ErrorInfo(level, pos, mut msgs): ErrorInfo) -> String {
+//     let mut res = String::new();
 
-    if pos.isSource() {
-        write!(res, "{}:{}: (column {}) ", pos.file(), pos.row(), pos.column()).unwrap();
-    } else {
-        write!(res, "{}:: ", pos).unwrap();
-    }
-    write!(res, "[{}]", level).unwrap();
-    if !short_msg.is_empty() {
-        msgs.insert(0, short_msg);
-    }
-    if msgs.is_empty() {
-        internalErr("No short message or error message provided.");
-    }
-    for msg in msgs {
-        write!(res, "{}>>> {}\n", INDENT, msg).unwrap();
-    }
+//     if pos.isSource() {
+//         write!(res, "{}:{}: (column {}) ", pos.file(), pos.row(), pos.column()).unwrap();
+//     } else {
+//         write!(res, "{}:: ", pos).unwrap();
+//     }
+//     write!(res, "[{}]", level).unwrap();
+//     if !short_msg.is_empty() {
+//         msgs.insert(0, short_msg);
+//     }
+//     if msgs.is_empty() {
+//         internalErr("No short message or error message provided.");
+//     }
+//     for msg in msgs {
+//         write!(res, "{}>>> {}\n", INDENT, msg).unwrap();
+//     }
 
-    res
-}
+//     res
+// }
 
 pub fn internalErr(msg: &str) -> ! {
     let mut res = String::new();
