@@ -330,14 +330,14 @@ impl Display for CToken {
             CTokSLit(_, ref v)    => write!(f, "{}", showCString(v)),
             CTokIdent(_, ref v)   => write!(f, "{}", v.as_str()),
             CTokTyIdent(_, ref v) => write!(f, "{}", v.as_str()),
-            CTokGnuC(_, GnuCAttrTok) => write!(f, "__attribute__"),
-            CTokGnuC(_, GnuCExtTok)  => write!(f, "__extension__"),
-            CTokGnuC(_, GnuCVaArg) => write!(f, "__builtin_va_arg"),
-            CTokGnuC(_, GnuCOffsetof)  => write!(f, "__builtin_offsetof"),
-            CTokGnuC(_, GnuCTyCompat) => write!(f, "__builtin_types_compatible_p"),
-            CTokGnuC(_, GnuCComplexReal)  => write!(f, "__real__"),
-            CTokGnuC(_, GnuCComplexImag) => write!(f, "__image__"),
-            CTokClangC(_, ClangCTok(ClangCVersion(ref v)))  => write!(f, "{}", v),
+            CTokGnuC(_, GnuCTok::Attr) => write!(f, "__attribute__"),
+            CTokGnuC(_, GnuCTok::Ext)  => write!(f, "__extension__"),
+            CTokGnuC(_, GnuCTok::VaArg)   => write!(f, "__builtin_va_arg"),
+            CTokGnuC(_, GnuCTok::Offsetof) => write!(f, "__builtin_offsetof"),
+            CTokGnuC(_, GnuCTok::TyCompat) => write!(f, "__builtin_types_compatible_p"),
+            CTokGnuC(_, GnuCTok::ComplexReal) => write!(f, "__real__"),
+            CTokGnuC(_, GnuCTok::ComplexImag) => write!(f, "__image__"),
+            CTokClangC(_, ClangCTok::CVersion(ClangCVersion(ref v))) => write!(f, "{}", v),
             CTokEof               => write!(f, "<EOF>"),
         }
     }
@@ -345,16 +345,16 @@ impl Display for CToken {
 
 #[derive(Clone, Debug)]
 pub enum GnuCTok {
-    GnuCAttrTok,
-    GnuCExtTok,
-    GnuCVaArg,
-    GnuCOffsetof,
-    GnuCTyCompat,
-    GnuCComplexReal,
-    GnuCComplexImag,
+    Attr,
+    Ext,
+    VaArg,
+    Offsetof,
+    TyCompat,
+    ComplexReal,
+    ComplexImag,
 }
-pub use self::GnuCTok::*;
 
 #[derive(Clone, Debug)]
-pub struct ClangCTok(pub ClangCVersion);
-pub type ClangCVersionTok = ClangCTok;
+pub enum ClangCTok {
+    CVersion(ClangCVersion),
+}
