@@ -48,7 +48,7 @@ use system::preprocess::{CppArgs, Preprocessor, is_preprocessed, run_preprocesso
 use syntax::ast::CTranslUnit;
 use data::input_stream::InputStream;
 use data::position::Position;
-use parser::{ParseError, parseC};
+use parser::{ParseError, parse};
 
 /// Parse a C source file.
 ///
@@ -72,13 +72,13 @@ pub fn parse_file<C, P>(cpp: C, tmp_dir: Option<PathBuf>,
         InputStream::from_file(&input_file)?
     };
 
-    parseC(input_stream, pos)
+    parse(input_stream, pos)
 }
 
 /// Parse an already preprocessed C source file.
 pub fn parse_file_pre<P: AsRef<Path>>(file: P) -> Result<CTranslUnit, ParseError> {
     let input_stream = InputStream::from_file(file.as_ref())?;
-    parseC(input_stream, Position::from_file(file.as_ref()))
+    parse(input_stream, Position::from_file(file.as_ref()))
 }
 
 /// Basic public API. Accepts C source and a filename.
@@ -87,5 +87,5 @@ pub fn parse_str<P: AsRef<Path>>(input: &str, file: P) -> Result<CTranslUnit, Pa
     // but makes it usable at this early stage.
 
     let input_stream = InputStream::from_string(input.into());
-    parseC(input_stream, Position::from_file(file.as_ref()))
+    parse(input_stream, Position::from_file(file.as_ref()))
 }

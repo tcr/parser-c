@@ -147,9 +147,9 @@ $white+         ;
 --
 \#$space*@int$space*(\"($infname|@charesc)*\"$space*)?(@int$space*)*\r?$eol
   {
-     let new_pos = adjustLineDirective(p.getTokString(), pos)?;
-     p.setPos(new_pos);
-     lexToken_q(p, false)
+     let new_pos = adjust_line_directive(p.tok_str(), pos)?;
+     p.set_pos(new_pos);
+     lex_inner(p, false)
   }
 
 -- #pragma directive (K&R A12.8)
@@ -254,7 +254,7 @@ $white+         ;
 
 -- other identifiers (follows K&R A2.3 and A2.4)
 --
-$identletter($identletter|$digit)*   { idtok(p, pos, len) }
+$identletter($identletter|$digit)*   { id_token(p, pos, len) }
 
 -- constants (follows K&R A2.5)
 --
@@ -364,19 +364,19 @@ L?\"($inchar|@charesc)*@ucn($inchar|@charesc|@ucn)*\"
 
 {
 
-fn idtok(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
-    let name = p.getNewName();
+fn id_token(p: &mut Parser, pos: Position, len: usize) -> Res<CToken> {
+    let name = p.new_name();
     let pos = Rc::new(pos);
-    let idstr = p.getTokString().to_string();
+    let idstr = p.tok_str().to_string();
     let ident = Ident::new(pos.clone(), idstr, name);
-    if p.isTypeIdent(&ident) {
+    if p.is_type_ident(&ident) {
         Ok(CTokTyIdent((pos, len), ident))
     } else {
         Ok(CTokIdent((pos, len), ident))
     }
 }
 
-fn adjustLineDirective(pragma: &str, pos: Position) -> Res<Position> {
+fn adjust_line_directive(pragma: &str, pos: Position) -> Res<Position> {
     if pos.offset().is_none() {
         // internal position -> do not touch
         return Ok(pos);
@@ -433,10 +433,10 @@ fn adjustLineDirective(pragma: &str, pos: Position) -> Res<Position> {
 }
 
 #[inline]
-fn tok<M>(len: usize, mkTok: M, pos: Position) -> Res<CToken>
+fn tok<M>(len: usize, mk_tok: M, pos: Position) -> Res<CToken>
     where M: Fn(PosLength) -> CToken
 {
-    Ok(mkTok((Rc::new(pos), len)))
+    Ok(mk_tok((Rc::new(pos), len)))
 }
 
 /// error token
@@ -447,20 +447,20 @@ fn token_fail(errmsg: &str, pos: Position) -> Res<CToken> {
 
 /// token that uses the string
 #[inline]
-fn token<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: usize) -> Res<CToken>
+fn token<T, R, M>(p: &Parser, mk_tok: M, from_str: R, pos: Position, len: usize) -> Res<CToken>
     where R: Fn(&str) -> T, M: Fn(PosLength, T) -> CToken
 {
-    Ok(mkTok((Rc::new(pos), len), fromStr(p.getTokString())))
+    Ok(mk_tok((Rc::new(pos), len), from_str(p.tok_str())))
 }
 
 /// token that may fail
 #[inline]
-fn token_plus<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: usize) -> Res<CToken>
+fn token_plus<T, R, M>(p: &Parser, mk_tok: M, from_str: R, pos: Position, len: usize) -> Res<CToken>
     where R: Fn(&str) -> Result<T, String>, M: Fn(PosLength, T) -> CToken
 {
-    match fromStr(p.getTokString()) {
+    match from_str(p.tok_str()) {
         Err(err) => Err(ParseError::lexical(pos, err)),
-        Ok(ok)   => Ok(mkTok((Rc::new(pos), len), ok)),
+        Ok(ok)   => Ok(mk_tok((Rc::new(pos), len), ok)),
     }
 }
 
@@ -469,25 +469,25 @@ fn token_plus<T, R, M>(p: &Parser, mkTok: M, fromStr: R, pos: Position, len: usi
 
 type AlexInput = (Position, InputStream);
 
-fn alexGetByte(input: &mut AlexInput) -> Option<u8> {
+fn alex_get_byte(input: &mut AlexInput) -> Option<u8> {
     input.1.peek_byte()
 }
 
-fn alexMove(input: &mut AlexInput, len: usize) {
+fn alex_move(input: &mut AlexInput, len: usize) {
     input.1.move_token(len, &mut input.0);
 }
 
-fn lexicalError<T>(p: &mut Parser) -> Res<T> {
-    let input = p.getInput();
+fn lexical_error<T>(p: &mut Parser) -> Res<T> {
+    let input = p.input();
     let c = input.1.last_char().unwrap_or('?');
     Err(ParseError::lexical(input.0.clone(),
                             format!("The character {:?} does not fit here", c)))
 }
 
-pub fn parseError<T>(p: &mut Parser) -> Res<T> {
-    let lastTok = p.getLastToken();
-    let errmsg = format!("The symbol '{}' does not fit here", lastTok);
-    Err(ParseError::syntax(lastTok.pos(), errmsg))
+pub fn parse_error<T>(p: &mut Parser) -> Res<T> {
+    let last_tok = p.last_token();
+    let errmsg = format!("The symbol '{}' does not fit here", last_tok);
+    Err(ParseError::syntax(last_tok.pos(), errmsg))
 }
 
 
@@ -499,36 +499,36 @@ pub fn parseError<T>(p: &mut Parser) -> Res<T> {
 // when we get to LINE, we have [int (1,1),x (1,4)] in the token cache.
 // Now we run
 // > action  (pos 2,0) 14 "LINE \"ex.c\" 3\n"
-// which in turn adjusts the position and then calls lexToken again
+// which in turn adjusts the position and then calls lex again
 // we get `int (pos 4,0)', and have [x (1,4), int (4,1) ] in the token cache (fine)
 // but then, we again call setLastToken when returning and get [int (4,1),int (4,1)] in the token cache (bad)
-// to resolve this, recursive calls invoke lexToken' False.
-pub fn lexC(p: &mut Parser) -> Res<CToken> {
-    lexToken_q(p, true)
+// to resolve this, recursive calls invoke lex_inner(p, false).
+pub fn lex(p: &mut Parser) -> Res<CToken> {
+    lex_inner(p, true)
 }
 
-fn lexToken_q(p: &mut Parser, modifyCache: bool) -> Res<CToken> {
-    match alexScan(p.getInput()) {
+fn lex_inner(p: &mut Parser, modify_cache: bool) -> Res<CToken> {
+    match alex_scan(p.input()) {
         AlexReturn::EOF => {
-            p.handleEofToken();
+            p.handle_eof_token();
             Ok(CTokEof)
         },
         AlexReturn::Error => {
-            lexicalError(p)
+            lexical_error(p)
         },
         AlexReturn::Skip(len_bytes) => {
-            alexMove(p.getInput(), len_bytes);
-            lexToken_q(p, modifyCache)
+            alex_move(p.input(), len_bytes);
+            lex_inner(p, modify_cache)
         },
         AlexReturn::Token(len_bytes, len_chars, action) => {
-            let pos = p.getPosClone();
-            alexMove(p.getInput(), len_bytes);
-            p.setLastTokLen(len_bytes);
-            let nextTok = action(p, pos, len_chars)?;
-            if modifyCache {
-                p.setLastToken(&nextTok);
+            let pos = p.pos_clone();
+            alex_move(p.input(), len_bytes);
+            p.set_last_tok_len(len_bytes);
+            let next_tok = action(p, pos, len_chars)?;
+            if modify_cache {
+                p.set_last_token(&next_tok);
             }
-            Ok(nextTok)
+            Ok(next_tok)
         },
     }
 }

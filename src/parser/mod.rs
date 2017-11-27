@@ -1,5 +1,5 @@
 // Cut down on number of warnings until we manage it.
-#![allow(non_snake_case)]
+//#![allow(non_snake_case)]
 // Original file: "Parser.hs"
 // File auto-generated using Corollary.
 
@@ -19,8 +19,8 @@ use std::collections::HashSet;
 use either::Either;
 
 pub use parser::parser::Parser;
-use parser::parser::translUnitP;
-use parser::builtin::*;
+use parser::parser::translation_unit;
+use parser::builtin::builtin_type_names;
 use parser::tokens::{CToken, CTokEof};
 use syntax::ast::*;
 use data::name::{Name, NameSupply, new_name_supply};
@@ -78,107 +78,119 @@ impl Error for ParseError {
 }
 
 pub struct PState {
-    curInput: (Position, InputStream),
-    tokLen: usize,
-    prevToken: Option<CToken>,
-    savedToken: Option<CToken>,
-    nameSupply: NameSupply,
-    tyidents: HashSet<Ident>,
+    input: (Position, InputStream),
+    prev_tok_len: usize,
+    prev_token: Option<CToken>,
+    saved_token: Option<CToken>,
+    name_supply: NameSupply,
+    type_idents: HashSet<Ident>,
     scopes: Vec<HashSet<Ident>>,
 }
 
-pub fn execParser<F, T>(input: InputStream, pos: Position, builtins: Vec<Ident>, names: NameSupply,
-                        do_parse: F) -> Result<(T, NameSupply), ParseError>
+pub fn exec_parser<F, T>(input: InputStream, pos: Position, builtins: Vec<Ident>, names: NameSupply,
+                         do_parse: F) -> Result<(T, NameSupply), ParseError>
     where F: FnOnce(&mut Parser) -> Result<T, ParseError>
 {
     let initial_state = PState {
-        curInput: (pos, input),
-        tokLen: 0,
-        prevToken: None,
-        savedToken: None,
-        nameSupply: names,
-        tyidents: HashSet::from_iter(builtins),
+        input: (pos, input),
+        prev_tok_len: 0,
+        prev_token: None,
+        saved_token: None,
+        name_supply: names,
+        type_idents: HashSet::from_iter(builtins),
         scopes: vec![],
     };
     let (state, res) = Parser::exec(initial_state, do_parse)?;
-    Ok((res, state.nameSupply))
+    Ok((res, state.name_supply))
+}
+
+pub fn exec_parser_simple<T, F>(do_parse: F, input: InputStream, pos: Position)
+                                -> Result<T, ParseError>
+    where F: Fn(&mut Parser) -> Result<T, ParseError>
+{
+    exec_parser(input, pos, builtin_type_names(), new_name_supply(), do_parse).map(|x| x.0)
+}
+
+pub fn parse(input: InputStream, initial_pos: Position) -> Result<CTranslUnit, ParseError> {
+    exec_parser(input, initial_pos, builtin_type_names(), new_name_supply(),
+                translation_unit).map(|x| *x.0)
 }
 
 impl Parser {
-    pub fn getNewName(&mut self) -> Name {
-        self.user.nameSupply.next().unwrap()
+    pub fn new_name(&mut self) -> Name {
+        self.user.name_supply.next().unwrap()
     }
 
     // lexer related API
 
-    pub fn getInput(&mut self) -> &mut (Position, InputStream) {
-        &mut self.user.curInput
+    pub fn input(&mut self) -> &mut (Position, InputStream) {
+        &mut self.user.input
     }
 
-    pub fn setPos(&mut self, pos: Position) {
-        self.user.curInput.0 = pos;
+    pub fn set_pos(&mut self, pos: Position) {
+        self.user.input.0 = pos;
     }
 
-    pub fn getPosClone(&self) -> Position {
-        self.user.curInput.0.clone()
+    pub fn pos_clone(&self) -> Position {
+        self.user.input.0.clone()
     }
 
-    pub fn setLastTokLen(&mut self, len: usize) {
-        self.user.tokLen = len;
+    pub fn set_last_tok_len(&mut self, len: usize) {
+        self.user.prev_tok_len = len;
     }
 
-    pub fn getTokString(&self) -> &str {
-        self.user.curInput.1.last_string(self.user.tokLen)
+    pub fn tok_str(&self) -> &str {
+        self.user.input.1.last_string(self.user.prev_tok_len)
     }
 
     // parser related API
 
-    pub fn addTypedef(&mut self, ident: Ident) {
-        self.user.tyidents.insert(ident);
+    fn add_typedef(&mut self, ident: Ident) {
+        self.user.type_idents.insert(ident);
     }
 
-    pub fn shadowTypedef(&mut self, ident: &Ident) {
-        self.user.tyidents.remove(ident);
+    fn shadow_typedef(&mut self, ident: &Ident) {
+        self.user.type_idents.remove(ident);
     }
 
-    pub fn isTypeIdent(&self, ident: &Ident) -> bool {
-        self.user.tyidents.contains(ident)
+    pub fn is_type_ident(&self, ident: &Ident) -> bool {
+        self.user.type_idents.contains(ident)
     }
 
-    pub fn enterScope(&mut self) {
-        self.user.scopes.insert(0, self.user.tyidents.clone());
+    pub fn enter_scope(&mut self) {
+        self.user.scopes.insert(0, self.user.type_idents.clone());
     }
 
-    pub fn leaveScope(&mut self) {
-        assert!(!self.user.scopes.is_empty(), "leaveScope: already in global scope");
-        self.user.tyidents = self.user.scopes.remove(0);
+    pub fn leave_scope(&mut self) {
+        assert!(!self.user.scopes.is_empty(), "leave_scope: already in global scope");
+        self.user.type_idents = self.user.scopes.remove(0);
     }
 
-    pub fn getLastToken(&self) -> CToken {
-        self.user.prevToken.clone().expect("touched undefined token")
+    pub fn last_token(&self) -> &CToken {
+        self.user.prev_token.as_ref().expect("touched undefined token")
     }
 
-    pub fn getSavedToken(&self) -> CToken {   // TODO borrow
-        self.user.savedToken.clone().expect("touched undefined token")
+    pub fn saved_token(&self) -> &CToken {
+        self.user.saved_token.as_ref().expect("touched undefined token")
     }
 
-    pub fn setLastToken(&mut self, tk: &CToken) {
+    pub fn set_last_token(&mut self, tk: &CToken) {
         match *tk {
             CTokEof => {
-                self.user.savedToken = self.user.prevToken.clone();
+                self.user.saved_token = self.user.prev_token.clone();
             }
             ref tok => {
-                self.user.savedToken = mem::replace(&mut self.user.prevToken,
-                                                    Some(tok.clone()));
+                self.user.saved_token = mem::replace(&mut self.user.prev_token,
+                                                     Some(tok.clone()));
             }
         }
     }
 
-    pub fn handleEofToken(&mut self) -> () {
-        self.user.savedToken = self.user.prevToken.clone();
+    pub fn handle_eof_token(&mut self) -> () {
+        self.user.saved_token = self.user.prev_token.clone();
     }
 
-    pub fn doDeclIdent(&mut self, declspecs: &[CDeclSpec], declr: &CDeclrR) {
+    pub fn do_decl_ident(&mut self, declspecs: &[CDeclSpec], declr: &CDeclrR) {
         let is_typedef = |declspec: &CDeclSpec| match *declspec {
             CStorageSpec(CTypedef(_)) => true,
             _ => false,
@@ -188,15 +200,15 @@ impl Parser {
             None => (),
             Some(ref ident) => {
                 if declspecs.iter().any(is_typedef) {
-                    self.addTypedef(ident.clone())
+                    self.add_typedef(ident.clone())
                 } else {
-                    self.shadowTypedef(ident)
+                    self.shadow_typedef(ident)
                 }
             },
         }
     }
 
-    pub fn doFuncParamDeclIdent(&mut self, decl: &CDeclr) {
+    pub fn do_func_param_decl_ident(&mut self, decl: &CDeclr) {
         if decl.1.is_empty() {
             return;
         }
@@ -206,7 +218,7 @@ impl Parser {
                     for dl in dle {
                         if let (Some(ref declr), _, _,) = *dl {
                             if let Some(ref ident) = declr.0 {
-                                self.shadowTypedef(ident);
+                                self.shadow_typedef(ident);
                             }
                         }
                     }
@@ -215,37 +227,37 @@ impl Parser {
         }
     }
 
-    pub fn withLength<T, F>(&mut self, nodeinfo: NodeInfo, mkAttrNode: F) -> Result<T, ParseError>
+    pub fn with_length<T, F>(&mut self, nodeinfo: NodeInfo, mk_attr_node: F) -> Result<T, ParseError>
         where F: FnOnce(NodeInfo) -> T
     {
-        let lastTok = self.getSavedToken();
-        let firstPos = nodeinfo.pos();
-        let (pos, len) = lastTok.into_pos_len();
-        let attrs = NodeInfo::new(firstPos, pos, len,
+        let last_tok = self.saved_token();
+        let first_pos = nodeinfo.pos();
+        let (last_pos, last_len) = last_tok.pos_len();
+        let attrs = NodeInfo::new(first_pos, last_pos, last_len,
                                   nodeinfo.name().unwrap_or_else(|| panic!("nameOfNode")));
-        Ok(mkAttrNode(attrs))
+        Ok(mk_attr_node(attrs))
     }
 
-    pub fn withAttribute<N: Pos, F>(&mut self, node: N, cattrs: Vec<CAttr>, mkDeclrNode: F)
-                                    -> Result<Box<CDeclrR>, ParseError>
+    pub fn with_attribute<N: Pos, F>(&mut self, node: N, cattrs: Vec<CAttr>, mk_declr_node: F)
+                                     -> Result<Box<CDeclrR>, ParseError>
         where F: FnOnce(NodeInfo) -> Box<CDeclrR>
     {
-        let name = self.getNewName();
+        let name = self.new_name();
         let attrs = NodeInfo::with_pos_name(node.pos(), name);
-        let newDeclr = mkDeclrNode(attrs).appendAttrs(cattrs);
-        Ok(newDeclr)
+        let new_declr = mk_declr_node(attrs).append_attrs(cattrs);
+        Ok(new_declr)
     }
 
-    pub fn withAttributePF<N: Pos, F>(&mut self, node: N, cattrs: Vec<CAttr>,
-                                      mkDeclrCtor: F) -> Result<Box<FnBox(Box<CDeclrR>) -> Box<CDeclrR>>, ParseError>
-        where F: FnOnce(NodeInfo, Box<CDeclrR>) -> Box<CDeclrR> + 'static
+    pub fn with_attribute_postfix<N, F>(&mut self, node: N, cattrs: Vec<CAttr>, mk_declr_ctor: F)
+                                        -> Result<Box<FnBox(Box<CDeclrR>) -> Box<CDeclrR>>, ParseError>
+        where N: Pos, F: FnOnce(NodeInfo, Box<CDeclrR>) -> Box<CDeclrR> + 'static
     {
-        let name = self.getNewName();
+        let name = self.new_name();
         let attrs = NodeInfo::with_pos_name(node.pos(), name);
-        let newDeclr: Box<FnBox(Box<CDeclrR>) -> Box<CDeclrR>> = box move |_0| {
-            mkDeclrCtor(attrs.clone(), _0).appendAttrs(cattrs.clone())
+        let new_declr: Box<FnBox(Box<CDeclrR>) -> Box<CDeclrR>> = box move |_0| {
+            mk_declr_ctor(attrs.clone(), _0).append_attrs(cattrs.clone())
         };
-        Ok(newDeclr)
+        Ok(new_declr)
     }
 }
 
@@ -268,7 +280,6 @@ impl CNode for CDeclrR {
 }
 
 impl CDeclrR {
-
     pub fn empty() -> Box<CDeclrR> {
         box CDeclrR { ident: None, inner: vec![], asmname: None, cattrs: vec![],
                       at: NodeInfo::undef() }
@@ -278,14 +289,14 @@ impl CDeclrR {
         box CDeclrR { ident: Some(ident), inner: vec![], asmname: None, cattrs: vec![], at: ni }
     }
 
-    pub fn setAsmName(mut self, mAsmName: Option<Box<CStrLit>>) -> Result<CDeclrR, ParseError> {
+    pub fn set_asm_name(mut self, asm_name: Option<Box<CStrLit>>) -> Result<CDeclrR, ParseError> {
         if self.asmname.is_none() {
-            self.asmname = mAsmName;
+            self.asmname = asm_name;
             Ok(self)
-        } else if mAsmName.is_none() {
+        } else if asm_name.is_none() {
             Ok(self)
         } else {
-            let newname = mAsmName.unwrap();
+            let newname = asm_name.unwrap();
             let oldname = self.asmname.as_ref().unwrap();
             Err(ParseError::syntax(newname.pos(),
                                    format!("Duplicate assembler name: {}, {}",
@@ -293,19 +304,19 @@ impl CDeclrR {
         }
     }
 
-    pub fn withAsmNameAttrs(self, (mAsmName, newAttrs): (Option<Box<CStrLit>>, Vec<CAttr>))
-                            -> Result<CDeclrR, ParseError> {
-        self.appendObjAttrs(newAttrs).setAsmName(mAsmName)
+    pub fn with_asm_name_attrs(self, (asm_name, new_attrs): (Option<Box<CStrLit>>, Vec<CAttr>))
+                               -> Result<CDeclrR, ParseError> {
+        self.append_obj_attrs(new_attrs).set_asm_name(asm_name)
     }
 
-    pub fn funDeclr(mut self: Box<Self>, params: Either<Vec<Ident>, (Vec<CDecl>, bool)>,
-                    cattrs: Vec<CAttr>, at: NodeInfo) -> Box<Self> {
+    pub fn fun_declr(mut self: Box<Self>, params: Either<Vec<Ident>, (Vec<CDecl>, bool)>,
+                     cattrs: Vec<CAttr>, at: NodeInfo) -> Box<Self> {
         self.inner.push(CFunDeclr(params, cattrs, at));
         self
     }
 
-    pub fn arrDeclr(mut self: Box<Self>, tyquals: Vec<CTypeQual>, var_sized: bool, static_size: bool,
-                    size_expr_opt: Option<Box<CExpr>>, at: NodeInfo) -> Box<Self> {
+    pub fn arr_declr(mut self: Box<Self>, tyquals: Vec<CTypeQual>, var_sized: bool, static_size: bool,
+                     size_expr_opt: Option<Box<CExpr>>, at: NodeInfo) -> Box<Self> {
         let arr_sz = match size_expr_opt {
             Some(e) => CArrSize(static_size, e),
             None => CNoArrSize(var_sized)
@@ -314,32 +325,32 @@ impl CDeclrR {
         self
     }
 
-    pub fn ptrDeclr(mut self: Box<CDeclrR>, tyquals: Vec<CTypeQual>, at: NodeInfo) -> Box<Self> {
+    pub fn ptr_declr(mut self: Box<CDeclrR>, tyquals: Vec<CTypeQual>, at: NodeInfo) -> Box<Self> {
         self.inner.push(CPtrDeclr(tyquals, at));
         self
     }
 
-    pub fn appendAttrs(mut self: Box<Self>, mut newAttrs: Vec<CAttr>) -> Box<Self> {
+    pub fn append_attrs(mut self: Box<Self>, mut new_attrs: Vec<CAttr>) -> Box<Self> {
         if self.inner.is_empty() {
-            self.cattrs.append(&mut newAttrs);
+            self.cattrs.append(&mut new_attrs);
         } else {
             match self.inner.last_mut().unwrap() {
-                &mut CPtrDeclr(ref mut typeQuals, _) => {
-                    typeQuals.extend(newAttrs.into_iter().map(|q| CAttrQual(box q)))
+                &mut CPtrDeclr(ref mut type_quals, _) => {
+                    type_quals.extend(new_attrs.into_iter().map(|q| CAttrQual(box q)))
                 }
-                &mut CArrDeclr(ref mut typeQuals, _, _) => {
-                    typeQuals.extend(newAttrs.into_iter().map(|q| CAttrQual(box q)))
+                &mut CArrDeclr(ref mut type_quals, _, _) => {
+                    type_quals.extend(new_attrs.into_iter().map(|q| CAttrQual(box q)))
                 }
                 &mut CFunDeclr(_, ref mut cattrs, _) => {
-                     cattrs.append(&mut newAttrs)
+                    cattrs.append(&mut new_attrs)
                 }
             }
         }
         self
     }
 
-    pub fn appendObjAttrs(mut self, mut newAttrs: Vec<CAttr>) -> CDeclrR {
-        self.cattrs.append(&mut newAttrs);
+    pub fn append_obj_attrs(mut self, mut new_attrs: Vec<CAttr>) -> CDeclrR {
+        self.cattrs.append(&mut new_attrs);
         self
     }
 
@@ -347,19 +358,4 @@ impl CDeclrR {
         let CDeclrR { ident, inner, asmname, cattrs, at } = self;
         box CDeclarator(ident, inner, asmname, cattrs, at)
     }
-}
-
-pub fn parseC(input: InputStream, initialPosition: Position) -> Result<CTranslUnit, ParseError> {
-    execParser(input, initialPosition, builtinTypeNames(), new_name_supply(), translUnitP).map(|x| x.0)
-}
-
-pub fn execParser_<T, F>(do_parse: F, input: InputStream, pos: Position) -> Result<T, ParseError>
-    where T: 'static, F: Fn(&mut Parser) -> Result<T, ParseError>
-{
-    execParser(input, pos, builtinTypeNames(), new_name_supply(), do_parse).map(|x| x.0)
-}
-
-pub fn ptrDeclr(mut slf: CDeclrR, tyquals: Vec<CTypeQual>, at: NodeInfo) -> CDeclrR {
-    slf.inner.push(CPtrDeclr(tyquals, at));
-    slf
 }

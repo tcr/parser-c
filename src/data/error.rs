@@ -1,3 +1,5 @@
+// TODO: make something useful out of this module.
+#![allow(non_snake_case)]
 // Original file: "Error.hs"
 // File auto-generated using Corollary.
 

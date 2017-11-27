@@ -80,19 +80,19 @@ impl NodeInfo {
 
     pub fn len(&self) -> Option<usize> {
         match *self {
-            NodeInfo(ref firstPos, ref lastPos, lastTokLen, _) |
-            OnlyPos(ref firstPos, ref lastPos, lastTokLen) => if lastTokLen == 0 {
+            NodeInfo(ref first_pos, ref last_pos, last_len, _) |
+            OnlyPos(ref first_pos, ref last_pos, last_len) => if last_len == 0 {
                 None
             } else {
-                Some(lastPos.offset().unwrap() + lastTokLen - firstPos.offset().unwrap())
+                Some(last_pos.offset().unwrap() + last_len - first_pos.offset().unwrap())
             }
         }
     }
 
     pub fn get_last_token_pos(&self) -> PosLength {
         match *self {
-            NodeInfo(_, ref lastPos, len, _) |
-            OnlyPos(_, ref lastPos, len) => (lastPos.clone(), len),
+            NodeInfo(_, ref last_pos, last_len, _) |
+            OnlyPos(_, ref last_pos, last_len) => (last_pos.clone(), last_len),
         }
     }
 
