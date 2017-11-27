@@ -24,10 +24,10 @@ impl SUERef {
         }
     }
 
-    pub fn to_string(self) -> String {
-        match self {
+    pub fn as_str(&self) -> &str {
+        match *self {
             AnonymousRef(_) => "".into(),
-            NamedRef(ident) => ident.to_string(),
+            NamedRef(ref ident) => ident.as_str(),
         }
     }
 }
@@ -77,24 +77,20 @@ impl Ident {
     }
 
     pub fn internal(s: String) -> Ident {
-        Ident(Rc::new(RawIdent(s, NodeInfo::with_only_pos(Position::internal()))))
+        Ident(Rc::new(RawIdent(s, NodeInfo::with_only_pos(Rc::new(Position::internal())))))
     }
 
-    pub fn internal_at(pos: Position, s: String) -> Ident {
+    pub fn internal_at(pos: Rc<Position>, s: String) -> Ident {
         let len = s.len();
         Ident(Rc::new(RawIdent(s, NodeInfo::with_pos_len(pos.clone(), pos, len))))
     }
 
     pub fn builtin(s: String) -> Ident {
-        Ident(Rc::new(RawIdent(s, NodeInfo::with_only_pos(Position::builtin()))))
+        Ident(Rc::new(RawIdent(s, NodeInfo::with_only_pos(Rc::new(Position::builtin())))))
     }
 
     pub fn is_internal(&self) -> bool {
         (self.0).1.pos().is_internal()
-    }
-
-    pub fn to_string(&self) -> String {
-        (self.0).0.clone()
     }
 
     pub fn as_str(&self) -> &str {

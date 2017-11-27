@@ -158,6 +158,7 @@ impl Parser {
     }
 
     pub fn enter_scope(&mut self) {
+        // TODO: a way to avoid clone here?
         self.user.scopes.insert(0, self.user.type_idents.clone());
     }
 
@@ -254,8 +255,8 @@ impl Parser {
     {
         let name = self.new_name();
         let attrs = NodeInfo::with_pos_name(node.pos(), name);
-        let new_declr: Box<FnBox(Box<CDeclrR>) -> Box<CDeclrR>> = box move |_0| {
-            mk_declr_ctor(attrs.clone(), _0).append_attrs(cattrs.clone())
+        let new_declr: Box<FnBox(Box<CDeclrR>) -> Box<CDeclrR>> = box move |declr| {
+            mk_declr_ctor(attrs, declr).append_attrs(cattrs)
         };
         Ok(new_declr)
     }
