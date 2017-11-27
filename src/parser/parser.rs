@@ -20,6 +20,8 @@ type Error = ParseError;
 type State = PState;
 type Token = CToken;
 
+const EOF_TOK: Token = CToken::CTokEof;
+
 macro_rules! with_pos {
     ($parser:expr, $infonode:expr, $closure:expr) => {{
         let pos1 = $infonode.pos();
@@ -22307,6 +22309,8 @@ fn happy_error<T>(p: &mut Parser) -> Res<T> {
 // -----------------------------------------------------------------------------
 // Some convenient typedefs
 
+use std::mem;
+
 const ERROR_TOK: isize = 1;
 
 enum Cont {
@@ -22335,7 +22339,7 @@ impl Parser {
     {
         let mut parser = Parser {
             user: initial_state,
-            token: CToken::CTokEof,
+            token: EOF_TOK,
             state: happy_invalid,
             states: vec![],
             stack: vec![]
@@ -22403,7 +22407,7 @@ fn happy_shift(p: &mut Parser, new_state: Action, i: isize) -> Res<Cont> {
         }
         _ => {
             p.states.push(p.state);
-            p.stack.push(HappyAbsSyn::Terminal(p.token.clone()));
+            p.stack.push(HappyAbsSyn::Terminal(mem::replace(&mut p.token, EOF_TOK)));
             p.state = new_state;
             Ok(Cont::NewToken)
         },
