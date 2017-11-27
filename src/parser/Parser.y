@@ -1212,16 +1212,13 @@ struct_default_declaring_list
   -- attrs_opt apply to the declared object
   | struct_default_declaring_list ',' attrs_opt struct_identifier_declarator
         {
-            unwrap_let! { CDecl(declspecs, dies, at) = { *$1 };
-                box match $4 {
-                    (Some(d), s) => {
-                        CDecl(declspecs, prepend((Some(append_obj_attrs($3, d)), None, s), dies), at)
-                    },
-                    (None, s) => {
-                        CDecl(declspecs, prepend((None, None, s), dies), at)
-                    },
+            unwrap_let! { box CDecl(_, ref mut dies, _) = $1;
+                match $4 {
+                    (Some(d), s) => dies.insert(0, (Some(append_obj_attrs($3, d)), None, s)),
+                    (None, s)    => dies.insert(0, (None, None, s)),
                 }
             }
+            $1
         } -- FIXME
 
 -- * GNU extensions:
@@ -1243,17 +1240,13 @@ struct_declaring_list
 
   | struct_declaring_list ',' attrs_opt struct_declarator attrs_opt
         {
-            unwrap_let! { CDecl(declspecs, dies, at) = { *$1 };
-                box match $4 {
-                    (Some(d), s) => {
-                        CDecl(declspecs, prepend((Some(
-                            append_obj_attrs(add_vecs($3, $5), d)), None, s), dies), at)
-                    },
-                    (None, s) => {
-                        CDecl(declspecs, prepend((None, None, s), dies), at)
-                    },
+            unwrap_let! { box CDecl(_, ref mut dies, _) = $1;
+                match $4 {
+                    (Some(d), s) => dies.insert(0, (Some(append_obj_attrs(add_vecs($3, $5), d)), None, s)),
+                    (None, s)    => dies.insert(0, (None, None, s)),
                 }
             }
+            $1
         }
 
   -- FIXME: We're being far too liberal in the parsing here, we really want to just
@@ -1284,13 +1277,8 @@ struct_identifier_declarator
   | identifier_declarator ':' constant_expression       { (Some($1.reverse()), Some($3)) }
   | struct_identifier_declarator attr
         {
-            match $1 {
-                (None, expr) => (None, expr),
-                (Some(decl), bsz) => {
-                    let CDeclarator(name, derived, asmname, attrs, node) = { *decl };
-                    (Some(box CDeclarator(name, derived, asmname, add_vecs(attrs, $2), node)), bsz)
-                }
-            }
+            if let (Some(ref mut decl), _) = $1 { decl.3.extend($2); }
+            $1
         }
 
 -- parse C enumeration declaration (C99 6.7.2.2)
@@ -2241,11 +2229,7 @@ attr
 
 attribute_list :: { Vec<CAttr> }
   : attribute                      { $1.map_or(vec![], |a| vec![*a]) }
-  | attribute_list ',' attribute   { match $3 {
-                                         None => $1,
-                                         Some(a) => appended($1, *a),
-                                     }
-                                   }
+  | attribute_list ',' attribute   { if let Some(a) = $3 { appended($1, *a) } else { $1 } }
 
 
 attribute :: { Option<Box<CAttr>> }
