@@ -1,6 +1,6 @@
 //! Pretty printing
 
-use std::{fmt, mem, ops, slice};
+use std::{fmt, io, mem, ops, slice};
 use std::borrow::Cow;
 use std::rc::Rc;
 use std::collections::HashSet;
@@ -14,25 +14,18 @@ use syntax::constants::{showCChar, showCString, showCInteger, showCFloat};
 
 const INDENT: isize = 4;
 
-/// Will be in std as slice::from_ref soon.
-fn slice_from_ref<T>(s: &T) -> &[T] {
-    unsafe {
-        slice::from_raw_parts(s, 1)
-    }
-}
-
 // ---------------------------------------------------------------------------------------
 // Public API
 
-/// Pretty print any AST element.
-pub fn prettyToString<P: Pretty>(p: &P) -> String {
-    let mut result = String::new();
+/// Pretty print any AST element and return a string.
+pub fn pretty_to_string<P: Pretty>(p: &P) -> String {
+    let mut result = Vec::new();
     render(&p.pretty(), 100, &mut result);
-    result
+    String::from_utf8(result).expect("wrote invalid utf8")
 }
 
-/// Pretty print any AST element.
-pub fn pretty<P: Pretty, W: fmt::Write>(p: &P, w: &mut W) {
+/// Pretty print any AST element to a Write instance.
+pub fn pretty<P: Pretty, W: io::Write>(p: &P, w: &mut W) {
     render(&p.pretty(), 100, w)
 }
 
@@ -42,10 +35,10 @@ pub fn pretty<P: Pretty, W: fmt::Write>(p: &P, w: &mut W) {
 /// The resulting file may not compile (because of missing `#define` directives
 /// and similar things), but is very useful for testing, as otherwise the pretty
 /// printed file will be cluttered with declarations from system headers.
-pub fn prettyUsingInclude(&CTranslationUnit(ref edecls, _): &CTranslUnit) -> String {
+pub fn pretty_using_include<W: io::Write>(unit: &CTranslUnit, w: &mut W) {
     let mut header_files = HashSet::new();
     let mut doc = empty();
-    for decl in edecls {
+    for decl in &unit.0 {
         match decl.pos().file() {
             Some(ref f) if f.ends_with(".h") => {
                 if header_files.insert(f.clone()) {
@@ -59,9 +52,7 @@ pub fn prettyUsingInclude(&CTranslationUnit(ref edecls, _): &CTranslUnit) -> Str
         doc = text("/* Warning: The #include directives in this file aren't necessarily correct. */")
             .above(doc);
     }
-    let mut result = String::new();
-    render(&doc, 100, &mut result);
-    result
+    render(&doc, 100, w)
 }
 
 
@@ -328,39 +319,42 @@ fn list<'a, I, It>(it: I) -> Doc<'a>
 }
 
 
-struct Renderer<'w, W: fmt::Write + 'w> {
+struct Renderer<'w, W: io::Write + 'w> {
     writer: &'w mut W,
     line_len: isize,
     line_pos: isize,
     indent: isize,
 }
 
-impl<'w, W: fmt::Write + 'w> Renderer<'w, W> {
-    fn write(&mut self, st: &str) -> fmt::Result {
+impl<'w, W: io::Write + 'w> Renderer<'w, W> {
+    fn write(&mut self, st: &str) -> io::Result<()> {
         self.line_pos += st.len() as isize;
-        self.writer.write_str(st)
+        self.writer.write_all(st.as_bytes())
     }
 
-    fn write_spaces(&mut self, mut n: isize) -> fmt::Result {
+    fn write_spaces(&mut self, mut n: isize) -> io::Result<()> {
         while n > 0 {
             let k = n.min(SPACES.len() as isize);
-            self.writer.write_str(&SPACES[..k as usize])?;
+            self.writer.write_all(SPACES[..k as usize].as_bytes())?;
             n -= k;
         }
         Ok(())
     }
 
-    fn newline(&mut self) -> fmt::Result {
-        self.writer.write_char('\n')?;
+    fn newline(&mut self) -> io::Result<()> {
+        self.writer.write_all(b"\n")?;
         let n = self.indent;
         self.line_pos = n;
         self.write_spaces(n)
     }
 
-    fn render<'a>(&mut self, doc: &Doc<'a>) -> fmt::Result {
+    fn render<'a>(&mut self, doc: &Doc<'a>) -> io::Result<()> {
         match *doc.0 {
             Empty => {},
-            Text(Text::Chr(ch)) => self.write(ch.encode_utf8(&mut [0; 4]))?,
+            Text(Text::Chr(ch)) => {
+                self.line_pos += 1;
+                self.writer.write_all(ch.encode_utf8(&mut [0; 4]).as_bytes())?
+            },
             Text(Text::Str(st)) => self.write(st)?,
             Text(Text::String(ref st)) => self.write(st)?,
             Beside(ref p, ref q) => {
@@ -418,7 +412,7 @@ impl<'w, W: fmt::Write + 'w> Renderer<'w, W> {
     }
 }
 
-fn render<'a, W: fmt::Write>(doc: &Doc<'a>, line_len: isize, w: &mut W) {
+fn render<'a, W: io::Write>(doc: &Doc<'a>, line_len: isize, w: &mut W) {
     let mut r = Renderer { line_len, indent: 0, line_pos: 0, writer: w };
     r.render(doc).expect("error rendering pretty-printed document")
 }
@@ -507,7 +501,7 @@ impl Pretty for Ident {
 
 impl Pretty for CTranslUnit {
     fn pretty<'a>(&'a self) -> Doc<'a> {
-        pretty_nl_sep(&self.0)
+        pretty_nl_sep(&self.0) + '\n'
     }
 }
 
@@ -761,7 +755,7 @@ impl Pretty for CTypeQual {
             CVolatQual(_) => text("volatile"),
             CRestrQual(_) => text("__restrict"),
             CAtomicQual(_) => text("_Atomic"),
-            CAttrQual(ref attr) => pretty_attrlist(slice_from_ref(attr)),
+            CAttrQual(ref attr) => pretty_attrlist(slice::from_ref(attr)),
             CNullableQual(_) => text("_Nullable"),
             CNonnullQual(_) => text("_Nonnull"),
         }
