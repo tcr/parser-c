@@ -2,7 +2,7 @@ extern crate parser_c;
 
 use std::env;
 
-use parser_c::parseCFile;
+use parser_c::parse_file;
 use parser_c::system::gcc;
 
 fn main() {
@@ -13,8 +13,8 @@ fn main() {
         dump = true;
     }
     if let Some(input_file) = args.pop() {
-        let preprocessor = gcc::newGCC("gcc");
-        match parseCFile(preprocessor, None, args, input_file) {
+        let preprocessor = gcc::GCC::new("gcc");
+        match parse_file(preprocessor, None, args, input_file) {
             Err(e) => eprintln!("{}", e),
             Ok(unit) => if dump { println!("{:?}", unit) },
         }
