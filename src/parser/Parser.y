@@ -59,6 +59,16 @@ macro_rules! with_pos {
     }};
 }
 
+macro_rules! unwrap_let {
+    ($pat:pat = $expr:expr; $($tt:tt)+) => {
+        if let $pat = $expr {
+            $($tt)+
+        } else {
+            unreachable!()
+        }
+    }
+}
+
 }
 
 -- Relevant C99 sections:
@@ -689,19 +699,15 @@ declaration
 
   | declaring_list ';'
         {%
-            if let CDecl(declspecs, dies, at) = { *$1 } {
+            unwrap_let! { CDecl(declspecs, dies, at) = { *$1 };
                 p.with_length(at, |at| box CDecl(declspecs, rev_vec(dies), at))
-            } else {
-                panic!("irrefutable pattern")
             }
         }
 
   | default_declaring_list ';'
         {%
-            if let CDecl(declspecs, dies, at) = { *$1 } {
+            unwrap_let! { CDecl(declspecs, dies, at) = { *$1 };
                 p.with_length(at, |at| box CDecl(declspecs, rev_vec(dies), at))
-            } else {
-                panic!("irrefutable pattern")
             }
         }
   | "_Static_assert" '(' constant_expression ',' string_literal ')' ';'
@@ -759,13 +765,11 @@ default_declaring_list
 
   | default_declaring_list ',' attrs_opt identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
-            if let CDecl(declspecs, dies, at) = { *$1 } {
+            unwrap_let! { CDecl(declspecs, dies, at) = { *$1 };
                 let (f, s) = { *$5 };
                 let declr = $4.with_asm_name_attrs((f, add_vecs(s, $3)))?;
                 p.do_decl_ident(&declspecs, &declr);
                 p.with_length(at, |at| box CDecl(declspecs, prepend((Some(declr.reverse()), $6, None), dies), at))
-            } else {
-                panic!("irrefutable pattern")
             }
         }
 
@@ -800,13 +804,11 @@ declaring_list
 
   | declaring_list ',' attrs_opt declarator asm_attrs_opt initializer_opt
         {%
-            if let CDecl(declspecs, dies, at) = { *$1 } {
+            unwrap_let! { CDecl(declspecs, dies, at) = { *$1 };
                 let (f, s) = { *$5 };
                 let declr = $4.with_asm_name_attrs((f, add_vecs(s, $3)))?;
                 p.do_decl_ident(&declspecs, &declr);
                 Ok(box CDecl(declspecs, prepend((Some(declr.reverse()), $6, None), dies), at))
-            } else {
-                panic!("irrefutable pattern")
             }
         }
 
@@ -1169,19 +1171,15 @@ struct_declaration :: { Box<CDecl> }
 struct_declaration
   : struct_declaring_list ';'
         {
-            if let CDecl(declspecs, dies, at) = { *$1 } {
+            unwrap_let! { CDecl(declspecs, dies, at) = { *$1 };
                 box CDecl(declspecs, rev_vec(dies), at)
-            } else {
-                panic!("irrefutable pattern");
             }
         }
 
   | struct_default_declaring_list';'
         {
-            if let CDecl(declspecs, dies, at) = { *$1 } {
+            unwrap_let! { CDecl(declspecs, dies, at) = { *$1 };
                 box CDecl(declspecs, rev_vec(dies), at)
-            } else {
-                panic!("irrefutable pattern");
             }
         }
 
@@ -1212,7 +1210,7 @@ struct_default_declaring_list
   -- attrs_opt apply to the declared object
   | struct_default_declaring_list ',' attrs_opt struct_identifier_declarator
         {
-            if let CDecl(declspecs, dies, at) = { *$1 } {
+            unwrap_let! { CDecl(declspecs, dies, at) = { *$1 };
                 box match $4 {
                     (Some(d), s) => {
                         CDecl(declspecs, prepend((Some(append_obj_attrs($3, d)), None, s), dies), at)
@@ -1221,8 +1219,6 @@ struct_default_declaring_list
                         CDecl(declspecs, prepend((None, None, s), dies), at)
                     },
                 }
-            } else {
-                panic!("irrefutable pattern")
             }
         } -- FIXME
 
@@ -1245,7 +1241,7 @@ struct_declaring_list
 
   | struct_declaring_list ',' attrs_opt struct_declarator attrs_opt
         {
-            if let CDecl(declspecs, dies, at) = { *$1 } {
+            unwrap_let! { CDecl(declspecs, dies, at) = { *$1 };
                 box match $4 {
                     (Some(d), s) => {
                         CDecl(declspecs, prepend((Some(
@@ -1255,8 +1251,6 @@ struct_declaring_list
                         CDecl(declspecs, prepend((None, None, s), dies), at)
                     },
                 }
-            } else {
-                panic!("irrefutable pattern");
             }
         }
 
@@ -2198,76 +2192,25 @@ constant_expression
 --
 constant :: { Box<CConst> }
 constant
-  : cint        {%
-                    with_pos!(p, $1, move |at| {
-                        if let CTokILit(_, i) = {$1} {
-                            box CIntConst(i, at)
-                        } else {
-                            panic!("irrefutable pattern")
-                        }
-                    })
-                }
-  | cchar       {%
-                    with_pos!(p, $1, move |at| {
-                        if let CTokCLit(_, c) = {$1} {
-                            box CCharConst(c, at)
-                        } else {
-                            panic!("irrefutable pattern")
-                        }
-                    })
-                }
-  | cfloat      {%
-                    with_pos!(p, $1, move |at| {
-                        if let CTokFLit(_, f) = {$1} {
-                            box CFloatConst(f, at)
-                        } else {
-                            panic!("irrefutable pattern")
-                        }
-                    })
-                }
+  : cint        {% with_pos!(p, $1, move |at| unwrap_let! { CTokILit(_, i) = $1; box CIntConst(i, at) }) }
+  | cchar       {% with_pos!(p, $1, move |at| unwrap_let! { CTokCLit(_, c) = $1; box CCharConst(c, at) }) }
+  | cfloat      {% with_pos!(p, $1, move |at| unwrap_let! { CTokFLit(_, f) = $1; box CFloatConst(f, at) }) }
 
 
 string_literal :: { Box<CStrLit> }
 string_literal
   : cstr
-        {%
-            with_pos!(p, $1, move |at| {
-                if let CTokSLit(_, s) = {$1} {
-                    box CStringLiteral(s, at)
-                } else {
-                    panic!("irrefutable pattern")
-                }
-            })
-        }
+        {% with_pos!(p, $1, move |at| unwrap_let! { CTokSLit(_, s) = $1; box CStringLiteral(s, at) }) }
 
   | cstr string_literal_list
-        {%
-            with_pos!(p, $1, move |at| {
-                if let CTokSLit(_, s) = $1 {
-                    box CStringLiteral(CString::concat(prepend(s, $2)), at)
-                } else {
-                    panic!("irrefutable pattern")
-                }
-            })
-        }
+        {% with_pos!(p, $1, move |at| unwrap_let! { CTokSLit(_, s) = $1;
+                                                    box CStringLiteral(CString::concat(prepend(s, $2)), at) }) }
 
 
 string_literal_list :: { Vec<CString> }
 string_literal_list
-  : cstr                        {
-                                    if let CTokSLit(_, s) = $1 {
-                                        vec![s]
-                                    } else {
-                                        panic!("irrefutable pattern")
-                                    }
-                                }
-  | string_literal_list cstr    {
-                                    if let CTokSLit(_, s) = $2 {
-                                        appended($1, s)
-                                    } else {
-                                        panic!("irrefutable pattern")
-                                    }
-                                }
+  : cstr                        { unwrap_let! { CTokSLit(_, s) = $1; vec![s] } }
+  | string_literal_list cstr    { unwrap_let! { CTokSLit(_, s) = $2; appended($1, s) } }
 
 clang_version_literal :: { ClangCVersion }
   : clangcversion       { $1 }
