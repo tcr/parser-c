@@ -27,7 +27,7 @@ impl<T: CNode + Clone> CNode for Rc<T> {
         (**self).node_info()
     }
     fn into_node_info(self) -> NodeInfo {
-        (*self).clone().into_node_info()
+        (*self).node_info().clone()
     }
 }
 
@@ -57,7 +57,6 @@ impl NodeInfo {
     }
 
     pub fn undef() -> NodeInfo {
-        // XXX share undef posn
         let undef = Rc::new(Position::none());
         OnlyPos(undef.clone(), undef, 0)
     }
@@ -66,12 +65,12 @@ impl NodeInfo {
         NodeInfo(pos1, pos2, len, name)
     }
 
-    pub fn with_only_pos(pos: Position) -> NodeInfo {
-        OnlyPos(Rc::new(pos), Rc::new(Position::none()), 0)
+    pub fn with_only_pos(pos: Rc<Position>) -> NodeInfo {
+        OnlyPos(pos, Rc::new(Position::none()), 0)
     }
 
-    pub fn with_pos_len(a: Position, b: Position, len: usize) -> NodeInfo {
-        OnlyPos(Rc::new(a), Rc::new(b), len)
+    pub fn with_pos_len(a: Rc<Position>, b: Rc<Position>, len: usize) -> NodeInfo {
+        OnlyPos(a, b, len)
     }
 
     pub fn with_pos_name(pos: Rc<Position>, name: Name) -> NodeInfo {
