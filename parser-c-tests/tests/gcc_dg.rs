@@ -5,8 +5,8 @@ use std::path::Path;
 use std::fs::File;
 use std::io::Read;
 
-use parser_c::{parse, parseCFilePre};
-use parser_c::pretty::prettyToString;
+use parser_c::{parse_str, parse_file_pre};
+use parser_c::pretty::pretty_to_string;
 use parser_c::syntax::ast::{Equiv, Traverse, CStat, CCompound, CBlockStmt};
 
 /// Replace single-statement CCompound statements by the single statement.
@@ -31,7 +31,7 @@ fn normalize(node: &mut Any) {
 
 fn check_gcc_dg_file(file_str: &str, should_fail: bool) {
     let path = Path::new("./gcc_pre").join(file_str);
-    let mut ast = match parseCFilePre(&path) {
+    let mut ast = match parse_file_pre(&path) {
         Ok(mut ast) => if !should_fail {
             ast
         } else {
@@ -43,8 +43,8 @@ fn check_gcc_dg_file(file_str: &str, should_fail: bool) {
             panic!("*** Parse fail: {}", e);
         }
     };
-    let pretty = prettyToString(&ast);
-    let mut ast2 = match parse(&pretty, file_str) {
+    let pretty = pretty_to_string(&ast);
+    let mut ast2 = match parse_str(&pretty, file_str) {
         Ok(mut ast) => ast,
         Err(e) => {
             let mut s = String::new();
@@ -65,9 +65,9 @@ fn check_gcc_dg_file(file_str: &str, should_fail: bool) {
         println!("--- Original source:");
         println!("{}", s);
         println!("--- Pretty-print of original AST:");
-        println!("{}", prettyToString(&ast));
+        println!("{}", pretty_to_string(&ast));
         println!("--- Pretty-print of reparsed AST:");
-        println!("{}", prettyToString(&ast2));
+        println!("{}", pretty_to_string(&ast2));
         println!("---");
         println!("*** Parsed ASTs are not equivalent");
     }

@@ -1,6 +1,6 @@
 extern crate parser_c;
 
-use parser_c::parse;
+use parser_c::parse_str;
 
 const INPUT: &'static str = r#"
 
@@ -13,7 +13,7 @@ int main() {
 
 #[test]
 fn simple() {
-    match parse(INPUT, "simple.c") {
+    match parse_str(INPUT, "simple.c") {
         Err(err) => {
             panic!("error: {:?}", err);
         }

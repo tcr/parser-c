@@ -11,29 +11,31 @@ use system::preprocess::{Preprocessor, CppArgs, PPResult};
 use system::preprocess::CppOption::*;
 
 pub struct GCC {
-    gccPath: PathBuf,
+    gcc_path: PathBuf,
 }
 
-pub fn newGCC<P: Into<PathBuf>>(gccPath: P) -> GCC {
-    GCC { gccPath: gccPath.into() }
+impl GCC {
+    pub fn new<P: Into<PathBuf>>(path: P) -> GCC {
+        GCC { gcc_path: path.into() }
+    }
 }
 
 impl Preprocessor for GCC {
-    fn parseCPPArgs(&self, args: Vec<String>) -> Result<(CppArgs, Vec<String>), String> {
-        gccParseCPPArgs(args)
+    fn parse_cpp_args(&self, args: Vec<String>) -> Result<(CppArgs, Vec<String>), String> {
+        parse_gcc_cpp_args(args)
     }
 
-    fn runCPP(&self, cpp_args: &CppArgs) -> PPResult<()> {
+    fn run_cpp(&self, cpp_args: &CppArgs) -> PPResult<()> {
         // copy the input to the outputfile, because in case the input is preprocessed,
         // gcc -E will do nothing.
-        let out = cpp_args.outputFile.as_ref().unwrap();
-        fs::copy(&cpp_args.inputFile, out)?;
+        let out = cpp_args.output_file.as_ref().unwrap();
+        fs::copy(&cpp_args.input_file, out)?;
         let meta = fs::metadata(out)?;
         meta.permissions().set_readonly(false);
         fs::set_permissions(out, meta.permissions())?;
         // now run GCC
-        let mut cmd = Command::new(&self.gccPath);
-        buildCppArgs(&mut cmd, cpp_args);
+        let mut cmd = Command::new(&self.gcc_path);
+        build_cpp_cmd(&mut cmd, cpp_args);
         if cmd.status()?.success() {
             Ok(())
         } else {
@@ -42,7 +44,7 @@ impl Preprocessor for GCC {
     }
 }
 
-fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), String> {
+fn parse_gcc_cpp_args(args: Vec<String>) -> Result<(CppArgs, Vec<String>), String> {
     let mut input_file = None;
     let mut output_file = None;
     let mut cppopt = vec![];
@@ -115,17 +117,17 @@ fn gccParseCPPArgs(args: Vec<String>) -> Result<(CppArgs, Vec<String>), String> 
     match input_file {
         None => Err("No .c / .hc / .h source file given".into()),
         Some(ifile) => Ok((CppArgs {
-            cppOptions: cppopt,
-            extraOptions: extra,
-            inputFile: ifile,
-            cppTmpDir: None,
-            outputFile: output_file,
+            cpp_options: cppopt,
+            extra_options: extra,
+            input_file: ifile,
+            cpp_tmp_dir: None,
+            output_file: output_file,
         }, other))
     }
 }
 
-pub fn buildCppArgs(cmd: &mut Command, cppargs: &CppArgs) {
-    for opt in &cppargs.cppOptions {
+fn build_cpp_cmd(cmd: &mut Command, cpp_args: &CppArgs) {
+    for opt in &cpp_args.cpp_options {
         match *opt {
             IncludeDir(ref incl) => { cmd.arg("-I"); cmd.arg(incl); }
             Define(ref key, ref value) => { cmd.arg(
@@ -135,11 +137,11 @@ pub fn buildCppArgs(cmd: &mut Command, cppargs: &CppArgs) {
             IncludeFile(ref incfile) => { cmd.arg("-include"); cmd.arg(incfile); }
         }
     }
-    if let Some(ofile) = cppargs.outputFile.as_ref() {
+    if let Some(ofile) = cpp_args.output_file.as_ref() {
         cmd.arg("-o");
         cmd.arg(ofile);
     }
     cmd.arg("-E");
-    cmd.arg(&cppargs.inputFile);
-    cmd.args(&cppargs.extraOptions);
+    cmd.arg(&cpp_args.input_file);
+    cmd.args(&cpp_args.extra_options);
 }
