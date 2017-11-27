@@ -17,21 +17,24 @@ pub enum CAssignOp {
 }
 pub use self::CAssignOp::*;
 
-pub fn assignBinop(op: CAssignOp) -> CBinaryOp {
-    match op {
-        CAssignOp => panic!("direct assignment has no binary operator"),
-        CMulAssOp => CMulOp,
-        CDivAssOp => CDivOp,
-        CRmdAssOp => CRmdOp,
-        CAddAssOp => CAddOp,
-        CSubAssOp => CSubOp,
-        CShlAssOp => CShlOp,
-        CShrAssOp => CShrOp,
-        CAndAssOp => CAndOp,
-        CXorAssOp => CXorOp,
-        COrAssOp => COrOp,
+impl CAssignOp {
+    pub fn binop(&self) -> Option<CBinaryOp> {
+        match *self {
+            CAssignOp => None,
+            CMulAssOp => Some(CMulOp),
+            CDivAssOp => Some(CDivOp),
+            CRmdAssOp => Some(CRmdOp),
+            CAddAssOp => Some(CAddOp),
+            CSubAssOp => Some(CSubOp),
+            CShlAssOp => Some(CShlOp),
+            CShrAssOp => Some(CShrOp),
+            CAndAssOp => Some(CAndOp),
+            CXorAssOp => Some(CXorOp),
+            COrAssOp  => Some(COrOp),
+        }
     }
 }
+
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum CBinaryOp {
@@ -56,21 +59,36 @@ pub enum CBinaryOp {
 }
 pub use self::CBinaryOp::*;
 
-pub fn isCmpOp(op: CBinaryOp) -> bool {
-    [CLeqOp, CGeqOp, CLeOp, CGrOp, CEqOp, CNeqOp].contains(&op)
+impl CBinaryOp {
+    pub fn is_cmp_op(&self) -> bool {
+        match *self {
+            CLeqOp | CGeqOp | CLeOp | CGrOp | CEqOp | CNeqOp => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_ptr_op(&self) -> bool {
+        match *self {
+            CAddOp | CSubOp => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_bit_op(&self) -> bool {
+        match *self {
+            CShlOp | CShrOp | CAndOp | COrOp | CXorOp => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_logic_op(&self) -> bool {
+        match *self {
+            CLndOp | CLorOp => true,
+            _ => false,
+        }
+    }
 }
 
-pub fn isPtrOp(op: CBinaryOp) -> bool {
-    [CAddOp, CSubOp].contains(&op)
-}
-
-pub fn isBitOp(op: CBinaryOp) -> bool {
-    [CShlOp, CShrOp, CAndOp, COrOp, CXorOp].contains(&op)
-}
-
-pub fn isLogicOp(op: CBinaryOp) -> bool {
-    [CLndOp, CLorOp].contains(&op)
-}
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum CUnaryOp {
@@ -87,6 +105,11 @@ pub enum CUnaryOp {
 }
 pub use self::CUnaryOp::*;
 
-pub fn isEffectfulOp(op: CUnaryOp) -> bool {
-    [CPreIncOp, CPreDecOp, CPostIncOp, CPostDecOp].contains(&op)
+impl CUnaryOp {
+    pub fn is_effectful_op(&self) -> bool {
+        match *self {
+            CPreIncOp | CPreDecOp | CPostIncOp | CPostDecOp => true,
+            _ => false,
+        }
+    }
 }

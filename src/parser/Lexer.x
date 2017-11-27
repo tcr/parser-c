@@ -264,9 +264,9 @@ $identletter($identletter|$digit)*   { idtok(p, pos, len) }
 
 -- integer constants (follows K&R A2.5.1, C99 6.4.4.1)
 -- NOTE: 0 is lexed as octal integer constant, and readCOctal takes care of this
-0$octdigit*@intgnusuffix?       { token_plus(p, CTokILit, readCOctal, pos, len) }
-$digitNZ$digit*@intgnusuffix?   { token_plus(p, CTokILit, |lit| readCInteger(DecRepr, lit), pos, len) }
-0[xX]$hexdigit+@intgnusuffix?   { token_plus(p, CTokILit, |lit| readCInteger(HexRepr, &lit[2..]), pos, len) }
+0$octdigit*@intgnusuffix?       { token_plus(p, CTokILit, CInteger::parse_octal, pos, len) }
+$digitNZ$digit*@intgnusuffix?   { token_plus(p, CTokILit, |lit| CInteger::parse(CIntRepr::Dec, lit), pos, len) }
+0[xX]$hexdigit+@intgnusuffix?   { token_plus(p, CTokILit, |lit| CInteger::parse(CIntRepr::Hex, &lit[2..]), pos, len) }
 
 (0$octdigit*|$digitNZ$digit*|0[xX]$hexdigit+)[uUlL]+ { token_fail("Invalid integer constant suffix", pos) }
 
@@ -274,36 +274,36 @@ $digitNZ$digit*@intgnusuffix?   { token_plus(p, CTokILit, |lit| readCInteger(Dec
 --
 -- * Universal Character Names are unsupported and cause an error.
 \'($inchar|@charesc)\'      { token_plus(p, CTokCLit,
-                                         |lit| unescapeChar(&lit[1..]).map(|t| cChar(t.0)), pos, len) }
+                                         |lit| CChar::unescape(&lit[1..]).map(|t| CChar::new(t.0)), pos, len) }
 L\'($inchar|@charesc)\'     { token_plus(p, CTokCLit,
-                                         |lit| unescapeChar(&lit[2..]).map(|t| cChar_w(t.0)), pos, len) }
+                                         |lit| CChar::unescape(&lit[2..]).map(|t| CChar::new_wide(t.0)), pos, len) }
 \'($inchar|@charesc){2,}\'  { token_plus(p, CTokCLit,
-                                         |lit| unescapeMultiChars(&lit[1..lit.len()-1]).map(|t| cChars(false, t)),
+                                         |lit| CChar::unescape_multi(&lit[1..lit.len()-1]).map(|t| CChar::new_multi(t, false)),
                                          pos, len) }
 L\'($inchar|@charesc){2,}\' { token_plus(p, CTokCLit,
-                                         |lit| unescapeMultiChars(&lit[2..lit.len()-1]).map(|t| cChars(true, t)),
+                                         |lit| CChar::unescape_multi(&lit[2..lit.len()-1]).map(|t| CChar::new_multi(t, true)),
                                          pos, len) }
 
 -- Clang version literals
 @clangversion               { token(p, |pos, vers| CTokClangC(pos, ClangCTok::CVersion(vers)),
-                                    readClangCVersion, pos, len) }
+                                    ClangCVersion::parse, pos, len) }
 
 -- float constants (follows K&R A2.5.3. C99 6.4.4.2)
 --
 -- * NOTE: Hexadecimal floating constants without binary exponents are forbidden.
 --         They generate a lexer error, because they are hard to recognize in the parser.
-(@mantpart@exppart?|@intpart@exppart)@floatgnusuffix?  { token(p, CTokFLit, readCFloat, pos, len) }
-@hexprefix(@hexmant|@hexdigits)@binexp@floatgnusuffix? { token(p, CTokFLit, readCFloat, pos, len) }
+(@mantpart@exppart?|@intpart@exppart)@floatgnusuffix?  { token(p, CTokFLit, CFloat::parse, pos, len) }
+@hexprefix(@hexmant|@hexdigits)@binexp@floatgnusuffix? { token(p, CTokFLit, CFloat::parse, pos, len) }
 @hexprefix@hexmant                                     { token_fail("Hexadecimal floating constant requires an exponent",
                                                                     pos) }
 
 -- string literal (follows K&R A2.6)
 -- C99: 6.4.5.
 \"($instr|@charesc)*\"      { token_plus(p, CTokSLit,
-                                         |lit| unescapeString(&lit[1..lit.len()-1]).map(cString),
+                                         |lit| CString::unescape(&lit[1..lit.len()-1]).map(CString::new),
                                          pos, len) }
 L\"($instr|@charesc)*\"     { token_plus(p, CTokSLit,
-                                         |lit| unescapeString(&lit[2..lit.len()-1]).map(cString_w),
+                                         |lit| CString::unescape(&lit[2..lit.len()-1]).map(CString::new_wide),
                                          pos, len) }
 
 L?\'@ucn\'                        { token_fail("Universal character names are unsupported", pos) }

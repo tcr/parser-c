@@ -111885,15 +111885,15 @@ fn alex_action_87(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
 }
 
 fn alex_action_88(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
- token_plus(p, CTokILit, readCOctal, pos, len) 
+ token_plus(p, CTokILit, CInteger::parse_octal, pos, len) 
 }
 
 fn alex_action_89(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
- token_plus(p, CTokILit, |lit| readCInteger(DecRepr, lit), pos, len) 
+ token_plus(p, CTokILit, |lit| CInteger::parse(CIntRepr::Dec, lit), pos, len) 
 }
 
 fn alex_action_90(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
- token_plus(p, CTokILit, |lit| readCInteger(HexRepr, &lit[2..]), pos, len) 
+ token_plus(p, CTokILit, |lit| CInteger::parse(CIntRepr::Hex, &lit[2..]), pos, len) 
 }
 
 fn alex_action_91(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
@@ -111902,37 +111902,37 @@ fn alex_action_91(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
 
 fn alex_action_92(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
  token_plus(p, CTokCLit,
-                                         |lit| unescapeChar(&lit[1..]).map(|t| cChar(t.0)), pos, len) 
+                                         |lit| CChar::unescape(&lit[1..]).map(|t| CChar::new(t.0)), pos, len) 
 }
 
 fn alex_action_93(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
  token_plus(p, CTokCLit,
-                                         |lit| unescapeChar(&lit[2..]).map(|t| cChar_w(t.0)), pos, len) 
+                                         |lit| CChar::unescape(&lit[2..]).map(|t| CChar::new_wide(t.0)), pos, len) 
 }
 
 fn alex_action_94(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
  token_plus(p, CTokCLit,
-                                         |lit| unescapeMultiChars(&lit[1..lit.len()-1]).map(|t| cChars(false, t)),
+                                         |lit| CChar::unescape_multi(&lit[1..lit.len()-1]).map(|t| CChar::new_multi(t, false)),
                                          pos, len) 
 }
 
 fn alex_action_95(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
  token_plus(p, CTokCLit,
-                                         |lit| unescapeMultiChars(&lit[2..lit.len()-1]).map(|t| cChars(true, t)),
+                                         |lit| CChar::unescape_multi(&lit[2..lit.len()-1]).map(|t| CChar::new_multi(t, true)),
                                          pos, len) 
 }
 
 fn alex_action_96(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
  token(p, |pos, vers| CTokClangC(pos, ClangCTok::CVersion(vers)),
-                                    readClangCVersion, pos, len) 
+                                    ClangCVersion::parse, pos, len) 
 }
 
 fn alex_action_97(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
- token(p, CTokFLit, readCFloat, pos, len) 
+ token(p, CTokFLit, CFloat::parse, pos, len) 
 }
 
 fn alex_action_98(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
- token(p, CTokFLit, readCFloat, pos, len) 
+ token(p, CTokFLit, CFloat::parse, pos, len) 
 }
 
 fn alex_action_99(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
@@ -111942,13 +111942,13 @@ fn alex_action_99(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
 
 fn alex_action_100(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
  token_plus(p, CTokSLit,
-                                         |lit| unescapeString(&lit[1..lit.len()-1]).map(cString),
+                                         |lit| CString::unescape(&lit[1..lit.len()-1]).map(CString::new),
                                          pos, len) 
 }
 
 fn alex_action_101(p: &mut Parser, pos: Position, len: usize) -> Res<Token> {
  token_plus(p, CTokSLit,
-                                         |lit| unescapeString(&lit[2..lit.len()-1]).map(cString_w),
+                                         |lit| CString::unescape(&lit[2..lit.len()-1]).map(CString::new_wide),
                                          pos, len) 
 }
 

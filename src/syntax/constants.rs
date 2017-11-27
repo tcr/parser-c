@@ -1,74 +1,161 @@
 // Original file: "Constants.hs"
 // File auto-generated using Corollary.
 
+use std::fmt::{self, Write};
 use std::char;
+use std::str::FromStr;
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum CChar {
-    CChar(char, bool),
-    CChars(Vec<char>, bool),
-}
-pub use self::CChar::*;
 
-fn showWideFlag(flag: bool) -> &'static str {
+// ------------------------------------------------------------------------------
+// Formatting utilities
+
+fn format_wide_flag(flag: bool) -> &'static str {
     if flag { "L" } else { "" }
 }
 
-pub fn showCChar(ch: &CChar) -> String {
-    match *ch {
-        CChar(ch, wide) =>
-            format!("{}'{}'", showWideFlag(wide), escapeCChar(ch)),
-        CChars(ref chars, wide) => {
-            let mut result = format!("{}'", showWideFlag(wide));
-            chars.iter().for_each(|ch| result.push_str(&escapeCChar(*ch)));
-            result.push('\'');
-            result
+fn escape(f: &mut fmt::Formatter, ch: char, quote: char) -> fmt::Result {
+    match ch {
+        '\\'   => f.write_str("\\\\"),
+        '\x07' => f.write_str("\\a"),
+        '\x08' => f.write_str("\\b"),
+        '\x0b' => f.write_str("\\v"),
+        '\x0c' => f.write_str("\\f"),
+        '\x1b' => f.write_str("\\e"),
+        '\n'   => f.write_str("\\n"),
+        '\r'   => f.write_str("\\r"),
+        '\t'   => f.write_str("\\t"),
+        _ if ch == quote => { f.write_char('\\')?; f.write_char(quote) },
+        _ if (ch >= ' ' && ch <= '~') => f.write_char(ch),
+        _ if (ch as u32) < 512 => write!(f, "\\{:03o}", ch as u32),
+        _ => write!(f, "\\x{:x}", ch as u32),
+    }
+}
+
+
+// ------------------------------------------------------------------------------
+// Character constants
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum CChar {
+    Char(char, bool),
+    Chars(Vec<char>, bool),
+}
+
+impl fmt::Display for CChar {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}'", format_wide_flag(self.is_wide()))?;
+        match *self {
+            CChar::Char(ch, _) => escape(f, ch, '\'')?,
+            CChar::Chars(ref chars, _) => {
+                for &ch in chars.iter() {
+                    escape(f, ch, '\'')?;
+                }
+            }
+        }
+        f.write_str("'")
+    }
+}
+
+impl CChar {
+    pub fn new(ch: char) -> CChar {
+        CChar::Char(ch, false)
+    }
+
+    pub fn new_wide(ch: char) -> CChar {
+        CChar::Char(ch, true)
+    }
+
+    pub fn new_multi(chars: Vec<char>, wide: bool) -> CChar {
+        CChar::Chars(chars, wide)
+    }
+
+    pub fn into_string(self) -> String {
+        match self {
+            CChar::Char(c, _) => c.to_string(),
+            CChar::Chars(cs, _) => cs.into_iter().collect(),
         }
     }
-}
 
-pub fn getCChar(ch: CChar) -> String {
-    match ch {
-        CChar(c, _) => c.to_string(),
-        CChars(cs, _) => cs.into_iter().collect(),
-    }
-}
-
-pub fn getCCharAsInt(ch: CChar) -> isize {
-    match ch {
-        CChar(c, _) => c as isize,
-        CChars(_, _) => {
-            panic!("integer value of multi-character character constants is implementation defined")
+    pub fn as_int(&self) -> Option<isize> {
+        match *self {
+            CChar::Char(ch, _) => Some(ch as isize),
+            CChar::Chars(_, _) => None,
         }
     }
-}
 
-pub fn isWideChar(ch: CChar) -> bool {
-    match ch {
-        CChar(_, wideFlag) |
-        CChars(_, wideFlag) => wideFlag,
+    pub fn is_wide(&self) -> bool {
+        match *self {
+            CChar::Char(_, wide) | CChar::Chars(_, wide) => wide,
+        }
+    }
+
+    pub fn unescape(s: &str) -> Result<(char, &str), String> {
+        let mut iter = s.chars();
+        match iter.next() {
+            None => Err("No character to unescape".into()),
+            Some('\\') => match iter.next() {
+                None => Ok(('\\', "")),
+                Some(ch) => Ok(match ch {
+                    'n'  => ('\n',   &s[2..]),
+                    't'  => ('\t',   &s[2..]),
+                    'v'  => ('\x0b', &s[2..]),
+                    'b'  => ('\x08', &s[2..]),
+                    'r'  => ('\r',   &s[2..]),
+                    'f'  => ('\x0c', &s[2..]),
+                    'a'  => ('\x07', &s[2..]),
+                    'e'  => ('\x1b', &s[2..]),
+                    'E'  => ('\x1b', &s[2..]),
+                    '\\' => ('\\',   &s[2..]),
+                    '?'  => ('?',    &s[2..]),
+                    '\'' => ('\'',   &s[2..]),
+                    '\"' => ('\"',   &s[2..]),
+                    'x'  => {
+                        let digits = iter.position(|x| !x.is_digit(16)).unwrap_or(s.len() - 2);
+                        if digits == 0 {
+                            return Err("Bad hex escape sequence".into());
+                        }
+                        let codepoint = u32::from_str_radix(&s[2..2+digits], 16).ok()
+                            .and_then(char::from_u32)
+                            .ok_or("Bad hex escape sequence")?;
+                        (codepoint, &s[2+digits..])
+                    }
+                    dig0 => {
+                        if !dig0.is_digit(8) {
+                            return Err("Bad octal escape sequence".into());
+                        }
+                        let digits = iter.position(|x| !x.is_digit(8)).unwrap_or(s.len() - 2);
+                        let codepoint = u32::from_str_radix(&s[1..2+digits], 8).ok()
+                            .and_then(char::from_u32)
+                            .ok_or("Bad octal escape sequence")?;
+                        (codepoint, &s[2+digits..])
+                    }
+                })
+            },
+            Some(ch) => Ok((ch, iter.as_str()))
+        }
+    }
+
+    pub fn unescape_multi(mut cs: &str) -> Result<Vec<char>, String> {
+        let mut new_vec = Vec::with_capacity(cs.len());
+        while !cs.is_empty() {
+            let (ch, newcs) = Self::unescape(cs)?;
+            cs = newcs;
+            new_vec.push(ch);
+        }
+        Ok(new_vec)
     }
 }
 
-pub fn cChar(c: char) -> CChar {
-    CChar(c, false)
-}
 
-pub fn cChar_w(c: char) -> CChar {
-    CChar(c, true)
-}
-
-pub fn cChars(b: bool, a: Vec<char>) -> CChar {
-    CChars(a, b)
-}
+// ------------------------------------------------------------------------------
+// Integer constants
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum CIntRepr {
-    DecRepr,
-    HexRepr,
-    OctalRepr,
+    Dec,
+    Hex,
+    Octal,
 }
-pub use self::CIntRepr::*;
 
 bitflags! {
     pub struct CIntFlags: u32 {
@@ -79,269 +166,177 @@ bitflags! {
     }
 }
 
+impl FromStr for CIntFlags {
+    type Err = String;
+
+    fn from_str(mut s: &str) -> Result<CIntFlags, String> {
+        let mut flags = CIntFlags::empty();
+        loop {
+            if s.is_empty() {
+                return Ok(flags);
+            }
+            if s.starts_with("ll") || s.starts_with("LL") {
+                s = &s[2..];
+                flags |= FLAG_LONGLONG;
+                continue;
+            }
+            match &s[0..1] {
+                "l" => flags |= FLAG_LONG,
+                "L" => flags |= FLAG_LONG,
+                "u" => flags |= FLAG_UNSIGNED,
+                "U" => flags |= FLAG_UNSIGNED,
+                "i" => flags |= FLAG_IMAG,
+                "I" => flags |= FLAG_IMAG,
+                "j" => flags |= FLAG_IMAG,
+                "J" => flags |= FLAG_IMAG,
+                _ => return Err(format!("Unexpected flags {}", s)),
+            }
+            s = &s[1..];
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct CInteger(pub u128, pub CIntRepr, pub CIntFlags);
 
-
-fn parseFlags(mut s: &str) -> Result<CIntFlags, String> {
-    let mut flags = CIntFlags::empty();
-    loop {
-        if s.is_empty() {
-            return Ok(flags);
+impl fmt::Display for CInteger {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.1 {
+            CIntRepr::Dec => write!(f, "{}", self.0)?,
+            CIntRepr::Hex => write!(f, "{:#x}", self.0)?,
+            CIntRepr::Octal => write!(f, "0{:o}", self.0)?,
         }
-        if s.starts_with("ll") || s.starts_with("LL") {
-            s = &s[2..];
-            flags |= FLAG_LONGLONG;
-            continue;
-        }
-        match &s[0..1] {
-            "l" => flags |= FLAG_LONG,
-            "L" => flags |= FLAG_LONG,
-            "u" => flags |= FLAG_UNSIGNED,
-            "U" => flags |= FLAG_UNSIGNED,
-            "i" => flags |= FLAG_IMAG,
-            "I" => flags |= FLAG_IMAG,
-            "j" => flags |= FLAG_IMAG,
-            "J" => flags |= FLAG_IMAG,
-            _ => return Err(format!("Unexpected flags {}", s)),
-        }
-        s = &s[1..];
+        if self.2.contains(FLAG_UNSIGNED) { write!(f, "u")?; }
+        if self.2.contains(FLAG_LONG)     { write!(f, "L")?; }
+        if self.2.contains(FLAG_LONGLONG) { write!(f, "LL")?; }
+        if self.2.contains(FLAG_IMAG)     { write!(f, "i")?; }
+        Ok(())
     }
 }
 
-pub fn showCInteger(int: &CInteger) -> String {
-    let mut result = match int.1 {
-        DecRepr => format!("{}", int.0),
-        HexRepr => format!("{:#x}", int.0),
-        OctalRepr => format!("0{:o}", int.0),
-    };
-    if int.2.contains(FLAG_UNSIGNED) { result.push('u'); }
-    if int.2.contains(FLAG_LONG) { result.push('L'); }
-    if int.2.contains(FLAG_LONGLONG) { result.push_str("LL"); }
-    if int.2.contains(FLAG_IMAG) { result.push('i'); }
-    result
-}
+impl CInteger {
+    pub fn new(i: u128) -> CInteger {
+        CInteger(i, CIntRepr::Dec, CIntFlags::empty())
+    }
 
-pub fn readCInteger(repr: CIntRepr, s: &str) -> Result<CInteger, String> {
-    let base = match repr {
-        DecRepr => 10,
-        HexRepr => 16,
-        OctalRepr => 8,
-    };
-    let end = s.chars().position(|x| !x.is_digit(base)).unwrap_or(s.len());
-    let number = match u128::from_str_radix(&s[..end], base) {
-        Ok(n) => n,
-        Err(_) => return Err(format!("Bad Integer literal: {:?}", s)),
-    };
-    let flags = parseFlags(&s[end..])?;
-    Ok(CInteger(number, repr, flags))
-}
+    // Not a FromStr because of the extra argument.
+    pub fn parse(repr: CIntRepr, s: &str) -> Result<CInteger, String> {
+        let base = match repr {
+            CIntRepr::Dec => 10,
+            CIntRepr::Hex => 16,
+            CIntRepr::Octal => 8,
+        };
+        let end = s.chars().position(|x| !x.is_digit(base)).unwrap_or(s.len());
+        let number = match u128::from_str_radix(&s[..end], base) {
+            Ok(n) => n,
+            Err(_) => return Err(format!("Bad Integer literal: {:?}", s)),
+        };
+        let flags = s[end..].parse()?;
+        Ok(CInteger(number, repr, flags))
+    }
 
-/// Fix the 'octal' lexing of '0'
-pub fn readCOctal(s: &str) -> Result<CInteger, String> {
-    if s.chars().nth(0) == Some('0') {
-        if s.len() > 1 && s.chars().nth(1).unwrap().is_digit(8) {
-            readCInteger(OctalRepr, &s[1..])
+    /// Fix the 'octal' lexing of '0'
+    pub fn parse_octal(s: &str) -> Result<CInteger, String> {
+        if s.chars().nth(0) == Some('0') {
+            if s.len() > 1 && s.chars().nth(1).unwrap().is_digit(8) {
+                Self::parse(CIntRepr::Octal, &s[1..])
+            } else {
+                Self::parse(CIntRepr::Dec, &s)
+            }
         } else {
-            readCInteger(DecRepr, &s)
+            panic!("CInteger::parse_octal: string does not start with '0'")
         }
-    } else {
-        panic!("ReadOctal: string does not start with `0'")
+    }
+
+    pub fn as_int(&self) -> u128 {
+        self.0
     }
 }
 
-pub fn getCInteger(CInteger(i, _, _): CInteger) -> u128 {
-    i
-}
 
-pub fn cInteger(i: u128) -> CInteger {
-    CInteger(i, DecRepr, CIntFlags::empty())
-}
+// ------------------------------------------------------------------------------
+// Floating-point constants
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct CFloat(pub String);
 
-
-pub fn cFloat(input: f32) -> CFloat {
-    CFloat(input.to_string())
+impl fmt::Display for CFloat {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(&self.0)
+    }
 }
 
-pub fn readCFloat(input: &str) -> CFloat {
-    CFloat(input.to_string())
+impl CFloat {
+    pub fn new(input: f64) -> CFloat {
+        CFloat(input.to_string())
+    }
+
+    pub fn parse(input: &str) -> CFloat {
+        CFloat(input.to_string())
+    }
 }
 
-pub fn showCFloat(float: &CFloat) -> String {
-    float.0.clone()
-}
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ClangCVersion(pub String);
-
-
-pub fn readClangCVersion(input: &str) -> ClangCVersion {
-    ClangCVersion(input.to_string())
-}
+// ------------------------------------------------------------------------------
+// String constants
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct CString(pub String, pub bool);
 
-pub fn showCString(s: &CString) -> String {
-    let CString(ref s, b) = *s;
-    format!("{}{}", showWideFlag(b), showStringLit(s))
-}
-
-pub fn cString(__str: String) -> CString {
-    CString(__str, false)
-}
-
-pub fn cString_w(__str: String) -> CString {
-    CString(__str, true)
-}
-
-pub fn getCString(s: CString) -> String {
-    s.0
-}
-
-pub fn isWideString(s: &CString) -> bool {
-    s.1
-}
-
-pub fn concatCStrings(cs: Vec<CString>) -> CString {
-    let wideflag = cs.iter().any(isWideString);
-    let mut new_str = String::new();
-    for s in cs {
-        new_str.push_str(&s.0);
-    }
-    CString(new_str, wideflag)
-}
-
-fn showStringLit(s: &str) -> String {
-    let mut new_s = String::with_capacity(s.len());
-    new_s.push('"');
-    for ch in s.chars() {
-        if isSChar(ch) {
-            new_s.push(ch);
-        } else if ch == '"' {
-            new_s.push_str("\\\"");
-        } else {
-            new_s.push_str(&escapeChar(ch));
+impl fmt::Display for CString {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}\"", format_wide_flag(self.1))?;
+        for ch in self.0.chars() {
+            escape(f, ch, '"')?;
         }
-    }
-    new_s.push('"');
-    new_s
-}
-
-pub fn isAsciiSourceChar(c: char) -> bool {
-    c >= ' ' && c <= '~'
-}
-
-pub fn isCChar(ch: char) -> bool {
-    match ch {
-        '\\' => false,
-        '\'' => false,
-        '\n' => false,
-        c => isAsciiSourceChar(c),
+        f.write_str("\"")
     }
 }
 
-pub fn escapeCChar(ch: char) -> String {
-    match ch {
-        '\'' => "\\\'".to_string(),
-        ch if isSChar(ch) => ch.to_string(),
-        _ => escapeChar(ch)
+impl CString {
+    pub fn new(s: String) -> CString {
+        CString(s, false)
     }
-}
 
-pub fn isSChar(ch: char) -> bool {
-    match ch {
-        '\\' => false,
-        '\"' => false,
-        '\n' => false,
-        c => isAsciiSourceChar(c),
+    pub fn new_wide(s: String) -> CString {
+        CString(s, true)
     }
-}
 
-pub fn escapeChar(ch: char) -> String {
-    match ch {
-        '\\' => "\\\\".to_string(),
-        '\u{7}' => "\\a".to_string(),
-        '\u{8}' => "\\b".to_string(),
-        '\u{1b}' => "\\e".to_string(),
-        '\u{c}' => "\\f".to_string(),
-        '\n' => "\\n".to_string(),
-        '\r' => "\\r".to_string(),
-        '\t' => "\\t".to_string(),
-        '\u{b}' => "\\v".to_string(),
-        c => if (c as u32) < 512 {
-            format!("\\{:03o}", c as u32)
-        } else {
-            format!("\\x{:x}", c as u32)
+    pub fn concat(cs: Vec<CString>) -> CString {
+        let wideflag = cs.iter().any(CString::is_wide);
+        let mut new_str = String::new();
+        new_str.extend(cs.into_iter().map(|v| v.0));
+        CString(new_str, wideflag)
+    }
+
+    pub fn into_string(self) -> String {
+        self.0
+    }
+
+    pub fn is_wide(&self) -> bool {
+        self.1
+    }
+
+    pub fn unescape(mut cs: &str) -> Result<String, String> {
+        let mut new_str = String::with_capacity(cs.len());
+        while !cs.is_empty() {
+            let (ch, newcs) = CChar::unescape(cs)?;
+            cs = newcs;
+            new_str.push(ch);
         }
+        Ok(new_str)
     }
 }
 
-pub fn unescapeChar(s: &str) -> Result<(char, &str), String> {
-    let mut iter = s.chars();
-    match iter.next() {
-        None => Err("No character to unescape".into()),
-        Some('\\') => match iter.next() {
-            None => Ok(('\\', "")),
-            Some(ch) => Ok(match ch {
-                'n'  => ('\n',   &s[2..]),
-                't'  => ('\t',   &s[2..]),
-                'v'  => ('\x0b', &s[2..]),
-                'b'  => ('\x08', &s[2..]),
-                'r'  => ('\r',   &s[2..]),
-                'f'  => ('\x0c', &s[2..]),
-                'a'  => ('\x07', &s[2..]),
-                'e'  => ('\x1b', &s[2..]),
-                'E'  => ('\x1b', &s[2..]),
-                '\\' => ('\\',   &s[2..]),
-                '?'  => ('?',    &s[2..]),
-                '\'' => ('\'',   &s[2..]),
-                '\"' => ('\"',   &s[2..]),
-                'x'  => {
-                    let digits = iter.position(|x| !x.is_digit(16)).unwrap_or(s.len() - 2);
-                    if digits == 0 {
-                        return Err("Bad hex escape sequence".into());
-                    }
-                    let codepoint = u32::from_str_radix(&s[2..2+digits], 16).ok()
-                        .and_then(char::from_u32)
-                        .ok_or("Bad hex escape sequence")?;
-                    (codepoint, &s[2+digits..])
-                }
-                dig0 => {
-                    if !dig0.is_digit(8) {
-                        return Err("Bad octal escape sequence".into());
-                    }
-                    let digits = iter.position(|x| !x.is_digit(8)).unwrap_or(s.len() - 2);
-                    let codepoint = u32::from_str_radix(&s[1..2+digits], 8).ok()
-                        .and_then(char::from_u32)
-                        .ok_or("Bad octal escape sequence")?;
-                    (codepoint, &s[2+digits..])
-                }
-            })
-        },
-        Some(ch) => Ok((ch, iter.as_str()))
-    }
-}
 
-pub fn unescapeString(mut cs: &str) -> Result<String, String> {
-    let mut new_str = String::with_capacity(cs.len());
-    while !cs.is_empty() {
-        let (ch, newcs) = unescapeChar(cs)?;
-        cs = newcs;
-        new_str.push(ch);
-    }
-    Ok(new_str)
-}
+// ------------------------------------------------------------------------------
+// Special Clang constants
 
-pub fn unescapeMultiChars(mut cs: &str) -> Result<Vec<char>, String> {
-    let mut new_vec = Vec::with_capacity(cs.len());
-    while !cs.is_empty() {
-        let (ch, newcs) = unescapeChar(cs)?;
-        cs = newcs;
-        new_vec.push(ch);
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct ClangCVersion(pub String);
+
+impl ClangCVersion {
+    pub fn parse(input: &str) -> ClangCVersion {
+        ClangCVersion(input.to_string())
     }
-    Ok(new_vec)
 }

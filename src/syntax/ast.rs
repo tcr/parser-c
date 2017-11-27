@@ -352,7 +352,7 @@ pub enum CDeclarationSpecifier<I> {
 }
 pub use self::CDeclarationSpecifier::*;
 
-pub fn partitionDeclSpecs<I>(input: Vec<CDeclarationSpecifier<I>>)
+pub fn partition_declspecs<I>(input: Vec<CDeclarationSpecifier<I>>)
     -> (Vec<CStorageSpecifier<I>>,
         Vec<CAttribute<I>>,
         Vec<CTypeQualifier<I>>,
@@ -421,7 +421,7 @@ pub enum CTypeSpecifier<I> {
 pub use self::CTypeSpecifier::*;
 
 impl<I> CTypeSpecifier<I> where I: ::std::fmt::Debug {
-    pub fn isSUEDef(&self) -> bool {
+    pub fn is_sue_def(&self) -> bool {
         match *self {
             CSUType(box CStructureUnion(_, _, Some(_), _, _), _) => true,
             CEnumType(box CEnumeration(_, Some(_), _, _), _) => true,
@@ -591,16 +591,13 @@ pub enum CConstant<I> {
 }
 pub use self::CConstant::*;
 
+impl<I> CConstant<I> {
+    pub fn from_strlit(lit: CStringLiteral<I>) -> CConstant<I> {
+        CStrConst(lit.0, lit.1)
+    }
+}
+
 pub type CStrLit = CStringLiteral<NodeInfo>;
 
 #[derive(Clone, Debug, Equiv, CNode, NodeFunctor, Traverse)]
 pub struct CStringLiteral<I>(pub CString, pub I);
-
-
-pub fn cstringOfLit<I>(CStringLiteral(cstr, _): CStringLiteral<I>) -> CString {
-    cstr
-}
-
-pub fn liftStrLit<I>(CStringLiteral(__str, at): CStringLiteral<I>) -> CConstant<I> {
-    CStrConst(__str, at)
-}

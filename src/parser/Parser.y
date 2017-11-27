@@ -1853,7 +1853,7 @@ primary_expression :: { Box<CExpr> }
 primary_expression
   : ident                {% with_pos!(p, $1, |at| box CVar($1, at)) }
   | constant             { box CConst($1) }
-  | string_literal       { box CConst(box liftStrLit(*$1)) }
+  | string_literal       { box CConst(box CConstant::from_strlit(*$1)) }
   | '(' expression ')'   { $2 }
   | "_Generic" '(' assignment_expression ',' generic_assoc_list ')'
         {% with_pos!(p, $1, |at| box CGenericSelection($3, $5, at)) }
@@ -2244,7 +2244,7 @@ string_literal
         {%
             with_pos!(p, $1, move |at| {
                 if let CTokSLit(_, s) = $1 {
-                    box CStringLiteral(concatCStrings(prepend(s, $2)), at)
+                    box CStringLiteral(CString::concat(prepend(s, $2)), at)
                 } else {
                     panic!("irrefutable pattern")
                 }
