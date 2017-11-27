@@ -20505,7 +20505,7 @@ fn happyReduce_363(p: &mut Parser, i: isize) -> Res<Cont> {
 
 fn happyReduction_363(happy_x_1: HappyAbsSyn) -> HappyAbsSyn {
     match (happy_x_1) {
-        HappyAbsSyn128(happy_var_1) => HappyAbsSyn100(box CConst(box liftStrLit(*happy_var_1))),
+        HappyAbsSyn128(happy_var_1) => HappyAbsSyn100(box CConst(box CConstant::from_strlit(*happy_var_1))),
         _ => notHappyAtAll()
     }
 }
@@ -21833,7 +21833,7 @@ fn happyReduction_467(p: &mut Parser) -> Res<HappyAbsSyn> {
         (HappyAbsSyn129(happy_var_2), HappyTerminal(happy_var_1)) => {
             with_pos!(p, happy_var_1, move |at| {
                 if let CTokSLit(_, s) = happy_var_1 {
-                    box CStringLiteral(concatCStrings(prepend(s, happy_var_2)), at)
+                    box CStringLiteral(CString::concat(prepend(s, happy_var_2)), at)
                 } else {
                     panic!("irrefutable pattern")
                 }

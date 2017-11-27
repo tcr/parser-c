@@ -10,7 +10,6 @@ use syntax::ast::*;
 use syntax::ops::*;
 use data::ident::Ident;
 use data::position::Pos;
-use syntax::constants::{showCChar, showCString, showCInteger, showCFloat};
 
 const INDENT: isize = 4;
 
@@ -270,6 +269,10 @@ fn text<'a, T>(s: T) -> Doc<'a> where T: Into<Cow<'a, str>> {
         Cow::Owned(s) => mk(Text(Text::String(Rc::new(s)))),
         Cow::Borrowed(s) => mk(Text(Text::Str(s))),
     }
+}
+
+fn fmt<'a, T>(s: T) -> Doc<'a> where T: fmt::Display {
+    text(s.to_string())
 }
 
 fn parens<'a>(doc: Doc<'a>) -> Doc<'a> {
@@ -664,7 +667,7 @@ impl Pretty for CDecl {
             CDecl(ref specs, ref divs, _) => {
                 for item in specs.windows(2) {
                     if let &[CTypeSpec(ref ty), CTypeQual(CAttrQual(_))] = item {
-                        if ty.isSUEDef() {
+                        if ty.is_sue_def() {
                             panic!("AST Invariant violated: __attribute__ specifier following struct/union/enum");
                         }
                     }
@@ -1120,17 +1123,17 @@ impl Pretty for CUnaryOp {
 impl Pretty for CConst {
     fn pretty<'a>(&'a self) -> Doc<'a> {
         match *self {
-            CIntConst(ref int, _) => text(showCInteger(int)),
-            CCharConst(ref chr, _) => text(showCChar(chr)),
-            CFloatConst(ref flt, _) => text(showCFloat(flt)),
-            CStrConst(ref string, _) => text(showCString(string)),
+            CIntConst(ref int, _) => fmt(int),
+            CCharConst(ref chr, _) => fmt(chr),
+            CFloatConst(ref flt, _) => fmt(flt),
+            CStrConst(ref string, _) => fmt(string),
         }
     }
 }
 
 impl Pretty for CStrLit {
     fn pretty<'a>(&'a self) -> Doc<'a> {
-        text(showCString(&self.0))
+        fmt(&self.0)
     }
 }
 

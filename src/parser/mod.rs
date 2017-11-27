@@ -23,7 +23,6 @@ use parser::parser::translUnitP;
 use parser::builtin::*;
 use parser::tokens::{CToken, CTokEof};
 use syntax::ast::*;
-use syntax::constants::showCString;
 use data::name::{Name, NameSupply, new_name_supply};
 use data::ident::Ident;
 use data::node::{NodeInfo, CNode};
@@ -290,7 +289,7 @@ impl CDeclrR {
             let oldname = self.asmname.as_ref().unwrap();
             Err(ParseError::syntax(newname.pos(),
                                    format!("Duplicate assembler name: {}, {}",
-                                           showCString(&oldname.0), showCString(&newname.0))))
+                                           oldname.0, newname.0)))
         }
     }
 
