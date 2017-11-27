@@ -120,22 +120,22 @@ impl Position {
         }
     }
 
-    pub fn isSource(&self) -> bool {
+    pub fn is_source(&self) -> bool {
         match *self {
             Position::Position { .. } => true,
             _ => false,
         }
     }
 
-    pub fn isNone(&self) -> bool {
+    pub fn is_none(&self) -> bool {
         self == &Position::None
     }
 
-    pub fn isBuiltin(&self) -> bool {
+    pub fn is_builtin(&self) -> bool {
         self == &Position::Builtin
     }
 
-    pub fn isInternal(&self) -> bool {
+    pub fn is_internal(&self) -> bool {
         self == &Position::Internal
     }
 

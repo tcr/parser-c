@@ -90,7 +90,7 @@ impl Ident {
     }
 
     pub fn is_internal(&self) -> bool {
-        (self.0).1.pos().isInternal()
+        (self.0).1.pos().is_internal()
     }
 
     pub fn to_string(&self) -> String {

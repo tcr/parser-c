@@ -116,113 +116,113 @@ pub enum CToken {
 pub use self::CToken::*;
 
 impl CToken {
-    pub fn into_pos_len(self) -> PosLength {
-        match self {
-            CTokLParen(posl) => posl,
-            CTokRParen(posl) => posl,
-            CTokLBracket(posl) => posl,
-            CTokRBracket(posl) => posl,
-            CTokArrow(posl) => posl,
-            CTokDot(posl) => posl,
-            CTokExclam(posl) => posl,
-            CTokTilde(posl) => posl,
-            CTokInc(posl) => posl,
-            CTokDec(posl) => posl,
-            CTokPlus(posl) => posl,
-            CTokMinus(posl) => posl,
-            CTokStar(posl) => posl,
-            CTokSlash(posl) => posl,
-            CTokPercent(posl) => posl,
-            CTokAmper(posl) => posl,
-            CTokShiftL(posl) => posl,
-            CTokShiftR(posl) => posl,
-            CTokLess(posl) => posl,
-            CTokLessEq(posl) => posl,
-            CTokHigh(posl) => posl,
-            CTokHighEq(posl) => posl,
-            CTokEqual(posl) => posl,
-            CTokUnequal(posl) => posl,
-            CTokHat(posl) => posl,
-            CTokBar(posl) => posl,
-            CTokAnd(posl) => posl,
-            CTokOr(posl) => posl,
-            CTokQuest(posl) => posl,
-            CTokColon(posl) => posl,
-            CTokAssign(posl) => posl,
-            CTokPlusAss(posl) => posl,
-            CTokMinusAss(posl) => posl,
-            CTokStarAss(posl) => posl,
-            CTokSlashAss(posl) => posl,
-            CTokPercAss(posl) => posl,
-            CTokAmpAss(posl) => posl,
-            CTokHatAss(posl) => posl,
-            CTokBarAss(posl) => posl,
-            CTokSLAss(posl) => posl,
-            CTokSRAss(posl) => posl,
-            CTokComma(posl) => posl,
-            CTokSemic(posl) => posl,
-            CTokLBrace(posl) => posl,
-            CTokRBrace(posl) => posl,
-            CTokEllipsis(posl) => posl,
-            CTokAlignof(posl) => posl,
-            CTokAlignas(posl) => posl,
-            CTokAsm(posl) => posl,
-            CTokAtomic(posl) => posl,
-            CTokAuto(posl) => posl,
-            CTokBreak(posl) => posl,
-            CTokBool(posl) => posl,
-            CTokCase(posl) => posl,
-            CTokChar(posl) => posl,
-            CTokConst(posl) => posl,
-            CTokContinue(posl) => posl,
-            CTokComplex(posl) => posl,
-            CTokDefault(posl) => posl,
-            CTokDo(posl) => posl,
-            CTokDouble(posl) => posl,
-            CTokElse(posl) => posl,
-            CTokEnum(posl) => posl,
-            CTokExtern(posl) => posl,
-            CTokFloat(posl) => posl,
-            CTokFloat128(posl) => posl,
-            CTokFor(posl) => posl,
-            CTokGeneric(posl) => posl,
-            CTokGoto(posl) => posl,
-            CTokInt(posl) => posl,
-            CTokInt128(posl) => posl,
-            CTokInline(posl) => posl,
-            CTokIf(posl) => posl,
-            CTokLong(posl) => posl,
-            CTokLabel(posl) => posl,
-            CTokNoreturn(posl) => posl,
-            CTokNullable(posl) => posl,
-            CTokNonnull(posl) => posl,
-            CTokRegister(posl) => posl,
-            CTokRestrict(posl) => posl,
-            CTokReturn(posl) => posl,
-            CTokShort(posl) => posl,
-            CTokSigned(posl) => posl,
-            CTokSizeof(posl) => posl,
-            CTokStatic(posl) => posl,
-            CTokStaticAssert(posl) => posl,
-            CTokStruct(posl) => posl,
-            CTokSwitch(posl) => posl,
-            CTokTypedef(posl) => posl,
-            CTokTypeof(posl) => posl,
-            CTokThread(posl) => posl,
-            CTokUnion(posl) => posl,
-            CTokUnsigned(posl) => posl,
-            CTokVoid(posl) => posl,
-            CTokVolatile(posl) => posl,
-            CTokWhile(posl) => posl,
-            CTokCLit(posl, _) => posl,
-            CTokILit(posl, _) => posl,
-            CTokFLit(posl, _) => posl,
-            CTokSLit(posl, _) => posl,
-            CTokIdent(posl, _) => posl,
-            CTokTyIdent(posl, _) => posl,
-            CTokGnuC(posl, _) => posl,
-            CTokClangC(posl, _) => posl,
-            CTokEof => panic!("CToken::into_pos_len: Eof"),
+    pub fn pos_len(&self) -> PosLength {
+        match *self {
+            CTokLParen((ref pos, len)) |
+            CTokRParen((ref pos, len)) |
+            CTokLBracket((ref pos, len)) |
+            CTokRBracket((ref pos, len)) |
+            CTokArrow((ref pos, len)) |
+            CTokDot((ref pos, len)) |
+            CTokExclam((ref pos, len)) |
+            CTokTilde((ref pos, len)) |
+            CTokInc((ref pos, len)) |
+            CTokDec((ref pos, len)) |
+            CTokPlus((ref pos, len)) |
+            CTokMinus((ref pos, len)) |
+            CTokStar((ref pos, len)) |
+            CTokSlash((ref pos, len)) |
+            CTokPercent((ref pos, len)) |
+            CTokAmper((ref pos, len)) |
+            CTokShiftL((ref pos, len)) |
+            CTokShiftR((ref pos, len)) |
+            CTokLess((ref pos, len)) |
+            CTokLessEq((ref pos, len)) |
+            CTokHigh((ref pos, len)) |
+            CTokHighEq((ref pos, len)) |
+            CTokEqual((ref pos, len)) |
+            CTokUnequal((ref pos, len)) |
+            CTokHat((ref pos, len)) |
+            CTokBar((ref pos, len)) |
+            CTokAnd((ref pos, len)) |
+            CTokOr((ref pos, len)) |
+            CTokQuest((ref pos, len)) |
+            CTokColon((ref pos, len)) |
+            CTokAssign((ref pos, len)) |
+            CTokPlusAss((ref pos, len)) |
+            CTokMinusAss((ref pos, len)) |
+            CTokStarAss((ref pos, len)) |
+            CTokSlashAss((ref pos, len)) |
+            CTokPercAss((ref pos, len)) |
+            CTokAmpAss((ref pos, len)) |
+            CTokHatAss((ref pos, len)) |
+            CTokBarAss((ref pos, len)) |
+            CTokSLAss((ref pos, len)) |
+            CTokSRAss((ref pos, len)) |
+            CTokComma((ref pos, len)) |
+            CTokSemic((ref pos, len)) |
+            CTokLBrace((ref pos, len)) |
+            CTokRBrace((ref pos, len)) |
+            CTokEllipsis((ref pos, len)) |
+            CTokAlignof((ref pos, len)) |
+            CTokAlignas((ref pos, len)) |
+            CTokAsm((ref pos, len)) |
+            CTokAtomic((ref pos, len)) |
+            CTokAuto((ref pos, len)) |
+            CTokBreak((ref pos, len)) |
+            CTokBool((ref pos, len)) |
+            CTokCase((ref pos, len)) |
+            CTokChar((ref pos, len)) |
+            CTokConst((ref pos, len)) |
+            CTokContinue((ref pos, len)) |
+            CTokComplex((ref pos, len)) |
+            CTokDefault((ref pos, len)) |
+            CTokDo((ref pos, len)) |
+            CTokDouble((ref pos, len)) |
+            CTokElse((ref pos, len)) |
+            CTokEnum((ref pos, len)) |
+            CTokExtern((ref pos, len)) |
+            CTokFloat((ref pos, len)) |
+            CTokFloat128((ref pos, len)) |
+            CTokFor((ref pos, len)) |
+            CTokGeneric((ref pos, len)) |
+            CTokGoto((ref pos, len)) |
+            CTokInt((ref pos, len)) |
+            CTokInt128((ref pos, len)) |
+            CTokInline((ref pos, len)) |
+            CTokIf((ref pos, len)) |
+            CTokLong((ref pos, len)) |
+            CTokLabel((ref pos, len)) |
+            CTokNoreturn((ref pos, len)) |
+            CTokNullable((ref pos, len)) |
+            CTokNonnull((ref pos, len)) |
+            CTokRegister((ref pos, len)) |
+            CTokRestrict((ref pos, len)) |
+            CTokReturn((ref pos, len)) |
+            CTokShort((ref pos, len)) |
+            CTokSigned((ref pos, len)) |
+            CTokSizeof((ref pos, len)) |
+            CTokStatic((ref pos, len)) |
+            CTokStaticAssert((ref pos, len)) |
+            CTokStruct((ref pos, len)) |
+            CTokSwitch((ref pos, len)) |
+            CTokTypedef((ref pos, len)) |
+            CTokTypeof((ref pos, len)) |
+            CTokThread((ref pos, len)) |
+            CTokUnion((ref pos, len)) |
+            CTokUnsigned((ref pos, len)) |
+            CTokVoid((ref pos, len)) |
+            CTokVolatile((ref pos, len)) |
+            CTokWhile((ref pos, len)) |
+            CTokCLit((ref pos, len), _) |
+            CTokILit((ref pos, len), _) |
+            CTokFLit((ref pos, len), _) |
+            CTokSLit((ref pos, len), _) |
+            CTokIdent((ref pos, len), _) |
+            CTokTyIdent((ref pos, len), _) |
+            CTokGnuC((ref pos, len), _) |
+            CTokClangC((ref pos, len), _) => (pos.clone(), len),
+            CTokEof => panic!("CToken::pos_len: Eof"),
         }
     }
 }

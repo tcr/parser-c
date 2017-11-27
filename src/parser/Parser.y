@@ -41,7 +41,7 @@ use data::position::{Located, Pos};
 use data::node::NodeInfo;
 use data::ident::Ident;
 use parser::tokens::*;
-use parser::lexer::{lexC, parseError};
+use parser::lexer::{lex, parse_error};
 use parser::{ParseError, PState, CDeclrR};
 use syntax::ops::*;
 use syntax::ast::*;
@@ -54,8 +54,8 @@ type Token = CToken;
 macro_rules! with_pos {
     ($parser:expr, $infonode:expr, $closure:expr) => {{
         let pos1 = $infonode.pos();
-        let (pos2, len) = $parser.getSavedToken().into_pos_len();
-        Ok($closure(NodeInfo::new(pos1, pos2, len, $parser.getNewName())))
+        let (pos2, len) = $parser.saved_token().pos_len();
+        Ok($closure(NodeInfo::new(pos1, pos2, len, $parser.new_name())))
     }};
 }
 
@@ -137,7 +137,7 @@ macro_rules! with_pos {
 %tokentype { CToken }
 
 %monad { Res } { >>= } { return }
-%lexer { lexC } { CTokEof }
+%lexer { lex } { CTokEof }
 
 %expect 1
 
@@ -266,8 +266,8 @@ translation_unit
   : ext_decl_list {%
                       let decls = $1;
                       if decls.len() == 0 {
-                          let name = p.getNewName();
-                          let pos = Rc::new(p.getPosClone());
+                          let name = p.new_name();
+                          let pos = Rc::new(p.pos_clone());
                           let nodeinfo = NodeInfo::new(pos.clone(), pos, 0, name);
                           Ok(box CTranslationUnit(decls, nodeinfo))
                       } else {
@@ -320,25 +320,25 @@ external_declaration
 function_definition :: { Box<CFunDef> }
 function_definition
   :                            function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef(vec![], $1, vec![], $2, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef(vec![], $1, vec![], $2, at)) }
 
   | attrs                      function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef(liftCAttrs($1), $2, vec![], $3, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef(lift_attrs($1), $2, vec![], $3, at)) }
 
   | declaration_specifier      function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
 
   | type_specifier             function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
 
   | declaration_qualifier_list function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
 
   | type_qualifier_list        function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef(liftTypeQuals($1), $2, vec![], $3, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef(lift_type_quals($1), $2, vec![], $3, at)) }
 
   | type_qualifier_list  attrs function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef(addVecs(liftTypeQuals($1), liftCAttrs($2)), $3, vec![], $4, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef(add_vecs(lift_type_quals($1), lift_attrs($2)), $3, vec![], $4, at)) }
 
   -- old function declarators
 
@@ -346,7 +346,7 @@ function_definition
         {% with_pos!(p, $1, |at| box CFunctionDef(vec![], $1, $2, $3, at)) }
 
   |                      attrs function_declarator_old declaration_list compound_statement
-        {% with_pos!(p, $2, |at| box CFunctionDef(liftCAttrs($1), $2, $3, $4, at)) }
+        {% with_pos!(p, $2, |at| box CFunctionDef(lift_attrs($1), $2, $3, $4, at)) }
 
   | declaration_specifier      function_declarator_old declaration_list compound_statement
         {% with_pos!(p, $1, |at| box CFunctionDef($1, $2, $3, $4, at)) }
@@ -358,10 +358,10 @@ function_definition
         {% with_pos!(p, $1, |at| box CFunctionDef($1, $2, $3, $4, at)) }
 
   | type_qualifier_list   function_declarator_old declaration_list compound_statement
-        {% with_pos!(p, $1, |at| box CFunctionDef(liftTypeQuals($1), $2, $3, $4, at)) }
+        {% with_pos!(p, $1, |at| box CFunctionDef(lift_type_quals($1), $2, $3, $4, at)) }
 
   | type_qualifier_list attrs  function_declarator_old declaration_list compound_statement
-        {% with_pos!(p, $1, |at| box CFunctionDef(addVecs(liftTypeQuals($1), liftCAttrs($2)), $3, $4, $5, at)) }
+        {% with_pos!(p, $1, |at| box CFunctionDef(add_vecs(lift_type_quals($1), lift_attrs($2)), $3, $4, $5, at)) }
 
 -- Read declarator and put function
 function_declarator :: { Box<CDeclr> }
@@ -369,8 +369,8 @@ function_declarator
   : identifier_declarator
         {%
             let declr = $1.reverse();
-            p.enterScope();
-            p.doFuncParamDeclIdent(&declr);
+            p.enter_scope();
+            p.do_func_param_decl_ident(&declr);
             Ok(declr)
         }
 
@@ -419,9 +419,9 @@ compound_statement
 -- No syntax for these, just side effecting semantic actions.
 --
 enter_scope :: { () }
-enter_scope : {% Ok(p.enterScope()) }
+enter_scope : {% Ok(p.enter_scope()) }
 leave_scope :: { () }
-leave_scope : {% Ok(p.leaveScope()) }
+leave_scope : {% Ok(p.leave_scope()) }
 
 
 block_item_list :: { Vec<CBlockItem> }
@@ -443,26 +443,26 @@ nested_declaration
 nested_function_definition :: { Box<CFunDef> }
 nested_function_definition
   : declaration_specifier      function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
 
   | type_specifier             function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
 
   | declaration_qualifier_list function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef($1, $2, vec![], $3, at)) }
 
   | type_qualifier_list   function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef(liftTypeQuals($1), $2, vec![], $3, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef(lift_type_quals($1), $2, vec![], $3, at)) }
 
   | type_qualifier_list   attrs function_declarator compound_statement
-        {% p.leaveScope(); with_pos!(p, $1, |at| box CFunctionDef(addVecs(liftTypeQuals($1), liftCAttrs($2)),
-                                                                  $3, vec![], $4, at)) }
+        {% p.leave_scope(); with_pos!(p, $1, |at| box CFunctionDef(add_vecs(lift_type_quals($1), lift_attrs($2)),
+                                                                   $3, vec![], $4, at)) }
 
 
 label_declarations :: { Vec<Ident> }
 label_declarations
   : "__label__" identifier_list ';'                     { $2 }
-  | label_declarations "__label__" identifier_list ';'  { addVecs($1, $3) }
+  | label_declarations "__label__" identifier_list ';'  { add_vecs($1, $3) }
 
 
 -- parse C expression statement (C99 6.8.3)
@@ -690,7 +690,7 @@ declaration
   | declaring_list ';'
         {%
             if let CDecl(declspecs, dies, at) = { *$1 } {
-                p.withLength(at, |at| box CDecl(declspecs, revVec(dies), at))
+                p.with_length(at, |at| box CDecl(declspecs, rev_vec(dies), at))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -699,7 +699,7 @@ declaration
   | default_declaring_list ';'
         {%
             if let CDecl(declspecs, dies, at) = { *$1 } {
-                p.withLength(at, |at| box CDecl(declspecs, revVec(dies), at))
+                p.with_length(at, |at| box CDecl(declspecs, rev_vec(dies), at))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -726,34 +726,34 @@ default_declaring_list
   : declaration_qualifier_list identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
             let declspecs = $1;
-            let declr = $2.withAsmNameAttrs(*$3)?;
-            p.doDeclIdent(&declspecs, &declr);
+            let declr = $2.with_asm_name_attrs(*$3)?;
+            p.do_decl_ident(&declspecs, &declr);
             with_pos!(p, declspecs, |at| box CDecl(declspecs, vec![(Some(declr.reverse()), $4, None)], at))
         }
 
   | type_qualifier_list identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
-            let declspecs = liftTypeQuals($1);
-            let declr = $2.withAsmNameAttrs(*$3)?;
-            p.doDeclIdent(&declspecs, &declr);
+            let declspecs = lift_type_quals($1);
+            let declr = $2.with_asm_name_attrs(*$3)?;
+            p.do_decl_ident(&declspecs, &declr);
             with_pos!(p, declspecs, |at| box CDecl(declspecs, vec![(Some(declr.reverse()), $4, None)], at))
         }
 
   | type_qualifier_list attrs identifier_declarator asm_attrs_opt {-{}-} initializer_opt -- FIX 1600
         {%
-            let declspecs = liftTypeQuals($1);
-            let declr = $3.withAsmNameAttrs(*$4)?;
-            p.doDeclIdent(&declspecs, &declr);
-            with_pos!(p, declspecs, |at| box CDecl(addVecs(declspecs, liftCAttrs($2)),
+            let declspecs = lift_type_quals($1);
+            let declr = $3.with_asm_name_attrs(*$4)?;
+            p.do_decl_ident(&declspecs, &declr);
+            with_pos!(p, declspecs, |at| box CDecl(add_vecs(declspecs, lift_attrs($2)),
                                                    vec![(Some(declr.reverse()), $5, None)], at))
         }
 
   -- GNU extension: __attribute__ as the only qualifier
   | attrs identifier_declarator asm_attrs_opt {-{}-} initializer_opt
         {%
-            let declspecs = liftCAttrs($1);
-            let declr = $2.withAsmNameAttrs(*$3)?;
-            p.doDeclIdent(&declspecs, &declr);
+            let declspecs = lift_attrs($1);
+            let declr = $2.with_asm_name_attrs(*$3)?;
+            p.do_decl_ident(&declspecs, &declr);
             with_pos!(p, declspecs, |at| box CDecl(declspecs, vec![(Some(declr.reverse()), $4, None)], at))
         }
 
@@ -761,9 +761,9 @@ default_declaring_list
         {%
             if let CDecl(declspecs, dies, at) = { *$1 } {
                 let (f, s) = { *$5 };
-                let declr = $4.withAsmNameAttrs((f, addVecs(s, $3)))?;
-                p.doDeclIdent(&declspecs, &declr);
-                p.withLength(at, |at| box CDecl(declspecs, prepend((Some(declr.reverse()), $6, None), dies), at))
+                let declr = $4.with_asm_name_attrs((f, add_vecs(s, $3)))?;
+                p.do_decl_ident(&declspecs, &declr);
+                p.with_length(at, |at| box CDecl(declspecs, prepend((Some(declr.reverse()), $6, None), dies), at))
             } else {
                 panic!("irrefutable pattern")
             }
@@ -786,15 +786,15 @@ declaring_list :: { Box<CDecl> }
 declaring_list
   : declaration_specifier declarator asm_attrs_opt initializer_opt
         {%
-            let declr = $2.withAsmNameAttrs(*$3)?;
-            p.doDeclIdent(&$1, &declr);
+            let declr = $2.with_asm_name_attrs(*$3)?;
+            p.do_decl_ident(&$1, &declr);
             with_pos!(p, $1, |at| box CDecl($1, vec![(Some(declr.reverse()), $4, None)], at))
         }
 
   | type_specifier declarator asm_attrs_opt initializer_opt
         {%
-            let declr = $2.withAsmNameAttrs(*$3)?;
-            p.doDeclIdent(&$1, &declr);
+            let declr = $2.with_asm_name_attrs(*$3)?;
+            p.do_decl_ident(&$1, &declr);
             with_pos!(p, $1, |at| box CDecl($1, vec![(Some(declr.reverse()), $4, None)], at))
         }
 
@@ -802,8 +802,8 @@ declaring_list
         {%
             if let CDecl(declspecs, dies, at) = { *$1 } {
                 let (f, s) = { *$5 };
-                let declr = $4.withAsmNameAttrs((f, addVecs(s, $3)))?;
-                p.doDeclIdent(&declspecs, &declr);
+                let declr = $4.with_asm_name_attrs((f, add_vecs(s, $3)))?;
+                p.do_decl_ident(&declspecs, &declr);
                 Ok(box CDecl(declspecs, prepend((Some(declr.reverse()), $6, None), dies), at))
             } else {
                 panic!("irrefutable pattern")
@@ -839,19 +839,19 @@ declaration_qualifier_list
         { vec![*$1] }
 
   | attrs declaration_qualifier_without_types
-        { appended(liftCAttrs($1), *$2) }
+        { appended(lift_attrs($1), *$2) }
 
   | type_qualifier_list declaration_qualifier_without_types
         { appended(map(CTypeQual, $1), *$2) }
 
   | type_qualifier_list attrs declaration_qualifier_without_types
-        { appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)), *$3) }
+        { appended(add_vecs(map(CTypeQual, $1), lift_attrs($2)), *$3) }
 
   | declaration_qualifier_list declaration_qualifier
         { appended($1, *$2) }
 
   | declaration_qualifier_list attr
-        { addTrailingAttrs($1, $2) }
+        { add_trailing_attrs($1, $2) }
 
 --
 -- declaration_qualifier :- storage_class | type_qualifier | function_specifier | alignment_specifier
@@ -952,7 +952,7 @@ basic_declaration_specifier
         { appended($1, CTypeSpec(*$2)) }
 
   | basic_declaration_specifier attr
-        { addTrailingAttrs($1, $2) }
+        { add_trailing_attrs($1, $2) }
 
 
 -- A mixture of type qualifiers and basic type names in any order, but
@@ -970,13 +970,13 @@ basic_type_specifier
         { vec![CTypeSpec(*$1)] }
 
   | attrs basic_type_name
-        { appended(liftCAttrs($1), CTypeSpec(*$2)) }
+        { appended(lift_attrs($1), CTypeSpec(*$2)) }
 
   | type_qualifier_list basic_type_name
         { appended(map(CTypeQual, $1), CTypeSpec(*$2)) }
 
   | type_qualifier_list attrs basic_type_name
-        { appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)), CTypeSpec(*$3)) }
+        { appended(add_vecs(map(CTypeQual, $1), lift_attrs($2)), CTypeSpec(*$3)) }
 
   | basic_type_specifier type_qualifier
         { appended($1, CTypeQual(*$2)) }
@@ -985,7 +985,7 @@ basic_type_specifier
         { appended($1, CTypeSpec(*$2)) }
 
   | basic_type_specifier attr
-        { addTrailingAttrs($1, $2) }
+        { add_trailing_attrs($1, $2) }
 
 
 -- A named or anonymous struct, union or enum type along with at least one
@@ -1006,7 +1006,7 @@ sue_declaration_specifier
         { appended($1, *$2) }
 
   | sue_declaration_specifier attr
-        { addTrailingAttrs($1, $2) }
+        { add_trailing_attrs($1, $2) }
 
 
 -- A struct, union or enum type (named or anonymous) with optional leading and
@@ -1024,19 +1024,19 @@ sue_type_specifier
         { vec![CTypeSpec(*$1)] }
 
   | attrs elaborated_type_name
-        { appended(liftCAttrs($1), CTypeSpec(*$2)) }
+        { appended(lift_attrs($1), CTypeSpec(*$2)) }
 
   | type_qualifier_list elaborated_type_name
         { appended(map(CTypeQual, $1), CTypeSpec(*$2)) }
 
   | type_qualifier_list attrs elaborated_type_name
-        { appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)), CTypeSpec(*$3)) }
+        { appended(add_vecs(map(CTypeQual, $1), lift_attrs($2)), CTypeSpec(*$3)) }
 
   | sue_type_specifier type_qualifier
         { appended($1, CTypeQual(*$2)) }
 
   | sue_type_specifier attr
-        { addTrailingAttrs($1, $2) }
+        { add_trailing_attrs($1, $2) }
 
 -- A typedef'ed type identifier with at least one storage qualifier and any
 -- number of type qualifiers
@@ -1065,7 +1065,7 @@ typedef_declaration_specifier
         { appended($1, *$2) }
 
   | typedef_declaration_specifier attr
-        { addTrailingAttrs($1, $2) }
+        { add_trailing_attrs($1, $2) }
 
 
 -- typedef'ed type identifier with optional leading and trailing type qualifiers
@@ -1095,31 +1095,31 @@ typedef_type_specifier
 
   -- repeat with attrs (this could be easier if type qualifier list wouldn't allow leading attributes)
   | attrs tyident
-        {% with_pos!(p, $2, |at| appended(liftCAttrs($1), CTypeSpec(CTypeDef($2, at)))) }
+        {% with_pos!(p, $2, |at| appended(lift_attrs($1), CTypeSpec(CTypeDef($2, at)))) }
 
   | attrs typeof '(' expression ')'
-        {% with_pos!(p, $1, |at| appended(liftCAttrs($1), CTypeSpec(CTypeOfExpr($4, at)))) }
+        {% with_pos!(p, $1, |at| appended(lift_attrs($1), CTypeSpec(CTypeOfExpr($4, at)))) }
 
   | attrs typeof '(' type_name ')'
-        {% with_pos!(p, $2, |at| appended(liftCAttrs($1), CTypeSpec(CTypeOfType($4, at)))) }
+        {% with_pos!(p, $2, |at| appended(lift_attrs($1), CTypeSpec(CTypeOfType($4, at)))) }
 
   | type_qualifier_list attrs tyident
-        {% with_pos!(p, $3, |at| appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)),
+        {% with_pos!(p, $3, |at| appended(add_vecs(map(CTypeQual, $1), lift_attrs($2)),
                                           CTypeSpec(CTypeDef($3, at)))) }
 
   | type_qualifier_list attrs typeof '(' expression ')'
-        {% with_pos!(p, $3, |at| appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)),
+        {% with_pos!(p, $3, |at| appended(add_vecs(map(CTypeQual, $1), lift_attrs($2)),
                                           CTypeSpec(CTypeOfExpr($5, at)))) }
 
   | type_qualifier_list attrs typeof '(' type_name ')'
-        {% with_pos!(p, $3, |at| appended(addVecs(map(CTypeQual, $1), liftCAttrs($2)),
+        {% with_pos!(p, $3, |at| appended(add_vecs(map(CTypeQual, $1), lift_attrs($2)),
                                           CTypeSpec(CTypeOfType($5, at)))) }
 
   | typedef_type_specifier type_qualifier
         { appended($1, CTypeQual(*$2)) }
 
   | typedef_type_specifier attr
-        { addTrailingAttrs($1, $2) }
+        { add_trailing_attrs($1, $2) }
 
 
 -- A named or anonymous struct, union or enum type.
@@ -1170,7 +1170,7 @@ struct_declaration
   : struct_declaring_list ';'
         {
             if let CDecl(declspecs, dies, at) = { *$1 } {
-                box CDecl(declspecs, revVec(dies), at)
+                box CDecl(declspecs, rev_vec(dies), at)
             } else {
                 panic!("irrefutable pattern");
             }
@@ -1179,7 +1179,7 @@ struct_declaration
   | struct_default_declaring_list';'
         {
             if let CDecl(declspecs, dies, at) = { *$1 } {
-                box CDecl(declspecs, revVec(dies), at)
+                box CDecl(declspecs, rev_vec(dies), at)
             } else {
                 panic!("irrefutable pattern");
             }
@@ -1197,7 +1197,7 @@ struct_default_declaring_list
   : type_qualifier_list attrs_opt struct_identifier_declarator
         {%
             with_pos!(p, $1, match $3 {
-                (d, s) => |at| box CDecl(addVecs(liftTypeQuals($1), liftCAttrs($2)), vec![(d, None, s)], at)
+                (d, s) => |at| box CDecl(add_vecs(lift_type_quals($1), lift_attrs($2)), vec![(d, None, s)], at)
             })
         }
 
@@ -1205,7 +1205,7 @@ struct_default_declaring_list
   | attrs struct_identifier_declarator
         {%
             with_pos!(p, $1, match $2 {
-                (d, s) => |at| box CDecl(liftCAttrs($1), vec![(d, None, s)], at),
+                (d, s) => |at| box CDecl(lift_attrs($1), vec![(d, None, s)], at),
             })
         }
 
@@ -1215,7 +1215,7 @@ struct_default_declaring_list
             if let CDecl(declspecs, dies, at) = { *$1 } {
                 box match $4 {
                     (Some(d), s) => {
-                        CDecl(declspecs, prepend((Some(appendObjAttrs($3, d)), None, s), dies), at)
+                        CDecl(declspecs, prepend((Some(append_obj_attrs($3, d)), None, s), dies), at)
                     },
                     (None, s) => {
                         CDecl(declspecs, prepend((None, None, s), dies), at)
@@ -1235,7 +1235,7 @@ struct_declaring_list
         {%
             with_pos!(p, $1, move |at| box match $2 {
                 (Some(d), s) => {
-                    CDecl($1, vec![(Some(appendObjAttrs($3, d)), None, s)], at)
+                    CDecl($1, vec![(Some(append_obj_attrs($3, d)), None, s)], at)
                 },
                 (None, s) => {
                     CDecl($1, vec![(None, None, s)], at)
@@ -1249,7 +1249,7 @@ struct_declaring_list
                 box match $4 {
                     (Some(d), s) => {
                         CDecl(declspecs, prepend((Some(
-                            appendObjAttrs(addVecs($3, $5), d)), None, s), dies), at)
+                            append_obj_attrs(add_vecs($3, $5), d)), None, s), dies), at)
                     },
                     (None, s) => {
                         CDecl(declspecs, prepend((None, None, s), dies), at)
@@ -1292,7 +1292,7 @@ struct_identifier_declarator
                 (None, expr) => (None, expr),
                 (Some(decl), bsz) => {
                     let CDeclarator(name, derived, asmname, attrs, node) = { *decl };
-                    (Some(box CDeclarator(name, derived, asmname, addVecs(attrs, $2), node)), bsz)
+                    (Some(box CDeclarator(name, derived, asmname, add_vecs(attrs, $2), node)), bsz)
                 }
             }
         }
@@ -1352,7 +1352,7 @@ type_qualifier_list :: { Vec<CTypeQual> }
 type_qualifier_list
   : attrs_opt type_qualifier                 { appended(map(|q| CAttrQual(box q), $1), *$2) }
   | type_qualifier_list type_qualifier       { appended($1, *$2) }
-  | type_qualifier_list attrs type_qualifier { appended(addVecs($1, map(|q| CAttrQual(box q), $2)), *$3) }
+  | type_qualifier_list attrs type_qualifier { appended(add_vecs($1, map(|q| CAttrQual(box q), $2)), *$3) }
 
 -- parse C declarator (C99 6.7.5)
 --
@@ -1410,16 +1410,16 @@ clean_typedef_declarator
         { $1 }
 
   | '*' parameter_typedef_declarator
-        {% with_pos!(p, $1, |at| $2.ptrDeclr(vec![], at)) }
+        {% with_pos!(p, $1, |at| $2.ptr_declr(vec![], at)) }
 
   | '*' attrs parameter_typedef_declarator
-        {% p.withAttribute($1, $2, |at| $3.ptrDeclr(vec![], at)) }
+        {% p.with_attribute($1, $2, |at| $3.ptr_declr(vec![], at)) }
 
   | '*' type_qualifier_list  parameter_typedef_declarator
-        {% with_pos!(p, $1, |at| $3.ptrDeclr($2, at)) }
+        {% with_pos!(p, $1, |at| $3.ptr_declr($2, at)) }
 
   | '*' type_qualifier_list attrs parameter_typedef_declarator
-        {% p.withAttribute($1, $3, |at| $4.ptrDeclr($2, at)) }
+        {% p.with_attribute($1, $3, |at| $4.ptr_declr($2, at)) }
 
 -- clean_postfix_typedef_declarator :- ( attrs? clean_typedef_declarator ) declarator_postfix?
 --
@@ -1427,8 +1427,8 @@ clean_postfix_typedef_declarator :: { Box<CDeclrR> }
 clean_postfix_typedef_declarator
   : '(' clean_typedef_declarator ')'                                        { $2 }
   | '(' clean_typedef_declarator ')' postfixing_abstract_declarator         { $4($2) }
-  | '(' attrs clean_typedef_declarator ')'                                  { $3.appendAttrs($2) }
-  | '(' attrs clean_typedef_declarator ')' postfixing_abstract_declarator   { $5($3).appendAttrs($2) }
+  | '(' attrs clean_typedef_declarator ')'                                  { $3.append_attrs($2) }
+  | '(' attrs clean_typedef_declarator ')' postfixing_abstract_declarator   { $5($3).append_attrs($2) }
 
 
 -- The following have a redundant '(' placed
@@ -1441,20 +1441,20 @@ paren_typedef_declarator
 
   -- redundant paren
   | '*' '(' simple_paren_typedef_declarator ')'
-        {% with_pos!(p, $1, |at| $3.ptrDeclr(vec![], at)) }
+        {% with_pos!(p, $1, |at| $3.ptr_declr(vec![], at)) }
 
   | '*' type_qualifier_list '(' simple_paren_typedef_declarator ')'
-        {% with_pos!(p, $1, |at| $4.ptrDeclr($2, at)) }
+        {% with_pos!(p, $1, |at| $4.ptr_declr($2, at)) }
   | '*' type_qualifier_list attrs '(' simple_paren_typedef_declarator ')'
-        {% p.withAttribute($1, $3, |at| $5.ptrDeclr($2, at))  }
+        {% p.with_attribute($1, $3, |at| $5.ptr_declr($2, at))  }
 
   | '*' paren_typedef_declarator
-        {% with_pos!(p, $1, |at| $2.ptrDeclr(vec![], at)) }
+        {% with_pos!(p, $1, |at| $2.ptr_declr(vec![], at)) }
 
   | '*' type_qualifier_list paren_typedef_declarator
-        {% with_pos!(p, $1, |at| $3.ptrDeclr($2, at)) }
+        {% with_pos!(p, $1, |at| $3.ptr_declr($2, at)) }
   | '*' type_qualifier_list attrs paren_typedef_declarator
-        {% p.withAttribute($1, $3, |at| $4.ptrDeclr($2, at)) }
+        {% p.with_attribute($1, $3, |at| $4.ptr_declr($2, at)) }
 
 -- redundant paren to left of tname
 paren_postfix_typedef_declarator :: { Box<CDeclrR> }
@@ -1498,16 +1498,16 @@ unary_identifier_declarator
         { $1 }
 
   | '*' identifier_declarator
-        {% with_pos!(p, $1, |at| $2.ptrDeclr(vec![], at)) }
+        {% with_pos!(p, $1, |at| $2.ptr_declr(vec![], at)) }
 
   | '*' attrs identifier_declarator
-        {% p.withAttribute($1, $2, |at| $3.ptrDeclr(vec![], at)) }
+        {% p.with_attribute($1, $2, |at| $3.ptr_declr(vec![], at)) }
 
   | '*' type_qualifier_list identifier_declarator
-        {% with_pos!(p, $1, |at| $3.ptrDeclr($2, at)) }
+        {% with_pos!(p, $1, |at| $3.ptr_declr($2, at)) }
 
   | '*' type_qualifier_list attrs identifier_declarator
-        {% p.withAttribute($1, $3, |at| $4.ptrDeclr($2, at)) }
+        {% p.with_attribute($1, $3, |at| $4.ptr_declr($2, at)) }
 
 postfix_identifier_declarator :: { Box<CDeclrR> }
 postfix_identifier_declarator
@@ -1521,10 +1521,10 @@ postfix_identifier_declarator
         { $4($2) }
 
    | '(' attrs unary_identifier_declarator ')'
-        { $3.appendAttrs($2) }
+        { $3.append_attrs($2) }
 
    | '(' attrs unary_identifier_declarator ')' postfixing_abstract_declarator
-        { $5($3).appendAttrs($2) }
+        { $5($3).append_attrs($2) }
 
 
 -- just an identifier in any number of nested parenthesis
@@ -1537,7 +1537,7 @@ paren_identifier_declarator
         { $2 }
 
   | '(' attrs paren_identifier_declarator ')'
-        { $3.appendAttrs($2) }
+        { $3.append_attrs($2) }
 
 function_declarator_old :: { Box<CDeclr> }
 function_declarator_old
@@ -1550,15 +1550,15 @@ old_function_declarator
         { $1 }
 
   | '*' old_function_declarator
-        {% with_pos!(p, $1, |at| $2.ptrDeclr(vec![], at)) } -- FIXME: no attr possible here ???
+        {% with_pos!(p, $1, |at| $2.ptr_declr(vec![], at)) } -- FIXME: no attr possible here ???
 
   | '*' type_qualifier_list old_function_declarator
-        {% with_pos!(p, $1, |at| $3.ptrDeclr($2, at)) }
+        {% with_pos!(p, $1, |at| $3.ptr_declr($2, at)) }
 
 postfix_old_function_declarator :: { Box<CDeclrR> }
 postfix_old_function_declarator
   : paren_identifier_declarator '(' identifier_list ')'
-        {% with_pos!(p, $1, |at| $1.funDeclr(Left($3), vec![], at)) }
+        {% with_pos!(p, $1, |at| $1.fun_declr(Left($3), vec![], at)) }
 
   | '(' old_function_declarator ')'
         { $2 }
@@ -1589,10 +1589,10 @@ parameter_declaration
         {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.reverse()), None, None)], at)) }
 
   | declaration_specifier identifier_declarator attrs_opt
-        {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.appendAttrs($3).reverse()), None, None)], at)) }
+        {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.append_attrs($3).reverse()), None, None)], at)) }
 
   | declaration_specifier parameter_typedef_declarator attrs_opt
-        {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.appendAttrs($3).reverse()), None, None)], at)) }
+        {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.append_attrs($3).reverse()), None, None)], at)) }
 
   | declaration_qualifier_list
         {% with_pos!(p, $1, |at| box CDecl($1, vec![], at)) }
@@ -1601,7 +1601,7 @@ parameter_declaration
         {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.reverse()), None, None)], at)) }
 
   | declaration_qualifier_list identifier_declarator attrs_opt
-        {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.appendAttrs($3).reverse()), None, None)], at)) }
+        {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.append_attrs($3).reverse()), None, None)], at)) }
 
   | type_specifier
         {% with_pos!(p, $1, |at| box CDecl($1, vec![], at)) }
@@ -1610,22 +1610,22 @@ parameter_declaration
         {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.reverse()), None, None)], at)) }
 
   | type_specifier identifier_declarator attrs_opt
-        {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.appendAttrs($3).reverse()), None, None)], at)) }
+        {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.append_attrs($3).reverse()), None, None)], at)) }
 
   | type_specifier parameter_typedef_declarator attrs_opt
-        {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.appendAttrs($3).reverse()), None, None)], at)) }
+        {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.append_attrs($3).reverse()), None, None)], at)) }
 
   | type_qualifier_list
-        {% with_pos!(p, $1, |at| box CDecl(liftTypeQuals($1), vec![], at)) }
+        {% with_pos!(p, $1, |at| box CDecl(lift_type_quals($1), vec![], at)) }
   | type_qualifier_list attr
-        {% with_pos!(p, $1, |at| box CDecl(addVecs(liftTypeQuals($1), liftCAttrs($2)), vec![], at)) }
+        {% with_pos!(p, $1, |at| box CDecl(add_vecs(lift_type_quals($1), lift_attrs($2)), vec![], at)) }
 
   | type_qualifier_list abstract_declarator
-        {% with_pos!(p, $1, |at| box CDecl(liftTypeQuals($1), vec![(Some($2.reverse()), None, None)], at)) }
+        {% with_pos!(p, $1, |at| box CDecl(lift_type_quals($1), vec![(Some($2.reverse()), None, None)], at)) }
 
   | type_qualifier_list identifier_declarator attrs_opt
-        {% with_pos!(p, $1, |at| box CDecl(liftTypeQuals($1),
-                                           vec![(Some($2.appendAttrs($3).reverse()), None, None)], at)) }
+        {% with_pos!(p, $1, |at| box CDecl(lift_type_quals($1),
+                                           vec![(Some($2.append_attrs($3).reverse()), None, None)], at)) }
 
 
 identifier_list :: { Vec<Ident> }
@@ -1645,10 +1645,10 @@ type_name
         {% with_pos!(p, $1, |at| box CDecl($1, vec![(Some($2.reverse()), None, None)], at)) }
 
   |  type_qualifier_list attr
-        {% with_pos!(p, $1, |at| box CDecl(addVecs(liftTypeQuals($1), liftCAttrs($2)), vec![], at)) }
+        {% with_pos!(p, $1, |at| box CDecl(add_vecs(lift_type_quals($1), lift_attrs($2)), vec![], at)) }
 
   |  type_qualifier_list abstract_declarator
-        {% with_pos!(p, $1, |at| box CDecl(liftTypeQuals($1), vec![(Some($2.reverse()), None, None)], at)) }
+        {% with_pos!(p, $1, |at| box CDecl(lift_type_quals($1), vec![(Some($2.reverse()), None, None)], at)) }
 
 -- parse C abstract declarator (C99 6.7.6)
 --
@@ -1676,7 +1676,7 @@ postfixing_abstract_declarator
             with_pos!(p, $1, |at| {
                 let a: Box<FnBox(Box<CDeclrR>) -> Box<CDeclrR>> = box move |declr: Box<CDeclrR>| {
                     let (params, variadic) = $2;
-                    declr.funDeclr(Right((params, variadic)), vec![], at)
+                    declr.fun_declr(Right((params, variadic)), vec![], at)
                 };
                 a
             })
@@ -1704,65 +1704,65 @@ postfix_array_abstract_declarator
         {%
             with_pos!(p, $1, |at| {
                 let a: Box<FnBox(Box<CDeclrR>) -> Box<CDeclrR>> = box |declr: Box<CDeclrR>| {
-                    declr.arrDeclr(vec![], false, false, $2, at)
+                    declr.arr_declr(vec![], false, false, $2, at)
                 };
                 a
             })
         }
 
   | '[' attrs assignment_expression_opt ']'
-        {% p.withAttributePF($1, $2, |at, declr| declr.arrDeclr(vec![], false, false, $3, at)) }
+        {% p.with_attribute_postfix($1, $2, |at, declr| declr.arr_declr(vec![], false, false, $3, at)) }
 
   | '[' type_qualifier_list assignment_expression_opt ']'
         {%
             with_pos!(p, $1, |at| {
                 let a: Box<FnBox(Box<CDeclrR>) -> Box<CDeclrR>> =
-                    box |declr: Box<CDeclrR>| declr.arrDeclr($2, false, false, $3, at);
+                    box |declr: Box<CDeclrR>| declr.arr_declr($2, false, false, $3, at);
                 a
             })
         }
 
   | '[' type_qualifier_list attrs assignment_expression_opt ']'
-        {% p.withAttributePF($1, $3, |at, declr| declr.arrDeclr($2, false, false, $4, at)) }
+        {% p.with_attribute_postfix($1, $3, |at, declr| declr.arr_declr($2, false, false, $4, at)) }
 
   | '[' static attrs_opt assignment_expression ']'
-        {% p.withAttributePF($1, $3, |at, declr| declr.arrDeclr(vec![], false, true, Some($4), at)) }
+        {% p.with_attribute_postfix($1, $3, |at, declr| declr.arr_declr(vec![], false, true, Some($4), at)) }
 
   | '[' static type_qualifier_list attrs_opt assignment_expression ']'
-        {% p.withAttributePF($1, $4, |at, declr| declr.arrDeclr($3, false, true, Some($5), at)) }
+        {% p.with_attribute_postfix($1, $4, |at, declr| declr.arr_declr($3, false, true, Some($5), at)) }
 
   | '[' type_qualifier_list attrs_opt static attrs_opt assignment_expression ']'
-        {% p.withAttributePF($1, addVecs($3, $5), |at, declr| declr.arrDeclr($2, false, true, Some($6), at)) }
+        {% p.with_attribute_postfix($1, add_vecs($3, $5), |at, declr| declr.arr_declr($2, false, true, Some($6), at)) }
 
   | '[' '*' attrs_opt ']'
-        {% p.withAttributePF($1, $3, |at, declr| declr.arrDeclr(vec![], true, false, None, at)) }
+        {% p.with_attribute_postfix($1, $3, |at, declr| declr.arr_declr(vec![], true, false, None, at)) }
   | '[' attrs '*' attrs_opt ']'
-        {% p.withAttributePF($1, addVecs($2, $4), |at, declr|
-                             declr.arrDeclr(vec![], true, false, None, at)) }
+        {% p.with_attribute_postfix($1, add_vecs($2, $4), |at, declr|
+                             declr.arr_declr(vec![], true, false, None, at)) }
 
   | '[' type_qualifier_list '*' attrs_opt ']'
-        {% p.withAttributePF($1, $4, |at, declr| declr.arrDeclr($2, true, false, None, at)) }
+        {% p.with_attribute_postfix($1, $4, |at, declr| declr.arr_declr($2, true, false, None, at)) }
   | '[' type_qualifier_list attrs '*' attrs_opt ']'
-        {% p.withAttributePF($1, addVecs($3, $5), |at, declr| declr.arrDeclr($2, true, false, None, at)) }
+        {% p.with_attribute_postfix($1, add_vecs($3, $5), |at, declr| declr.arr_declr($2, true, false, None, at)) }
 
 unary_abstract_declarator :: { Box<CDeclrR> }
 unary_abstract_declarator
   : '*'
-        {% with_pos!(p, $1, |at| CDeclrR::empty().ptrDeclr(vec![], at)) }
+        {% with_pos!(p, $1, |at| CDeclrR::empty().ptr_declr(vec![], at)) }
 
   | '*' type_qualifier_list attrs_opt
-        {% p.withAttribute($1, $3, |at| CDeclrR::empty().ptrDeclr($2, at)) }
+        {% p.with_attribute($1, $3, |at| CDeclrR::empty().ptr_declr($2, at)) }
 
   | '*' abstract_declarator
-        {% with_pos!(p, $1, |at| $2.ptrDeclr(vec![], at)) }
+        {% with_pos!(p, $1, |at| $2.ptr_declr(vec![], at)) }
 
   | '*' type_qualifier_list abstract_declarator
-        {% with_pos!(p, $1, |at| $3.ptrDeclr($2, at)) }
+        {% with_pos!(p, $1, |at| $3.ptr_declr($2, at)) }
 
   | '*' attrs
-        {% p.withAttribute($1, $2, |at| CDeclrR::empty().ptrDeclr(vec![], at)) }
+        {% p.with_attribute($1, $2, |at| CDeclrR::empty().ptr_declr(vec![], at)) }
   | '*' attrs abstract_declarator
-        {% p.withAttribute($1, $2, |at| $3.ptrDeclr(vec![], at)) }
+        {% p.with_attribute($1, $2, |at| $3.ptr_declr(vec![], at)) }
 
 -- postfix_ad starts with '(', postfixing with '(' or '[', unary_abstract starts with '*'
 postfix_abstract_declarator :: { Box<CDeclrR> }
@@ -1773,11 +1773,11 @@ postfix_abstract_declarator
   | '(' unary_abstract_declarator ')' postfixing_abstract_declarator    { $4($2) }
 
 -- FIX 0700
-  | '(' attrs unary_abstract_declarator ')'                                 { $3.appendAttrs($2) }
-  | '(' attrs postfix_abstract_declarator ')'                               { $3.appendAttrs($2) }
-  | '(' attrs postfixing_abstract_declarator ')'                            { $3(CDeclrR::empty()).appendAttrs($2) }
-  | '(' attrs unary_abstract_declarator ')' postfixing_abstract_declarator  { $5($3).appendAttrs($2) }
-  | postfix_abstract_declarator attr                                        { $1.appendAttrs($2) }
+  | '(' attrs unary_abstract_declarator ')'                                 { $3.append_attrs($2) }
+  | '(' attrs postfix_abstract_declarator ')'                               { $3.append_attrs($2) }
+  | '(' attrs postfixing_abstract_declarator ')'                            { $3(CDeclrR::empty()).append_attrs($2) }
+  | '(' attrs unary_abstract_declarator ')' postfixing_abstract_declarator  { $5($3).append_attrs($2) }
+  | postfix_abstract_declarator attr                                        { $1.append_attrs($2) }
 
 
 -- parse C initializer (C99 6.7.8)
@@ -2288,7 +2288,7 @@ attrs_opt
 attrs :: { Vec<CAttr> }
 attrs
   : attr            { $1 }
-  | attrs attr      { addVecs($1, $2) }
+  | attrs attr      { add_vecs($1, $2) }
 
 attr :: { Vec<CAttr> }
 attr
@@ -2331,7 +2331,7 @@ attribute_params
 {
 
 #[inline]
-fn revVec<T>(mut a: Vec<T>) -> Vec<T> {
+fn rev_vec<T>(mut a: Vec<T>) -> Vec<T> {
     a.reverse();
     a
 }
@@ -2343,7 +2343,7 @@ fn prepend<T>(t: T, mut a: Vec<T>) -> Vec<T> {
 }
 
 #[inline]
-fn addVecs<T>(mut a: Vec<T>, mut b: Vec<T>) -> Vec<T> {
+fn add_vecs<T>(mut a: Vec<T>, mut b: Vec<T>) -> Vec<T> {
     a.append(&mut b);
     a
 }
@@ -2360,22 +2360,22 @@ fn map<T, U, F: Fn(T) -> U>(f: F, a: Vec<T>) -> Vec<U> {
 }
 
 #[inline]
-fn liftTypeQuals(quals: Vec<CTypeQual>) -> Vec<CDeclSpec> {
+fn lift_type_quals(quals: Vec<CTypeQual>) -> Vec<CDeclSpec> {
     map(CTypeQual, quals)
 }
 
 #[inline]
-fn liftCAttrs(attrs: Vec<CAttribute<NodeInfo>>) -> Vec<CDeclSpec> {
+fn lift_attrs(attrs: Vec<CAttribute<NodeInfo>>) -> Vec<CDeclSpec> {
     map(|attr| CTypeQual(CAttrQual(box attr)), attrs)
 }
 
-fn appendObjAttrs(newAttrs: Vec<CAttribute<NodeInfo>>,
-                  box CDeclarator(ident, indirections, asmname, cAttrs, at): Box<CDeclarator<NodeInfo>>)
-                  -> Box<CDeclarator<NodeInfo>> {
-    box CDeclarator(ident, indirections, asmname, addVecs(cAttrs, newAttrs), at)
+#[inline]
+fn append_obj_attrs(mut new_attrs: Vec<CAttr>, mut declr: Box<CDeclr>) -> Box<CDeclr> {
+    declr.3.append(&mut new_attrs);
+    declr
 }
 
-fn addTrailingAttrs(mut declspecs: Vec<CDeclSpec>, mut new_attrs: Vec<CAttr>) -> Vec<CDeclSpec> {
+fn add_trailing_attrs(mut declspecs: Vec<CDeclSpec>, mut new_attrs: Vec<CAttr>) -> Vec<CDeclSpec> {
     let is_new = match declspecs.last_mut() {
         Some(&mut CTypeSpec(CSUType(box CStructureUnion(_, _, _, ref mut def_attrs, _), _))) => {
             def_attrs.append(&mut new_attrs);
@@ -2388,29 +2388,13 @@ fn addTrailingAttrs(mut declspecs: Vec<CDeclSpec>, mut new_attrs: Vec<CAttr>) ->
         _ => true
     };
     if is_new {
-        declspecs.append(&mut liftCAttrs(new_attrs));
+        declspecs.append(&mut lift_attrs(new_attrs));
     }
     declspecs
 }
 
-fn happyError<T>(p: &mut Parser) -> Res<T> {
-    parseError(p)
-}
-
-pub fn translUnitP(p: &mut Parser) -> Res<CTranslationUnit<NodeInfo>> {
-    translation_unit(p).map(|b| *b)
-}
-
-pub fn extDeclP(p: &mut Parser) -> Res<CExtDecl> {
-    external_declaration(p).map(|b| *b)
-}
-
-pub fn statementP(p: &mut Parser) -> Res<CStat> {
-    statement(p).map(|b| *b)
-}
-
-pub fn expressionP(p: &mut Parser) -> Res<CExpr> {
-    expression(p).map(|b| *b)
+fn happy_error<T>(p: &mut Parser) -> Res<T> {
+    parse_error(p)
 }
 
 }

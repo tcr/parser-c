@@ -3,6 +3,6 @@
 
 use data::ident::Ident;
 
-pub fn builtinTypeNames() -> Vec<Ident> {
+pub fn builtin_type_names() -> Vec<Ident> {
     vec![Ident::builtin("__builtin_va_list".into())]
 }
