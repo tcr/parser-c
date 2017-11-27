@@ -51,6 +51,8 @@ type Error = ParseError;
 type State = PState;
 type Token = CToken;
 
+const EOF_TOK: Token = CToken::CTokEof;
+
 macro_rules! with_pos {
     ($parser:expr, $infonode:expr, $closure:expr) => {{
         let pos1 = $infonode.pos();
