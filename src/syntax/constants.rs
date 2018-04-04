@@ -159,10 +159,10 @@ pub enum CIntRepr {
 
 bitflags! {
     pub struct CIntFlags: u32 {
-        const FLAG_UNSIGNED = 0b00000001;
-        const FLAG_LONG     = 0b00000010;
-        const FLAG_LONGLONG = 0b00000100;
-        const FLAG_IMAG     = 0b00001000;
+        const UNSIGNED = 0b00000001;
+        const LONG     = 0b00000010;
+        const LONGLONG = 0b00000100;
+        const IMAG     = 0b00001000;
     }
 }
 
@@ -177,18 +177,18 @@ impl FromStr for CIntFlags {
             }
             if s.starts_with("ll") || s.starts_with("LL") {
                 s = &s[2..];
-                flags |= FLAG_LONGLONG;
+                flags |= CIntFlags::LONGLONG;
                 continue;
             }
             match &s[0..1] {
-                "l" => flags |= FLAG_LONG,
-                "L" => flags |= FLAG_LONG,
-                "u" => flags |= FLAG_UNSIGNED,
-                "U" => flags |= FLAG_UNSIGNED,
-                "i" => flags |= FLAG_IMAG,
-                "I" => flags |= FLAG_IMAG,
-                "j" => flags |= FLAG_IMAG,
-                "J" => flags |= FLAG_IMAG,
+                "l" => flags |= CIntFlags::LONG,
+                "L" => flags |= CIntFlags::LONG,
+                "u" => flags |= CIntFlags::UNSIGNED,
+                "U" => flags |= CIntFlags::UNSIGNED,
+                "i" => flags |= CIntFlags::IMAG,
+                "I" => flags |= CIntFlags::IMAG,
+                "j" => flags |= CIntFlags::IMAG,
+                "J" => flags |= CIntFlags::IMAG,
                 _ => return Err(format!("Unexpected flags {}", s)),
             }
             s = &s[1..];
@@ -206,10 +206,10 @@ impl fmt::Display for CInteger {
             CIntRepr::Hex => write!(f, "{:#x}", self.0)?,
             CIntRepr::Octal => write!(f, "0{:o}", self.0)?,
         }
-        if self.2.contains(FLAG_UNSIGNED) { write!(f, "u")?; }
-        if self.2.contains(FLAG_LONG)     { write!(f, "L")?; }
-        if self.2.contains(FLAG_LONGLONG) { write!(f, "LL")?; }
-        if self.2.contains(FLAG_IMAG)     { write!(f, "i")?; }
+        if self.2.contains(CIntFlags::UNSIGNED) { write!(f, "u")?; }
+        if self.2.contains(CIntFlags::LONG)     { write!(f, "L")?; }
+        if self.2.contains(CIntFlags::LONGLONG) { write!(f, "LL")?; }
+        if self.2.contains(CIntFlags::IMAG)     { write!(f, "i")?; }
         Ok(())
     }
 }

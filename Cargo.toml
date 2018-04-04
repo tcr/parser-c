@@ -15,6 +15,6 @@ members = ["parser-c-macro", "parser-c-tests"]
 
 [dependencies]
 tempdir = "0.3.5"
-bitflags = "0.9.1"
-either = "1.1.0"
+bitflags = "1.0.1"
+either = "1.5.0"
 parser-c-macro = { path = "parser-c-macro", version = "0.3" }
