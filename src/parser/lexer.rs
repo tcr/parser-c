@@ -111411,7 +111411,7 @@ fn adjust_line_directive(pragma: &str, pos: Position) -> Res<Position> {
         flag_start = last_quote + 1;
         // TODO fname should be unescaped if it contains backslashes
         let fname = &pragma[first_quote+1..last_quote];
-        if &*current_fname == fname { current_fname } else { Rc::new(fname.to_string()) }
+        if &*current_fname == fname { current_fname } else { fname.into() }
     } else { // no or just one quote
         current_fname
     };

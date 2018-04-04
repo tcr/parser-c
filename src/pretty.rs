@@ -101,7 +101,7 @@ use self::ListStyle::*;
 enum Text<'a> {
     Chr(char),
     Str(&'a str),
-    String(Rc<String>),
+    String(Rc<str>),
 }
 
 // Pre-generate whitespace for indentation.
@@ -266,7 +266,7 @@ fn chr<'a>(ch: char) -> Doc<'a> {
 
 fn text<'a, T>(s: T) -> Doc<'a> where T: Into<Cow<'a, str>> {
     match s.into() {
-        Cow::Owned(s) => mk(Text(Text::String(Rc::new(s)))),
+        Cow::Owned(s) => mk(Text(Text::String(s.into()))),
         Cow::Borrowed(s) => mk(Text(Text::Str(s))),
     }
 }

@@ -26,9 +26,8 @@
 //! }
 //! ```
 
-#![feature(box_syntax, box_patterns, fnbox, vec_remove_item, i128_type,
-           slice_patterns, advanced_slice_patterns, conservative_impl_trait,
-           decode_utf8, ascii_ctype, from_ref)]
+#![feature(box_syntax, box_patterns, fnbox, vec_remove_item,
+           slice_patterns, decode_utf8, ascii_ctype, from_ref)]
 
 extern crate either;
 extern crate tempdir;

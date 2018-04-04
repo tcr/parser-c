@@ -11,7 +11,7 @@ pub enum Position {
         /// Absolute offset in the preprocessed file.
         offset: usize,
         /// Original file name. Affected by #line pragmas.
-        file: Rc<String>,
+        file: Rc<str>,
         /// Line in the original file. Affected by #line pragmas.
         row: usize,
         /// Column in the original file. Affected by #line pragmas.
@@ -57,14 +57,14 @@ impl fmt::Display for Position {
 }
 
 impl Position {
-    pub fn new(offset: usize, file: Rc<String>, row: usize, column: usize,
+    pub fn new(offset: usize, file: Rc<str>, row: usize, column: usize,
                parent: Option<Rc<Position>>) -> Position {
         Position::Position { offset, file, row, column, parent }
     }
 
     pub fn from_file<P: AsRef<Path>>(file: P) -> Position {
         let path_str = file.as_ref().display().to_string();
-        Position::Position { offset: 1, file: Rc::new(path_str),
+        Position::Position { offset: 1, file: path_str.into(),
                              row: 1, column: 1, parent: None }
     }
 
@@ -88,7 +88,7 @@ impl Position {
         }
     }
 
-    pub fn file(&self) -> Option<Rc<String>> {
+    pub fn file(&self) -> Option<Rc<str>> {
         if let Position::Position { ref file, .. } = *self {
             Some(file.clone())
         } else {

@@ -1,18 +1,16 @@
 extern crate parser_c;
 extern crate walkdir;
 
+use std::fs::read_to_string;
 use parser_c::parse_str;
-use std::fs::File;
 use walkdir::WalkDir;
-use std::io::prelude::*;
 
 #[test]
 fn eval_smoke() {
     for item in WalkDir::new("smoke") {
         if let Ok(entry) = item {
             if entry.path().extension().map_or(false, |v| v == "c") {
-                let mut input = String::new();
-                File::open(entry.path()).unwrap().read_to_string(&mut input).unwrap();
+                let input = read_to_string(entry.path()).unwrap();
                 match parse_str(&input, &entry.path().display().to_string()) {
                     Err(err) => {
                         panic!("error: {}", err);
